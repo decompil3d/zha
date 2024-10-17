@@ -23,12 +23,7 @@ from tests.common import (
     join_zigpy_device,
 )
 from zha.application import Platform
-from zha.application.const import (
-    CONF_USE_THREAD,
-    ZHA_GW_MSG,
-    ZHA_GW_MSG_CONNECTION_LOST,
-    RadioType,
-)
+from zha.application.const import CONF_USE_THREAD, ZHA_GW_MSG_CONNECTION_LOST, RadioType
 from zha.application.gateway import (
     ConnectionLostEvent,
     DeviceJoinedDeviceInfo,
@@ -72,7 +67,7 @@ async def coordinator_mock(zha_gateway: Gateway) -> Device:
             }
         },
         ieee="00:15:8d:00:02:32:4f:32",
-        nwk=0x0000,
+        nwk=zigpy.types.NWK(0x0000),
         node_descriptor=zdo_t.NodeDescriptor(
             logical_type=zdo_t.LogicalType.Coordinator,
             complex_descriptor_available=0,
@@ -507,7 +502,7 @@ async def test_startup_concurrency_limit(
                 }
             },
             ieee=f"11:22:33:44:{i:08x}",
-            nwk=0x1234 + i,
+            nwk=zigpy.types.NWK(0x1234 + i),
         )
         zigpy_dev.node_desc.mac_capability_flags |= (
             zigpy.zdo.types.NodeDescriptor.MACCapabilityFlags.MainsPowered
@@ -615,7 +610,7 @@ def test_gateway_raw_device_initialized(
         RawDeviceInitializedEvent(
             device_info=RawDeviceInitializedDeviceInfo(
                 ieee=zigpy.types.EUI64.convert("00:0d:6f:00:0a:90:69:e7"),
-                nwk=0xB79C,
+                nwk=zigpy.types.NWK(0xB79C),
                 pairing_status=DevicePairingStatus.INTERVIEW_COMPLETE,
                 model="FakeModel",
                 manufacturer="FakeManufacturer",
@@ -646,9 +641,7 @@ def test_gateway_raw_device_initialized(
                         }
                     },
                 },
-            ),
-            event_type="zha_gateway_message",
-            event="raw_device_initialized",
+            )
         ),
     )
 
@@ -668,7 +661,7 @@ def test_gateway_device_joined(
         DeviceJoinedEvent(
             device_info=DeviceJoinedDeviceInfo(
                 ieee=zigpy.types.EUI64.convert("00:0d:6f:00:0a:90:69:e7"),
-                nwk=0xB79C,
+                nwk=zigpy.types.NWK(0xB79C),
                 pairing_status=DevicePairingStatus.PAIRED,
             )
         ),
@@ -687,8 +680,6 @@ def test_gateway_connection_lost(zha_gateway: Gateway) -> None:
         ZHA_GW_MSG_CONNECTION_LOST,
         ConnectionLostEvent(
             exception=exception,
-            event=ZHA_GW_MSG_CONNECTION_LOST,
-            event_type=ZHA_GW_MSG,
         ),
     )
 
