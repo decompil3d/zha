@@ -37,7 +37,12 @@ from zha.application.gateway import Gateway
 from zha.application.platforms.sensor import LQISensor, RSSISensor
 from zha.application.platforms.switch import Switch
 from zha.exceptions import ZHAException
-from zha.zigbee.device import ClusterBinding, get_device_automation_triggers
+from zha.zigbee.device import (
+    ClusterBinding,
+    NeighborInfo,
+    RouteInfo,
+    get_device_automation_triggers,
+)
 from zha.zigbee.group import Group
 
 
@@ -820,3 +825,76 @@ async def test_quirks_v2_device_renaming(zha_gateway: Gateway) -> None:
     zha_device = await join_zigpy_device(zha_gateway, zigpy_dev)
     assert zha_device.model == "IRIS Keypad V2"
     assert zha_device.manufacturer == "Lowe's"
+
+
+def test_neighbor_info_ser_deser() -> None:
+    """Test the serialization and deserialization of the neighbor info."""
+
+    neighbor_info = NeighborInfo(
+        ieee="00:0d:6f:00:0a:90:69:e7",
+        nwk=0x1234,
+        extended_pan_id="00:0d:6f:00:0a:90:69:e7",
+        lqi=255,
+        relationship=zdo_t._NeighborEnums.Relationship.Child.name,
+        depth=0,
+        device_type=zdo_t._NeighborEnums.DeviceType.Router.name,
+        rx_on_when_idle=zdo_t._NeighborEnums.RxOnWhenIdle.On.name,
+        permit_joining=zdo_t._NeighborEnums.PermitJoins.Accepting.name,
+    )
+
+    assert isinstance(neighbor_info.ieee, zigpy.types.EUI64)
+    assert isinstance(neighbor_info.nwk, zigpy.types.NWK)
+    assert isinstance(neighbor_info.extended_pan_id, zigpy.types.EUI64)
+    assert isinstance(neighbor_info.relationship, zdo_t._NeighborEnums.Relationship)
+    assert isinstance(neighbor_info.device_type, zdo_t._NeighborEnums.DeviceType)
+    assert isinstance(neighbor_info.rx_on_when_idle, zdo_t._NeighborEnums.RxOnWhenIdle)
+    assert isinstance(neighbor_info.permit_joining, zdo_t._NeighborEnums.PermitJoins)
+
+    assert neighbor_info.model_dump() == {
+        "ieee": "00:0d:6f:00:0a:90:69:e7",
+        "nwk": 0x1234,
+        "extended_pan_id": "00:0d:6f:00:0a:90:69:e7",
+        "lqi": 255,
+        "relationship": zdo_t._NeighborEnums.Relationship.Child.name,
+        "depth": 0,
+        "device_type": zdo_t._NeighborEnums.DeviceType.Router.name,
+        "rx_on_when_idle": zdo_t._NeighborEnums.RxOnWhenIdle.On.name,
+        "permit_joining": zdo_t._NeighborEnums.PermitJoins.Accepting.name,
+    }
+
+    assert neighbor_info.model_dump_json() == (
+        '{"device_type":"Router","rx_on_when_idle":"On","relationship":"Child",'
+        '"extended_pan_id":"00:0d:6f:00:0a:90:69:e7","ieee":"00:0d:6f:00:0a:90:69:e7","nwk":4660,'
+        '"permit_joining":"Accepting","depth":0,"lqi":255}'
+    )
+
+
+def test_route_info_ser_deser() -> None:
+    """Test the serialization and deserialization of the route info."""
+
+    route_info = RouteInfo(
+        dest_nwk=0x1234,
+        next_hop=0x5678,
+        route_status=zdo_t.RouteStatus.Active.name,
+        memory_constrained=0,
+        many_to_one=1,
+        route_record_required=1,
+    )
+
+    assert isinstance(route_info.dest_nwk, zigpy.types.NWK)
+    assert isinstance(route_info.next_hop, zigpy.types.NWK)
+    assert isinstance(route_info.route_status, zdo_t.RouteStatus)
+
+    assert route_info.model_dump() == {
+        "dest_nwk": 0x1234,
+        "next_hop": 0x5678,
+        "route_status": zdo_t.RouteStatus.Active.name,
+        "memory_constrained": 0,
+        "many_to_one": 1,
+        "route_record_required": 1,
+    }
+
+    assert route_info.model_dump_json() == (
+        '{"dest_nwk":4660,"route_status":"Active","memory_constrained":0,"many_to_one":1,'
+        '"route_record_required":1,"next_hop":22136}'
+    )
