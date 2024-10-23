@@ -347,7 +347,7 @@ class PlatformEntity(BaseEntity):
 
     def maybe_emit_state_changed_event(self) -> None:
         """Send the state of this platform entity."""
-        from zha.websocket.server.gateway import WebSocketGateway
+        from zha.application.gateway import WebSocketGateway
 
         super().maybe_emit_state_changed_event()
         if isinstance(self.device.gateway, WebSocketGateway):
@@ -431,7 +431,7 @@ class GroupEntity(BaseEntity):
 
     def maybe_emit_state_changed_event(self) -> None:
         """Send the state of this platform entity."""
-        from zha.websocket.server.gateway import WebSocketGateway
+        from zha.application.gateway import WebSocketGateway
 
         super().maybe_emit_state_changed_event()
         if isinstance(self.group.gateway, WebSocketGateway):
