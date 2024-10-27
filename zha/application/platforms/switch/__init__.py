@@ -871,7 +871,9 @@ class SinopeLightDoubleTapFullSwitch(ConfigurableAttributeSwitch):
     _attr_translation_key: str = "double_up_full"
 
 
-class WebSocketClientSwitchEntity(WebSocketClientEntity, SwitchEntityInterface):
+class WebSocketClientSwitchEntity(
+    WebSocketClientEntity[SwitchEntityInfo], SwitchEntityInterface
+):
     """Defines a ZHA switch that is controlled via a websocket."""
 
     PLATFORM = Platform.SWITCH
@@ -880,13 +882,7 @@ class WebSocketClientSwitchEntity(WebSocketClientEntity, SwitchEntityInterface):
         self, entity_info: SwitchEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA switch entity."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @property
-    def info_object(self) -> SwitchEntityInfo:
-        """Return a representation of the switch."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def is_on(self) -> bool:

@@ -962,7 +962,9 @@ class ZONNSMARTThermostat(Thermostat):
             )
 
 
-class WebSocketClientThermostatEntity(WebSocketClientEntity, ClimateEntityInterface):
+class WebSocketClientThermostatEntity(
+    WebSocketClientEntity[ThermostatEntityInfo], ClimateEntityInterface
+):
     """Representation of a ZHA Thermostat device."""
 
     PLATFORM: Platform = Platform.CLIMATE
@@ -971,13 +973,7 @@ class WebSocketClientThermostatEntity(WebSocketClientEntity, ClimateEntityInterf
         self, entity_info: ThermostatEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA climate entity."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @property
-    def info_object(self) -> ThermostatEntityInfo:
-        """Return a representation of the thermostat."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def current_temperature(self) -> float | None:

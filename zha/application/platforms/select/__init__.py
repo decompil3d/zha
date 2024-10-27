@@ -904,7 +904,9 @@ class SinopeLightLEDOnColorSelect(ZCLEnumSelectEntity):
     _enum = SinopeLightLedColors
 
 
-class WebSocketClientSelectEntity(WebSocketClientEntity, SelectEntityInterface):
+class WebSocketClientSelectEntity(
+    WebSocketClientEntity[SelectEntityInfo], SelectEntityInterface
+):
     """Representation of a ZHA select entity controlled via a websocket."""
 
     PLATFORM = Platform.SELECT
@@ -913,13 +915,7 @@ class WebSocketClientSelectEntity(WebSocketClientEntity, SelectEntityInterface):
         self, entity_info: SelectEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA select entity."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @property
-    def info_object(self) -> SelectEntityInfo:
-        """Return a representation of the select."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def current_option(self) -> str | None:

@@ -596,7 +596,9 @@ class KeenVent(Shade):
         self.maybe_emit_state_changed_event()
 
 
-class WebSocketClientCoverEntity(WebSocketClientEntity, CoverEntityInterface):
+class WebSocketClientCoverEntity(
+    WebSocketClientEntity[CoverEntityInfo], CoverEntityInterface
+):
     """Representation of a ZHA cover."""
 
     PLATFORM: Platform = Platform.COVER
@@ -605,13 +607,7 @@ class WebSocketClientCoverEntity(WebSocketClientEntity, CoverEntityInterface):
         self, entity_info: CoverEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA fan entity."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @property
-    def info_object(self) -> CoverEntityInfo:
-        """Return the info object for this entity."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def supported_features(self) -> CoverEntityFeature:

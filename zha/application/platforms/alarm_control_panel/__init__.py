@@ -183,7 +183,7 @@ class AlarmControlPanel(PlatformEntity, AlarmControlPanelEntityInterface):
 
 
 class WebSocketClientAlarmControlPanel(
-    WebSocketClientEntity, AlarmControlPanelEntityInterface
+    WebSocketClientEntity[AlarmControlPanelEntityInfo], AlarmControlPanelEntityInterface
 ):
     """Alarm control panel entity for the WebSocket API."""
 
@@ -194,13 +194,7 @@ class WebSocketClientAlarmControlPanel(
         self, entity_info: AlarmControlPanelEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA alarm control device."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @functools.cached_property
-    def info_object(self) -> AlarmControlPanelEntityInfo:
-        """Return a representation of the alarm control panel."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def code_arm_required(self) -> bool:

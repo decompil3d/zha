@@ -1330,7 +1330,9 @@ class LightGroup(GroupEntity, BaseLight):
             self._off_brightness = off_brightness
 
 
-class WebSocketClientLightEntity(WebSocketClientEntity, LightEntityInterface):
+class WebSocketClientLightEntity(
+    WebSocketClientEntity[LightEntityInfo], LightEntityInterface
+):
     """Light entity that sends commands to a websocket client."""
 
     PLATFORM: Platform = Platform.LIGHT
@@ -1339,13 +1341,7 @@ class WebSocketClientLightEntity(WebSocketClientEntity, LightEntityInterface):
         self, entity_info: LightEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA lock entity."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @property
-    def info_object(self) -> LightEntityInfo:
-        """Return a representation of the select."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def xy_color(self) -> tuple[float, float] | None:

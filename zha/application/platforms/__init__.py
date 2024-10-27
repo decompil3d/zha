@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import abstractmethod
 import asyncio
 from contextlib import suppress
+import functools
 from functools import cached_property
 import logging
 from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar, final
@@ -29,7 +30,7 @@ from zha.model import BaseEvent
 
 if TYPE_CHECKING:
     from zha.zigbee.cluster_handlers import ClusterHandler
-    from zha.zigbee.device import Device
+    from zha.zigbee.device import Device, WebSocketClientDevice
     from zha.zigbee.endpoint import Endpoint
     from zha.zigbee.group import Group
 
@@ -483,10 +484,13 @@ class GroupEntity(BaseEntity):
 class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
     """Entity repsentation for the websocket client."""
 
-    def __init__(self, entity_info: BaseEntityInfoType) -> None:
+    def __init__(
+        self, entity_info: BaseEntityInfoType, device: WebSocketClientDevice
+    ) -> None:
         """Initialize the websocket client entity."""
         super().__init__(entity_info.unique_id)
         self.PLATFORM = entity_info.platform
+        self._device: WebSocketClientDevice = device
         self._entity_info: BaseEntityInfoType = entity_info
         self._attr_enabled = self._entity_info.enabled
         self._attr_fallback_name = self._entity_info.fallback_name
@@ -498,6 +502,11 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
         self._attr_device_class = self._entity_info.device_class
         self._attr_state_class = self._entity_info.state_class
 
+    @functools.cached_property
+    def info_object(self) -> BaseEntityInfoType:
+        """Return a representation of the alarm control panel."""
+        return self._entity_info
+
     @property
     def state(self) -> dict[str, Any]:
         """Return the arguments to use in the command."""
@@ -507,3 +516,8 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
     def state(self, value: dict[str, Any]) -> None:
         """Set the state of the entity."""
         self._entity_info.state = value
+
+    async def async_update(self) -> None:
+        """Retrieve latest state."""
+        self.debug("polling current state")
+        await self._device.gateway.entities.refresh_state(self._entity_info)

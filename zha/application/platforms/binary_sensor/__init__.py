@@ -404,7 +404,9 @@ class DanfossPreheatStatus(BinarySensor):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
 
-class WebSocketClientBinarySensor(WebSocketClientEntity, BinarySensorEntityInterface):
+class WebSocketClientBinarySensor(
+    WebSocketClientEntity[BinarySensorEntityInfo], BinarySensorEntityInterface
+):
     """Base class for binary sensors that are updated via a websocket client."""
 
     PLATFORM: Platform = Platform.BINARY_SENSOR
@@ -413,20 +415,9 @@ class WebSocketClientBinarySensor(WebSocketClientEntity, BinarySensorEntityInter
         self, entity_info: BinarySensorEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA alarm control device."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @functools.cached_property
-    def info_object(self) -> BinarySensorEntityInfo:
-        """Return a representation of the binary sensor."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def is_on(self) -> bool:
         """Return True if the switch is on based on the state machine."""
         return self.info_object.state.state
-
-    async def async_update(self) -> None:
-        """Retrieve latest state."""
-        self.debug("polling current state")
-        await self._device.gateway.entities.refresh_state(self._entity_info)

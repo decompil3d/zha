@@ -538,7 +538,9 @@ class KofFan(Fan):
         return {6: PRESET_MODE_SMART}
 
 
-class WebSocketClientFanEntity(WebSocketClientEntity, FanEntityInterface):
+class WebSocketClientFanEntity(
+    WebSocketClientEntity[FanEntityInfo], FanEntityInterface
+):
     """Representation of a ZHA fan over WebSocket."""
 
     PLATFORM: Platform = Platform.FAN
@@ -547,13 +549,7 @@ class WebSocketClientFanEntity(WebSocketClientEntity, FanEntityInterface):
         self, entity_info: FanEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA fan entity."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @property
-    def info_object(self) -> FanEntityInfo:
-        """Return the fan entity info."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def preset_modes(self) -> list[str]:

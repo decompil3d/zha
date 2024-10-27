@@ -353,7 +353,7 @@ class FirmwareUpdateEntity(PlatformEntity, FirmwareUpdateEntityInterface):
 
 
 class WebSocketClientFirmwareUpdateEntity(
-    WebSocketClientEntity, FirmwareUpdateEntityInterface
+    WebSocketClientEntity[FirmwareUpdateEntityInfo], FirmwareUpdateEntityInterface
 ):
     """Representation of a ZHA firmware update entity."""
 
@@ -363,13 +363,7 @@ class WebSocketClientFirmwareUpdateEntity(
         self, entity_info: FirmwareUpdateEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA alarm control device."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @property
-    def info_object(self) -> FirmwareUpdateEntityInfo:
-        """Return a representation of the entity."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def installed_version(self) -> str | None:

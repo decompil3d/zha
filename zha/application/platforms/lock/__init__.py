@@ -171,7 +171,9 @@ class DoorLock(PlatformEntity, LockEntityInterface):
         self._state = state
 
 
-class WebSocketClientLockEntity(WebSocketClientEntity, LockEntityInterface):
+class WebSocketClientLockEntity(
+    WebSocketClientEntity[LockEntityInfo], LockEntityInterface
+):
     """Representation of a ZHA lock on the client side."""
 
     PLATFORM: Platform = Platform.LOCK
@@ -180,13 +182,7 @@ class WebSocketClientLockEntity(WebSocketClientEntity, LockEntityInterface):
         self, entity_info: LockEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA lock entity."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @property
-    def info_object(self) -> LockEntityInfo:
-        """Return a representation of the lock."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def is_locked(self) -> bool:

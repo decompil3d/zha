@@ -1096,7 +1096,9 @@ class SinopeLightLEDOffIntensityConfigurationEntity(NumberConfigurationEntity):
     _attr_translation_key: str = "off_led_intensity"
 
 
-class WebSocketClientNumberEntity(WebSocketClientEntity, NumberEntityInterface):
+class WebSocketClientNumberEntity(
+    WebSocketClientEntity[NumberEntityInfo], NumberEntityInterface
+):
     """Representation of a WebSocket client number entity."""
 
     PLATFORM: Platform = Platform.NUMBER
@@ -1105,13 +1107,7 @@ class WebSocketClientNumberEntity(WebSocketClientEntity, NumberEntityInterface):
         self, entity_info: NumberEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA number entity."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @property
-    def info_object(self) -> NumberEntityInfo:
-        """Return the info object."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def native_value(self) -> float | None:

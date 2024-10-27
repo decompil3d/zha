@@ -234,7 +234,9 @@ class AqaraSelfTestButton(WriteAttributeButton):
     _attr_translation_key = "self_test"
 
 
-class WebSocketClientButtonEntity(WebSocketClientEntity, ButtonEntityInterface):
+class WebSocketClientButtonEntity(
+    WebSocketClientEntity[ButtonEntityInfo], ButtonEntityInterface
+):
     """Defines a ZHA button that is controlled via a websocket."""
 
     PLATFORM = Platform.BUTTON
@@ -243,13 +245,7 @@ class WebSocketClientButtonEntity(WebSocketClientEntity, ButtonEntityInterface):
         self, entity_info: ButtonEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA alarm control device."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @functools.cached_property
-    def info_object(self) -> ButtonEntityInfo:
-        """Return a representation of the button."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @functools.cached_property
     def args(self) -> list[Any]:

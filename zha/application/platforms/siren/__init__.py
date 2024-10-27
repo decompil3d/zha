@@ -205,7 +205,9 @@ class Siren(PlatformEntity, SirenEntityInterface):
         self.maybe_emit_state_changed_event()
 
 
-class WebSocketClientSirenEntity(WebSocketClientEntity, SirenEntityInterface):
+class WebSocketClientSirenEntity(
+    WebSocketClientEntity[SirenEntityInfo], SirenEntityInterface
+):
     """Siren entity for the WebSocket API."""
 
     PLATFORM = Platform.SIREN
@@ -214,13 +216,7 @@ class WebSocketClientSirenEntity(WebSocketClientEntity, SirenEntityInterface):
         self, entity_info: SirenEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA siren device."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @functools.cached_property
-    def info_object(self) -> SirenEntityInfo:
-        """Return a representation of the siren."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def is_on(self) -> bool:

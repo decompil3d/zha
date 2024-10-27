@@ -1893,7 +1893,9 @@ class DanfossMotorStepCounter(Sensor):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
 
-class WebSocketClientSensorEntity(WebSocketClientEntity, SensorEntityInterface):
+class WebSocketClientSensorEntity(
+    WebSocketClientEntity[BaseSensorEntityInfo], SensorEntityInterface
+):
     """Representation of a ZHA sensor entity."""
 
     PLATFORM: Platform = Platform.SENSOR
@@ -1902,13 +1904,7 @@ class WebSocketClientSensorEntity(WebSocketClientEntity, SensorEntityInterface):
         self, entity_info: BaseSensorEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA alarm control device."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @property
-    def info_object(self) -> BaseSensorEntityInfo:
-        """Return the info object."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def native_value(self) -> date | datetime | str | int | float | None:

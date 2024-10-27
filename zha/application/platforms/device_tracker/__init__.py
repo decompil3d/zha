@@ -160,7 +160,7 @@ class DeviceScannerEntity(PlatformEntity, DeviceTrackerEntityInterface):
 
 
 class WebSocketClientDeviceTrackerEntity(
-    WebSocketClientEntity, DeviceTrackerEntityInterface
+    WebSocketClientEntity[DeviceTrackerEntityInfo], DeviceTrackerEntityInterface
 ):
     """Device tracker entity for the WebSocket API."""
 
@@ -170,13 +170,7 @@ class WebSocketClientDeviceTrackerEntity(
         self, entity_info: DeviceTrackerEntityInfo, device: WebSocketClientDevice
     ) -> None:
         """Initialize the ZHA device tracker."""
-        super().__init__(entity_info)
-        self._device: WebSocketClientDevice = device
-
-    @property
-    def info_object(self) -> DeviceTrackerEntityInfo:
-        """Return a representation of the device tracker."""
-        return self._entity_info
+        super().__init__(entity_info, device)
 
     @property
     def is_connected(self) -> bool:
