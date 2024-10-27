@@ -18,9 +18,13 @@ from tests.common import (
     create_mock_zigpy_device,
     join_zigpy_device,
 )
+from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.gateway import Gateway
-from zha.application.platforms.alarm_control_panel import AlarmControlPanel
+from zha.application.platforms.alarm_control_panel import (
+    AlarmControlPanel,
+    WebSocketClientAlarmControlPanel,
+)
 from zha.application.platforms.alarm_control_panel.const import AlarmState
 from zha.zigbee.device import Device
 
@@ -37,15 +41,25 @@ ZIGPY_DEVICE = {
 }
 
 
+@pytest.mark.parametrize(
+    ("gateway_type", "entity_type"),
+    [
+        ("zha_gateway", AlarmControlPanel),
+        ("ws_gateway", WebSocketClientAlarmControlPanel),
+    ],
+)
 @patch(
     "zigpy.zcl.clusters.security.IasAce.client_command",
     new=AsyncMock(return_value=[sentinel.data, zcl_f.Status.SUCCESS]),
 )
 async def test_alarm_control_panel(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
     caplog: pytest.LogCaptureFixture,
+    gateway_type: str,
+    entity_type: type,
 ) -> None:
     """Test zhaws alarm control panel platform."""
+    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device: ZigpyDevice = create_mock_zigpy_device(
         zha_gateway,
         ZIGPY_DEVICE,
@@ -75,7 +89,7 @@ async def test_alarm_control_panel(
         (Platform.ALARM_CONTROL_PANEL, "00:0d:6f:00:0a:90:69:e7-1")
     )
     assert alarm_entity is not None
-    assert isinstance(alarm_entity, AlarmControlPanel)
+    assert isinstance(alarm_entity, entity_type)
 
     # test that the state is STATE_ALARM_DISARMED
     assert alarm_entity.state["state"] == AlarmState.DISARMED
@@ -248,7 +262,12 @@ async def test_alarm_control_panel(
     await reset_alarm_panel(zha_gateway, cluster, alarm_entity)
     assert alarm_entity.state["state"] == AlarmState.DISARMED
 
-    alarm_entity._cluster_handler.code_required_arm_actions = True
+    if isinstance(alarm_entity, WebSocketClientAlarmControlPanel):
+        zha_gateway.server_gateway.devices[zha_device.ieee].platform_entities[
+            (alarm_entity.PLATFORM, alarm_entity.unique_id)
+        ]._cluster_handler.code_required_arm_actions = True
+    else:
+        alarm_entity._cluster_handler.code_required_arm_actions = True
     await alarm_entity.async_alarm_arm_away()
     await zha_gateway.async_block_till_done()
     assert alarm_entity.state["state"] == AlarmState.DISARMED
