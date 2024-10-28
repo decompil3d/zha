@@ -76,7 +76,7 @@ from zha.zigbee.model import (
 )
 
 if TYPE_CHECKING:
-    from zha.application.gateway import Gateway
+    from zha.application.gateway import BaseGateway, Gateway, WebSocketClientGateway
     from zha.application.platforms.events import EntityStateChangedEvent
 
 _LOGGER = logging.getLogger(__name__)
@@ -96,10 +96,10 @@ def get_device_automation_triggers(
 class BaseDevice(LogMixin, EventBase, ABC, Generic[T]):
     """Base device for Zigbee Home Automation."""
 
-    def __init__(self, _gateway: Gateway) -> None:
+    def __init__(self, gateway) -> None:
         """Initialize base device."""
         super().__init__()
-        self._gateway: Gateway = _gateway
+        self._gateway = gateway
 
     @cached_property
     @abstractmethod
@@ -212,7 +212,7 @@ class BaseDevice(LogMixin, EventBase, ABC, Generic[T]):
         """Return the platform entities for this device."""
 
     @property
-    def gateway(self):
+    def gateway(self) -> BaseGateway:
         """Return the gateway for this device."""
         return self._gateway
 
@@ -239,7 +239,7 @@ class BaseDevice(LogMixin, EventBase, ABC, Generic[T]):
         _LOGGER.log(level, msg, *args, **kwargs)
 
 
-class Device(BaseDevice):
+class Device(BaseDevice[PlatformEntity]):
     """ZHA Zigbee device object."""
 
     unique_id: str
@@ -457,7 +457,7 @@ class Device(BaseDevice):
         return self._zigpy_device.skip_configuration or bool(self.is_active_coordinator)
 
     @property
-    def gateway(self):
+    def gateway(self) -> Gateway:
         """Return the gateway for this device."""
         return self._gateway
 
@@ -1132,16 +1132,16 @@ class Device(BaseDevice):
             zdo.debug(fmt, *(log_msg[2] + (outcome,)))
 
 
-class WebSocketClientDevice(BaseDevice):
+class WebSocketClientDevice(BaseDevice[WebSocketClientEntity]):
     """ZHA device object for the websocket client."""
 
     def __init__(
         self,
         extended_device_info: ExtendedDeviceInfo,
-        _gateway: Gateway,
+        gateway: WebSocketClientGateway,
     ) -> None:
         """Initialize the device."""
-        super().__init__(_gateway)
+        super().__init__(gateway)
         self._extended_device_info = extended_device_info
         self.unique_id = str(extended_device_info.ieee)
 
@@ -1163,6 +1163,11 @@ class WebSocketClientDevice(BaseDevice):
             ](entity_info, self)
             for entity_info in self._extended_device_info.entities.values()
         }
+
+    @property
+    def gateway(self) -> WebSocketClientGateway:
+        """Return the gateway for this device."""
+        return self._gateway
 
     @cached_property
     def name(self) -> str:

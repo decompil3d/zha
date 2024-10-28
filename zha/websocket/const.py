@@ -54,9 +54,13 @@ class APICommands(StrEnum):
     CLIMATE_SET_PRESET_MODE = "climate_set_preset_mode"
 
     COVER_OPEN = "cover_open"
+    COVER_OPEN_TILT = "cover_open_tilt"
     COVER_CLOSE = "cover_close"
+    COVER_CLOSE_TILT = "cover_close_tilt"
     COVER_STOP = "cover_stop"
     COVER_SET_POSITION = "cover_set_position"
+    COVER_SET_TILT_POSITION = "cover_set_tilt_position"
+    COVER_STOP_TILT = "cover_stop_tilt"
 
     FAN_TURN_ON = "fan_turn_on"
     FAN_TURN_OFF = "fan_turn_off"

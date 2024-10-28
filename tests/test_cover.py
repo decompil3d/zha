@@ -23,6 +23,7 @@ from tests.common import (
     send_attributes_report,
     update_attribute_cache,
 )
+from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.const import ATTR_COMMAND
 from zha.application.gateway import Gateway
@@ -37,6 +38,7 @@ from zha.application.platforms.cover.const import (
     CoverEntityFeature,
 )
 from zha.exceptions import ZHAException
+from zha.zigbee.device import WebSocketClientDevice
 
 Default_Response = zcl_f.GENERAL_COMMANDS[zcl_f.GeneralCommand.Default_Response].schema
 
@@ -91,11 +93,23 @@ WCT = closures.WindowCovering.WindowCoveringType
 WCCS = closures.WindowCovering.ConfigStatus
 
 
+@pytest.mark.parametrize(
+    "gateway_type, entity_type",
+    [
+        ("zha_gateway", Platform.COVER),
+        ("ws_gateway", Platform.COVER),
+    ],
+)
+@pytest.mark.looptime
 async def test_cover_non_tilt_initial_state(  # pylint: disable=unused-argument
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
+    zigpy_cover_device,
+    gateway_type: str,
+    entity_type: type,
 ) -> None:
     """Test ZHA cover platform."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     # load up cover domain
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     cluster = zigpy_cover_device.endpoints[1].window_covering
@@ -106,11 +120,19 @@ async def test_cover_non_tilt_initial_state(  # pylint: disable=unused-argument
     }
     update_attribute_cache(cluster)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_cover_device)
-    assert (
-        not zha_device.endpoints[1]
-        .all_cluster_handlers[f"1:0x{cluster.cluster_id:04x}"]
-        .inverted
-    )
+
+    if isinstance(zha_device, WebSocketClientDevice):
+        ch = (
+            zha_gateway.server_gateway.devices[zha_device.ieee]
+            .endpoints[1]
+            .all_cluster_handlers[f"1:0x{cluster.cluster_id:04x}"]
+        )
+    else:
+        ch = zha_device.endpoints[1].all_cluster_handlers[
+            f"1:0x{cluster.cluster_id:04x}"
+        ]
+    assert not ch.inverted
+
     assert cluster.read_attributes.call_count == 3
     assert (
         WCAttrs.current_position_lift_percentage.name
@@ -141,11 +163,22 @@ async def test_cover_non_tilt_initial_state(  # pylint: disable=unused-argument
     assert entity.state[ATTR_CURRENT_POSITION] == 0
 
 
+@pytest.mark.parametrize(
+    "gateway_type, entity_type",
+    [
+        ("zha_gateway", Platform.COVER),
+        ("ws_gateway", Platform.COVER),
+    ],
+)
+@pytest.mark.looptime
 async def test_cover(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
+    gateway_type: str,
+    entity_type: type,
 ) -> None:
     """Test zha cover platform."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     cluster = zigpy_cover_device.endpoints.get(1).window_covering
     cluster.PLUGGED_ATTR_READS = {
@@ -157,11 +190,17 @@ async def test_cover(
     update_attribute_cache(cluster)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_cover_device)
 
-    assert (
-        not zha_device.endpoints[1]
-        .all_cluster_handlers[f"1:0x{cluster.cluster_id:04x}"]
-        .inverted
-    )
+    if isinstance(zha_device, WebSocketClientDevice):
+        ch = (
+            zha_gateway.server_gateway.devices[zha_device.ieee]
+            .endpoints[1]
+            .all_cluster_handlers[f"1:0x{cluster.cluster_id:04x}"]
+        )
+    else:
+        ch = zha_device.endpoints[1].all_cluster_handlers[
+            f"1:0x{cluster.cluster_id:04x}"
+        ]
+    assert not ch.inverted
 
     assert cluster.read_attributes.call_count == 3
 
@@ -370,9 +409,22 @@ async def test_cover(
         assert cluster.request.call_args[1]["expect_reply"] is True
 
 
-async def test_cover_failures(zha_gateway: Gateway) -> None:
+@pytest.mark.parametrize(
+    "gateway_type, entity_type",
+    [
+        ("zha_gateway", Platform.COVER),
+        ("ws_gateway", Platform.COVER),
+    ],
+)
+@pytest.mark.looptime
+async def test_cover_failures(
+    zha_gateways: CombinedGateways,
+    gateway_type: str,
+    entity_type: type,
+) -> None:
     """Test ZHA cover platform failure cases."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     # load up cover domain
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     cluster = zigpy_cover_device.endpoints[1].window_covering
@@ -392,6 +444,11 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
 
     assert entity.state["state"] == STATE_OPEN
 
+    exception_string = (
+        r"Failed to close cover"
+        if isinstance(zha_gateway, Gateway)
+        else "(2, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     # close from UI
     with patch(
         "zigpy.zcl.Cluster.request",
@@ -400,7 +457,7 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
         ),
     ):
-        with pytest.raises(ZHAException, match=r"Failed to close cover"):
+        with pytest.raises(ZHAException, match=exception_string):
             await entity.async_close_cover()
             await zha_gateway.async_block_till_done()
         assert cluster.request.call_count == 1
@@ -410,6 +467,11 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
         )
         assert entity.state["state"] == STATE_OPEN
 
+    exception_string = (
+        r"Failed to close cover tilt"
+        if isinstance(zha_gateway, Gateway)
+        else "(3, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     with patch(
         "zigpy.zcl.Cluster.request",
         return_value=Default_Response(
@@ -417,7 +479,7 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
         ),
     ):
-        with pytest.raises(ZHAException, match=r"Failed to close cover tilt"):
+        with pytest.raises(ZHAException, match=exception_string):
             await entity.async_close_cover_tilt()
             await zha_gateway.async_block_till_done()
         assert cluster.request.call_count == 1
@@ -426,6 +488,11 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             == closures.WindowCovering.ServerCommandDefs.go_to_tilt_percentage.id
         )
 
+    exception_string = (
+        r"Failed to open cover"
+        if isinstance(zha_gateway, Gateway)
+        else "(4, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     # open from UI
     with patch(
         "zigpy.zcl.Cluster.request",
@@ -434,7 +501,7 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
         ),
     ):
-        with pytest.raises(ZHAException, match=r"Failed to open cover"):
+        with pytest.raises(ZHAException, match=exception_string):
             await entity.async_open_cover()
             await zha_gateway.async_block_till_done()
         assert cluster.request.call_count == 1
@@ -443,6 +510,11 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             == closures.WindowCovering.ServerCommandDefs.up_open.id
         )
 
+    exception_string = (
+        r"Failed to open cover tilt"
+        if isinstance(zha_gateway, Gateway)
+        else "(5, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     with patch(
         "zigpy.zcl.Cluster.request",
         return_value=Default_Response(
@@ -450,7 +522,7 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
         ),
     ):
-        with pytest.raises(ZHAException, match=r"Failed to open cover tilt"):
+        with pytest.raises(ZHAException, match=exception_string):
             await entity.async_open_cover_tilt()
             await zha_gateway.async_block_till_done()
         assert cluster.request.call_count == 1
@@ -459,6 +531,11 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             == closures.WindowCovering.ServerCommandDefs.go_to_tilt_percentage.id
         )
 
+    exception_string = (
+        r"Failed to set cover position"
+        if isinstance(zha_gateway, Gateway)
+        else "(6, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     # set position UI
     with patch(
         "zigpy.zcl.Cluster.request",
@@ -467,7 +544,7 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
         ),
     ):
-        with pytest.raises(ZHAException, match=r"Failed to set cover position"):
+        with pytest.raises(ZHAException, match=exception_string):
             await entity.async_set_cover_position(position=47)
             await zha_gateway.async_block_till_done()
 
@@ -477,6 +554,11 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             == closures.WindowCovering.ServerCommandDefs.go_to_lift_percentage.id
         )
 
+    exception_string = (
+        r"Failed to set cover tilt position"
+        if isinstance(zha_gateway, Gateway)
+        else "(7, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     with patch(
         "zigpy.zcl.Cluster.request",
         return_value=Default_Response(
@@ -484,7 +566,7 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
         ),
     ):
-        with pytest.raises(ZHAException, match=r"Failed to set cover tilt position"):
+        with pytest.raises(ZHAException, match=exception_string):
             await entity.async_set_cover_tilt_position(tilt_position=47)
             await zha_gateway.async_block_till_done()
         assert cluster.request.call_count == 1
@@ -493,6 +575,11 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             == closures.WindowCovering.ServerCommandDefs.go_to_tilt_percentage.id
         )
 
+    exception_string = (
+        r"Failed to stop cover"
+        if isinstance(zha_gateway, Gateway)
+        else "(8, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     # stop from UI
     with patch(
         "zigpy.zcl.Cluster.request",
@@ -501,7 +588,7 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
         ),
     ):
-        with pytest.raises(ZHAException, match=r"Failed to stop cover"):
+        with pytest.raises(ZHAException, match=exception_string):
             await entity.async_stop_cover()
             await zha_gateway.async_block_till_done()
         assert cluster.request.call_count == 1
@@ -510,6 +597,11 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             == closures.WindowCovering.ServerCommandDefs.stop.id
         )
 
+    exception_string = (
+        r"Failed to stop cover"
+        if isinstance(zha_gateway, Gateway)
+        else "(9, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     # stop tilt from UI
     with patch(
         "zigpy.zcl.Cluster.request",
@@ -518,7 +610,7 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
             status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
         ),
     ):
-        with pytest.raises(ZHAException, match=r"Failed to stop cover"):
+        with pytest.raises(ZHAException, match=exception_string):
             await entity.async_stop_cover_tilt()
             await zha_gateway.async_block_till_done()
         assert cluster.request.call_count == 1
@@ -528,11 +620,22 @@ async def test_cover_failures(zha_gateway: Gateway) -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "gateway_type, entity_type",
+    [
+        ("zha_gateway", Platform.COVER),
+        ("ws_gateway", Platform.COVER),
+    ],
+)
+@pytest.mark.looptime
 async def test_shade(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
+    gateway_type: str,
+    entity_type: type,
 ) -> None:
     """Test zha cover platform for shade device type."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_shade_device = create_mock_zigpy_device(zha_gateway, ZIGPY_SHADE_DEVICE)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_shade_device)
     cluster_on_off = zigpy_shade_device.endpoints.get(1).on_off
@@ -566,6 +669,11 @@ async def test_shade(
     await zha_gateway.async_block_till_done()
     assert entity.state["state"] == STATE_OPEN
 
+    exception_string = (
+        r"Failed to close cover"
+        if isinstance(zha_gateway, Gateway)
+        else "(3, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     # close from client command fails
     with (
         patch(
@@ -575,7 +683,7 @@ async def test_shade(
                 status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
             ),
         ),
-        pytest.raises(ZHAException, match="Failed to close cover"),
+        pytest.raises(ZHAException, match=exception_string),
     ):
         await entity.async_close_cover()
         await zha_gateway.async_block_till_done()
@@ -598,6 +706,11 @@ async def test_shade(
     await send_attributes_report(zha_gateway, cluster_level, {0: 0})
     assert entity.state["state"] == STATE_CLOSED
 
+    exception_string = (
+        r"Failed to open cover"
+        if isinstance(zha_gateway, Gateway)
+        else "(5, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     with (
         patch(
             "zigpy.zcl.Cluster.request",
@@ -606,7 +719,7 @@ async def test_shade(
                 status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
             ),
         ),
-        pytest.raises(ZHAException, match="Failed to open cover"),
+        pytest.raises(ZHAException, match=exception_string),
     ):
         await entity.async_open_cover()
         await zha_gateway.async_block_till_done()
@@ -626,6 +739,11 @@ async def test_shade(
         assert cluster_on_off.request.call_args[0][1] == 0x0001
         assert entity.state["state"] == STATE_OPEN
 
+    exception_string = (
+        r"Failed to set cover position"
+        if isinstance(zha_gateway, Gateway)
+        else "(7, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     # set position UI command fails
     with (
         patch(
@@ -635,7 +753,7 @@ async def test_shade(
                 status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
             ),
         ),
-        pytest.raises(ZHAException, match="Failed to set cover position"),
+        pytest.raises(ZHAException, match=exception_string),
     ):
         await entity.async_set_cover_position(position=47)
         await zha_gateway.async_block_till_done()
@@ -661,6 +779,11 @@ async def test_shade(
     await send_attributes_report(zha_gateway, cluster_level, {8: 0, 0: 100, 1: 1})
     assert entity.state["current_position"] == int(100 * 100 / 255)
 
+    exception_string = (
+        r"Failed to stop cover"
+        if isinstance(zha_gateway, Gateway)
+        else "(9, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     # stop command fails
     with (
         patch(
@@ -670,7 +793,7 @@ async def test_shade(
                 status=zcl_f.Status.UNSUP_CLUSTER_COMMAND,
             ),
         ),
-        pytest.raises(ZHAException, match="Failed to stop cover"),
+        pytest.raises(ZHAException, match=exception_string),
     ):
         await entity.async_stop_cover()
         await zha_gateway.async_block_till_done()
@@ -689,11 +812,22 @@ async def test_shade(
         assert cluster_level.request.call_args[0][1] in (0x0003, 0x0007)
 
 
+@pytest.mark.parametrize(
+    "gateway_type, entity_type",
+    [
+        ("zha_gateway", Platform.COVER),
+        ("ws_gateway", Platform.COVER),
+    ],
+)
+@pytest.mark.looptime
 async def test_keen_vent(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
+    gateway_type: str,
+    entity_type: type,
 ) -> None:
     """Test keen vent."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_keen_vent = create_mock_zigpy_device(
         zha_gateway,
         ZIGPY_KEEN_VENT,
@@ -724,12 +858,15 @@ async def test_keen_vent(
     await zha_gateway.async_block_till_done()
     assert entity.state["state"] == STATE_CLOSED
 
+    exception_string = (
+        r"Failed to send request: device did not respond"
+        if isinstance(zha_gateway, Gateway)
+        else "(3, 'PLATFORM_ENTITY_ACTION_ERROR')"
+    )
     # open from client command fails
     p1 = patch.object(cluster_on_off, "request", side_effect=asyncio.TimeoutError)
     p2 = patch.object(cluster_level, "request", AsyncMock(return_value=[4, 0]))
-    p3 = pytest.raises(
-        ZHAException, match="Failed to send request: device did not respond"
-    )
+    p3 = pytest.raises(ZHAException, match=exception_string)
 
     with p1, p2, p3:
         await entity.async_open_cover()
@@ -755,41 +892,62 @@ async def test_keen_vent(
         assert entity.state["current_position"] == 100
 
 
-async def test_cover_remote(zha_gateway: Gateway) -> None:
+@pytest.mark.parametrize(
+    "gateway_type, entity_type",
+    [
+        ("zha_gateway", Platform.COVER),
+        ("ws_gateway", Platform.COVER),
+    ],
+)
+@pytest.mark.looptime
+async def test_cover_remote(
+    zha_gateways: CombinedGateways,
+    gateway_type: str,
+    entity_type: type,
+) -> None:
     """Test ZHA cover remote."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     # load up cover domain
     zigpy_cover_remote = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_REMOTE)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_cover_remote)
-    zha_device.emit_zha_event = MagicMock(wraps=zha_device.emit_zha_event)
+
+    if isinstance(zha_gateway, Gateway):
+        zha_device.emit_zha_event = MagicMock(wraps=zha_device.emit_zha_event)
+        device = zha_device
+    else:
+        device = zha_gateway.server_gateway.devices[zha_device.ieee]
+        device.emit_zha_event = MagicMock(wraps=device.emit_zha_event)
 
     cluster = zigpy_cover_remote.endpoints[1].out_clusters[
         closures.WindowCovering.cluster_id
     ]
 
-    zha_device.emit_zha_event.reset_mock()
+    device.emit_zha_event.reset_mock()
 
     # up command
     hdr = make_zcl_header(0, global_command=False)
     cluster.handle_message(hdr, [])
     await zha_gateway.async_block_till_done()
 
-    assert zha_device.emit_zha_event.call_count == 1
-    assert ATTR_COMMAND in zha_device.emit_zha_event.call_args[0][0]
-    assert zha_device.emit_zha_event.call_args[0][0][ATTR_COMMAND] == "up_open"
+    assert device.emit_zha_event.call_count == 1
+    assert ATTR_COMMAND in device.emit_zha_event.call_args[0][0]
+    assert device.emit_zha_event.call_args[0][0][ATTR_COMMAND] == "up_open"
 
-    zha_device.emit_zha_event.reset_mock()
+    device.emit_zha_event.reset_mock()
 
     # down command
     hdr = make_zcl_header(1, global_command=False)
     cluster.handle_message(hdr, [])
     await zha_gateway.async_block_till_done()
 
-    assert zha_device.emit_zha_event.call_count == 1
-    assert ATTR_COMMAND in zha_device.emit_zha_event.call_args[0][0]
-    assert zha_device.emit_zha_event.call_args[0][0][ATTR_COMMAND] == "down_close"
+    assert device.emit_zha_event.call_count == 1
+    assert ATTR_COMMAND in device.emit_zha_event.call_args[0][0]
+    assert device.emit_zha_event.call_args[0][0][ATTR_COMMAND] == "down_close"
 
 
+# TODO parametrize this test and add service to restore state attributes
+@pytest.mark.looptime
 async def test_cover_state_restoration(
     zha_gateway: Gateway,
 ) -> None:

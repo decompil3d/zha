@@ -10,7 +10,7 @@ from datetime import timedelta
 import logging
 import time
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Final, Self, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Final, Self, cast
 
 from async_timeout import timeout
 import websockets
@@ -116,7 +116,6 @@ if TYPE_CHECKING:
     from zha.zigbee.model import ExtendedDeviceInfo, ZHAEvent
 
 BLOCK_LOG_TIMEOUT: Final[int] = 60
-_R = TypeVar("_R")
 _LOGGER = logging.getLogger(__name__)
 
 

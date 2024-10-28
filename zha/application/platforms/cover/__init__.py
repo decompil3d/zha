@@ -27,7 +27,7 @@ from zha.application.platforms.cover.const import (
     CoverEntityFeature,
     WCAttrs,
 )
-from zha.application.platforms.cover.model import CoverEntityInfo
+from zha.application.platforms.cover.model import CoverEntityInfo, ShadeEntityInfo
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.exceptions import ZHAException
 from zha.zigbee.cluster_handlers.closures import WindowCoveringClusterHandler
@@ -158,6 +158,13 @@ class Cover(PlatformEntity, CoverEntityInterface):
     def supported_features(self) -> CoverEntityFeature:
         """Return supported features."""
         return self._attr_supported_features
+
+    @property
+    def info_object(self) -> CoverEntityInfo:
+        """Return the info object for this entity."""
+        return CoverEntityInfo(
+            **super().info_object.__dict__, supported_features=self.supported_features
+        )
 
     @property
     def state(self) -> dict[str, Any]:
@@ -470,6 +477,13 @@ class Shade(PlatformEntity):
         )
 
     @property
+    def info_object(self) -> ShadeEntityInfo:
+        """Return the info object for this entity."""
+        return ShadeEntityInfo(
+            **super().info_object.__dict__, supported_features=self.supported_features
+        )
+
+    @property
     def state(self) -> dict[str, Any]:
         """Get the state of the cover."""
         if (closed := self.is_closed) is None:
@@ -481,6 +495,8 @@ class Shade(PlatformEntity):
             {
                 ATTR_CURRENT_POSITION: self.current_cover_position,
                 "is_closed": self.is_closed,
+                "is_opening": self.is_opening,
+                "is_closing": self.is_closing,
                 "state": state,
             }
         )
@@ -641,24 +657,34 @@ class WebSocketClientCoverEntity(
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
+        await self._device.gateway.covers.open_cover(self.info_object)
 
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
         """Open the cover tilt."""
+        await self._device.gateway.covers.open_cover_tilt(self.info_object)
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the cover."""
+        await self._device.gateway.covers.close_cover(self.info_object)
 
     async def async_close_cover_tilt(self, **kwargs: Any) -> None:
         """Close the cover tilt."""
+        await self._device.gateway.covers.close_cover_tilt(self.info_object)
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Move the cover to a specific position."""
+        await self._device.gateway.covers.set_cover_position(self.info_object, **kwargs)
 
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Move the cover tilt to a specific position."""
+        await self._device.gateway.covers.set_cover_tilt_position(
+            self.info_object, **kwargs
+        )
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
+        await self._device.gateway.covers.stop_cover(self.info_object)
 
     async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
         """Stop the cover tilt."""
+        await self._device.gateway.covers.stop_cover_tilt(self.info_object)

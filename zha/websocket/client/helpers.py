@@ -24,8 +24,11 @@ from zha.application.platforms.climate.websocket_api import (
 )
 from zha.application.platforms.cover.websocket_api import (
     CoverCloseCommand,
+    CoverCloseTiltCommand,
     CoverOpenCommand,
+    CoverOpenTiltCommand,
     CoverSetPositionCommand,
+    CoverSetTiltPositionCommand,
     CoverStopCommand,
 )
 from zha.application.platforms.fan.model import FanEntityInfo
@@ -284,6 +287,28 @@ class CoverHelper:
         )
         return await self._client.async_send_command(command)
 
+    async def open_cover_tilt(
+        self, cover_platform_entity: BasePlatformEntityInfo
+    ) -> WebSocketCommandResponse:
+        """Open cover tilt."""
+        ensure_platform_entity(cover_platform_entity, Platform.COVER)
+        command = CoverOpenTiltCommand(
+            ieee=cover_platform_entity.device_ieee,
+            unique_id=cover_platform_entity.unique_id,
+        )
+        return await self._client.async_send_command(command)
+
+    async def close_cover_tilt(
+        self, cover_platform_entity: BasePlatformEntityInfo
+    ) -> WebSocketCommandResponse:
+        """Open cover tilt."""
+        ensure_platform_entity(cover_platform_entity, Platform.COVER)
+        command = CoverCloseTiltCommand(
+            ieee=cover_platform_entity.device_ieee,
+            unique_id=cover_platform_entity.unique_id,
+        )
+        return await self._client.async_send_command(command)
+
     async def stop_cover(
         self, cover_platform_entity: BasePlatformEntityInfo
     ) -> WebSocketCommandResponse:
@@ -306,6 +331,31 @@ class CoverHelper:
             ieee=cover_platform_entity.device_ieee,
             unique_id=cover_platform_entity.unique_id,
             position=position,
+        )
+        return await self._client.async_send_command(command)
+
+    async def set_cover_tilt_position(
+        self,
+        cover_platform_entity: BasePlatformEntityInfo,
+        tilt_position: int,
+    ) -> WebSocketCommandResponse:
+        """Set a cover tilt position."""
+        ensure_platform_entity(cover_platform_entity, Platform.COVER)
+        command = CoverSetTiltPositionCommand(
+            ieee=cover_platform_entity.device_ieee,
+            unique_id=cover_platform_entity.unique_id,
+            tilt_position=tilt_position,
+        )
+        return await self._client.async_send_command(command)
+
+    async def stop_cover_tilt(
+        self, cover_platform_entity: BasePlatformEntityInfo
+    ) -> WebSocketCommandResponse:
+        """Stop a cover tilt."""
+        ensure_platform_entity(cover_platform_entity, Platform.COVER)
+        command = CoverStopCommand(
+            ieee=cover_platform_entity.device_ieee,
+            unique_id=cover_platform_entity.unique_id,
         )
         return await self._client.async_send_command(command)
 

@@ -17,13 +17,14 @@ from zha.websocket.server.api.model import (
     WebSocketCommand,
     WriteClusterAttributeResponse,
 )
-from zha.zigbee.device import Device
-from zha.zigbee.group import Group
 from zha.zigbee.model import GroupMemberReference
 
 if TYPE_CHECKING:
     from zha.application.gateway import WebSocketServerGateway
     from zha.websocket.server.client import Client
+    from zha.zigbee.device import Device
+    from zha.zigbee.group import Group
+
 
 GROUP = "group"
 MFG_CLUSTER_ID_START = 0xFC00

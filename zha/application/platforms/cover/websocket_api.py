@@ -31,6 +31,24 @@ async def open_cover(server: Server, client: Client, command: CoverOpenCommand) 
     await execute_platform_entity_command(server, client, command, "async_open_cover")
 
 
+class CoverOpenTiltCommand(PlatformEntityCommand):
+    """Cover open tilt command."""
+
+    command: Literal[APICommands.COVER_OPEN_TILT] = APICommands.COVER_OPEN_TILT
+    platform: str = Platform.COVER
+
+
+@decorators.websocket_command(CoverOpenTiltCommand)
+@decorators.async_response
+async def open_cover_tilt(
+    server: Server, client: Client, command: CoverOpenTiltCommand
+) -> None:
+    """Open the cover tilt."""
+    await execute_platform_entity_command(
+        server, client, command, "async_open_cover_tilt"
+    )
+
+
 class CoverCloseCommand(PlatformEntityCommand):
     """Cover close command."""
 
@@ -45,6 +63,24 @@ async def close_cover(
 ) -> None:
     """Close the cover."""
     await execute_platform_entity_command(server, client, command, "async_close_cover")
+
+
+class CoverCloseTiltCommand(PlatformEntityCommand):
+    """Cover close tilt command."""
+
+    command: Literal[APICommands.COVER_CLOSE_TILT] = APICommands.COVER_CLOSE_TILT
+    platform: str = Platform.COVER
+
+
+@decorators.websocket_command(CoverCloseTiltCommand)
+@decorators.async_response
+async def close_cover_tilt(
+    server: Server, client: Client, command: CoverCloseTiltCommand
+) -> None:
+    """Close the cover tilt."""
+    await execute_platform_entity_command(
+        server, client, command, "async_close_cover_tilt"
+    )
 
 
 class CoverSetPositionCommand(PlatformEntityCommand):
@@ -66,6 +102,27 @@ async def set_position(
     )
 
 
+class CoverSetTiltPositionCommand(PlatformEntityCommand):
+    """Cover set position command."""
+
+    command: Literal[APICommands.COVER_SET_TILT_POSITION] = (
+        APICommands.COVER_SET_TILT_POSITION
+    )
+    platform: str = Platform.COVER
+    tilt_position: int
+
+
+@decorators.websocket_command(CoverSetTiltPositionCommand)
+@decorators.async_response
+async def set_tilt_position(
+    server: Server, client: Client, command: CoverSetTiltPositionCommand
+) -> None:
+    """Set the cover tilt position."""
+    await execute_platform_entity_command(
+        server, client, command, "async_set_cover_tilt_position"
+    )
+
+
 class CoverStopCommand(PlatformEntityCommand):
     """Cover stop command."""
 
@@ -80,9 +137,31 @@ async def stop_cover(server: Server, client: Client, command: CoverStopCommand) 
     await execute_platform_entity_command(server, client, command, "async_stop_cover")
 
 
+class CoverStopTiltCommand(PlatformEntityCommand):
+    """Cover stop tilt command."""
+
+    command: Literal[APICommands.COVER_STOP_TILT] = APICommands.COVER_STOP_TILT
+    platform: str = Platform.COVER
+
+
+@decorators.websocket_command(CoverStopTiltCommand)
+@decorators.async_response
+async def stop_cover_tilt(
+    server: Server, client: Client, command: CoverStopTiltCommand
+) -> None:
+    """Stop the cover tilt."""
+    await execute_platform_entity_command(
+        server, client, command, "async_stop_cover_tilt"
+    )
+
+
 def load_api(server: Server) -> None:
     """Load the api command handlers."""
     register_api_command(server, open_cover)
     register_api_command(server, close_cover)
     register_api_command(server, set_position)
     register_api_command(server, stop_cover)
+    register_api_command(server, open_cover_tilt)
+    register_api_command(server, close_cover_tilt)
+    register_api_command(server, set_tilt_position)
+    register_api_command(server, stop_cover_tilt)
