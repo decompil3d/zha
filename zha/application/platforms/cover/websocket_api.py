@@ -155,6 +155,29 @@ async def stop_cover_tilt(
     )
 
 
+class CoverRestoreExternalStateAttributesCommand(PlatformEntityCommand):
+    """Cover restore external state attributes command."""
+
+    command: Literal[APICommands.COVER_RESTORE_EXTERNAL_STATE_ATTRIBUTES] = (
+        APICommands.COVER_RESTORE_EXTERNAL_STATE_ATTRIBUTES
+    )
+    platform: str = Platform.COVER
+    state: Literal["open", "opening", "closed", "closing"]
+    target_lift_position: int
+    target_tilt_position: int
+
+
+@decorators.websocket_command(CoverRestoreExternalStateAttributesCommand)
+@decorators.async_response
+async def restore_cover_external_state_attributes(
+    server: Server, client: Client, command: CoverRestoreExternalStateAttributesCommand
+) -> None:
+    """Stop the cover tilt."""
+    await execute_platform_entity_command(
+        server, client, command, "restore_external_state_attributes"
+    )
+
+
 def load_api(server: Server) -> None:
     """Load the api command handlers."""
     register_api_command(server, open_cover)
@@ -165,3 +188,4 @@ def load_api(server: Server) -> None:
     register_api_command(server, close_cover_tilt)
     register_api_command(server, set_tilt_position)
     register_api_command(server, stop_cover_tilt)
+    register_api_command(server, restore_cover_external_state_attributes)

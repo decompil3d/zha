@@ -60,9 +60,14 @@ async def execute_platform_entity_command(
         action = getattr(platform_entity, method_name)
         arg_spec = inspect.getfullargspec(action)
         if arg_spec.varkw:
-            await action(**command.model_dump(exclude_none=True))
+            if inspect.iscoroutinefunction(action):
+                await action(**command.model_dump(exclude_none=True))
+            else:
+                action(**command.model_dump(exclude_none=True))
+        elif inspect.iscoroutinefunction(action):
+            await action()
         else:
-            await action()  # the only argument is self
+            action()  # the only argument is self
 
     except Exception as err:
         _LOGGER.exception("Error executing command: %s", method_name, exc_info=err)

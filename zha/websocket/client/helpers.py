@@ -27,6 +27,7 @@ from zha.application.platforms.cover.websocket_api import (
     CoverCloseTiltCommand,
     CoverOpenCommand,
     CoverOpenTiltCommand,
+    CoverRestoreExternalStateAttributesCommand,
     CoverSetPositionCommand,
     CoverSetTiltPositionCommand,
     CoverStopCommand,
@@ -356,6 +357,24 @@ class CoverHelper:
         command = CoverStopCommand(
             ieee=cover_platform_entity.device_ieee,
             unique_id=cover_platform_entity.unique_id,
+        )
+        return await self._client.async_send_command(command)
+
+    async def restore_external_state_attributes(
+        self,
+        cover_platform_entity: BasePlatformEntityInfo,
+        state: Literal["open", "opening", "closed", "closing"],
+        target_lift_position: int,
+        target_tilt_position: int,
+    ) -> WebSocketCommandResponse:
+        """Stop a cover tilt."""
+        ensure_platform_entity(cover_platform_entity, Platform.COVER)
+        command = CoverRestoreExternalStateAttributesCommand(
+            ieee=cover_platform_entity.device_ieee,
+            unique_id=cover_platform_entity.unique_id,
+            state=state,
+            target_lift_position=target_lift_position,
+            target_tilt_position=target_tilt_position,
         )
         return await self._client.async_send_command(command)
 

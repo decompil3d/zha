@@ -191,6 +191,7 @@ class Cover(PlatformEntity, CoverEntityInterface):
         ],  # FIXME: why must these be expanded?
         target_lift_position: int | None,
         target_tilt_position: int | None,
+        **kwargs: Any,
     ):
         """Restore external state attributes."""
         self._state = state
@@ -624,6 +625,7 @@ class WebSocketClientCoverEntity(
     ) -> None:
         """Initialize the ZHA fan entity."""
         super().__init__(entity_info, device)
+        self._tasks: list[asyncio.Task] = []
 
     @property
     def supported_features(self) -> CoverEntityFeature:
@@ -688,3 +690,33 @@ class WebSocketClientCoverEntity(
     async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
         """Stop the cover tilt."""
         await self._device.gateway.covers.stop_cover_tilt(self.info_object)
+
+    def restore_external_state_attributes(
+        self,
+        *,
+        state: Literal[
+            "open", "opening", "closed", "closing"
+        ],  # FIXME: why must these be expanded?
+        target_lift_position: int | None,
+        target_tilt_position: int | None,
+    ):
+        """Restore external state attributes."""
+
+        def refresh_state():
+            refresh_task = asyncio.create_task(
+                self._device.gateway.entities.refresh_state(self.info_object)
+            )
+            self._tasks.append(refresh_task)
+            refresh_task.add_done_callback(self._tasks.remove)
+
+        task = asyncio.create_task(
+            self._device.gateway.covers.restore_external_state_attributes(
+                self.info_object,
+                state=state,
+                target_lift_position=target_lift_position,
+                target_tilt_position=target_tilt_position,
+            )
+        )
+        self._tasks.append(task)
+        task.add_done_callback(self._tasks.remove)
+        task.add_done_callback(lambda _: refresh_state())

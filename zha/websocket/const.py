@@ -61,6 +61,7 @@ class APICommands(StrEnum):
     COVER_SET_POSITION = "cover_set_position"
     COVER_SET_TILT_POSITION = "cover_set_tilt_position"
     COVER_STOP_TILT = "cover_stop_tilt"
+    COVER_RESTORE_EXTERNAL_STATE_ATTRIBUTES = "cover_restore_external_state_attributes"
 
     FAN_TURN_ON = "fan_turn_on"
     FAN_TURN_OFF = "fan_turn_off"

@@ -94,22 +94,21 @@ WCCS = closures.WindowCovering.ConfigStatus
 
 
 @pytest.mark.parametrize(
-    "gateway_type, entity_type",
+    "gateway_type",
     [
-        ("zha_gateway", Platform.COVER),
-        ("ws_gateway", Platform.COVER),
+        "zha_gateway",
+        "ws_gateway",
     ],
 )
 @pytest.mark.looptime
 async def test_cover_non_tilt_initial_state(  # pylint: disable=unused-argument
     zha_gateways: CombinedGateways,
-    zigpy_cover_device,
     gateway_type: str,
-    entity_type: type,
 ) -> None:
     """Test ZHA cover platform."""
 
     zha_gateway = getattr(zha_gateways, gateway_type)
+    zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     # load up cover domain
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     cluster = zigpy_cover_device.endpoints[1].window_covering
@@ -164,17 +163,16 @@ async def test_cover_non_tilt_initial_state(  # pylint: disable=unused-argument
 
 
 @pytest.mark.parametrize(
-    "gateway_type, entity_type",
+    "gateway_type",
     [
-        ("zha_gateway", Platform.COVER),
-        ("ws_gateway", Platform.COVER),
+        "zha_gateway",
+        "ws_gateway",
     ],
 )
 @pytest.mark.looptime
 async def test_cover(
     zha_gateways: CombinedGateways,
     gateway_type: str,
-    entity_type: type,
 ) -> None:
     """Test zha cover platform."""
 
@@ -410,21 +408,21 @@ async def test_cover(
 
 
 @pytest.mark.parametrize(
-    "gateway_type, entity_type",
+    "gateway_type",
     [
-        ("zha_gateway", Platform.COVER),
-        ("ws_gateway", Platform.COVER),
+        "zha_gateway",
+        "ws_gateway",
     ],
 )
 @pytest.mark.looptime
 async def test_cover_failures(
     zha_gateways: CombinedGateways,
     gateway_type: str,
-    entity_type: type,
 ) -> None:
     """Test ZHA cover platform failure cases."""
 
     zha_gateway = getattr(zha_gateways, gateway_type)
+    zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     # load up cover domain
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     cluster = zigpy_cover_device.endpoints[1].window_covering
@@ -621,17 +619,16 @@ async def test_cover_failures(
 
 
 @pytest.mark.parametrize(
-    "gateway_type, entity_type",
+    "gateway_type",
     [
-        ("zha_gateway", Platform.COVER),
-        ("ws_gateway", Platform.COVER),
+        "zha_gateway",
+        "ws_gateway",
     ],
 )
 @pytest.mark.looptime
 async def test_shade(
     zha_gateways: CombinedGateways,
     gateway_type: str,
-    entity_type: type,
 ) -> None:
     """Test zha cover platform for shade device type."""
 
@@ -813,17 +810,16 @@ async def test_shade(
 
 
 @pytest.mark.parametrize(
-    "gateway_type, entity_type",
+    "gateway_type",
     [
-        ("zha_gateway", Platform.COVER),
-        ("ws_gateway", Platform.COVER),
+        "zha_gateway",
+        "ws_gateway",
     ],
 )
 @pytest.mark.looptime
 async def test_keen_vent(
     zha_gateways: CombinedGateways,
     gateway_type: str,
-    entity_type: type,
 ) -> None:
     """Test keen vent."""
 
@@ -893,21 +889,21 @@ async def test_keen_vent(
 
 
 @pytest.mark.parametrize(
-    "gateway_type, entity_type",
+    "gateway_type",
     [
-        ("zha_gateway", Platform.COVER),
-        ("ws_gateway", Platform.COVER),
+        "zha_gateway",
+        "ws_gateway",
     ],
 )
 @pytest.mark.looptime
 async def test_cover_remote(
     zha_gateways: CombinedGateways,
     gateway_type: str,
-    entity_type: type,
 ) -> None:
     """Test ZHA cover remote."""
 
     zha_gateway = getattr(zha_gateways, gateway_type)
+    zigpy_cover_remote = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_REMOTE)
     # load up cover domain
     zigpy_cover_remote = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_REMOTE)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_cover_remote)
@@ -946,12 +942,21 @@ async def test_cover_remote(
     assert device.emit_zha_event.call_args[0][0][ATTR_COMMAND] == "down_close"
 
 
-# TODO parametrize this test and add service to restore state attributes
+@pytest.mark.parametrize(
+    "gateway_type",
+    [
+        "zha_gateway",
+        "ws_gateway",
+    ],
+)
 @pytest.mark.looptime
 async def test_cover_state_restoration(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
+    gateway_type: str,
 ) -> None:
     """Test the cover state restoration."""
+
+    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_cover_device)
     entity = get_entity(zha_device, platform=Platform.COVER)
@@ -965,6 +970,11 @@ async def test_cover_state_restoration(
         target_lift_position=12,
         target_tilt_position=34,
     )
+
+    # ws impl needs a round trip to get the state back to the client
+    # maybe we make this optimistic, set the state manually on the client
+    # and avoid the round trip refresh call?
+    await zha_gateway.async_block_till_done()
 
     assert entity.state["state"] == STATE_CLOSED
     assert entity.state["target_lift_position"] == 12
