@@ -136,6 +136,7 @@ class GenericState(BaseModel):
         "DanfossPreheatTime",
         "DanfossSoftwareErrorCode",
         "DanfossMotorStepCounter",
+        "Flow",
     ]
     available: bool | None = None
     state: str | bool | int | float | datetime | None = None

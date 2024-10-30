@@ -116,6 +116,7 @@ class SensorEntityInfo(BaseSensorEntityInfo):
         "DanfossPreheatTime",
         "DanfossSoftwareErrorCode",
         "DanfossMotorStepCounter",
+        "Flow",
     ]
     state: GenericState
     device_class: SensorDeviceClass | None = None
