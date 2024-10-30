@@ -38,6 +38,28 @@ async def select_option(
     )
 
 
+class SelectRestoreExternalStateAttributesCommand(PlatformEntityCommand):
+    """Select restore external state command."""
+
+    command: Literal[APICommands.SELECT_RESTORE_EXTERNAL_STATE_ATTRIBUTES] = (
+        APICommands.SELECT_RESTORE_EXTERNAL_STATE_ATTRIBUTES
+    )
+    platform: str = Platform.SELECT
+    state: str
+
+
+@decorators.websocket_command(SelectRestoreExternalStateAttributesCommand)
+@decorators.async_response
+async def restore_lock_external_state_attributes(
+    server: Server, client: Client, command: SelectRestoreExternalStateAttributesCommand
+) -> None:
+    """Restore externally preserved state for selects."""
+    await execute_platform_entity_command(
+        server, client, command, "restore_external_state_attributes"
+    )
+
+
 def load_api(server: Server) -> None:
     """Load the api command handlers."""
     register_api_command(server, select_option)
+    register_api_command(server, restore_lock_external_state_attributes)

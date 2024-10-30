@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import asyncio
 from enum import Enum
 import functools
 import logging
@@ -116,21 +117,18 @@ class EnumSelectEntity(PlatformEntity, SelectEntityInterface):
             return None
         return option.name.replace("_", " ")
 
-    async def async_select_option(self, option: str) -> None:
+    async def async_select_option(self, option: str, **kwargs) -> None:
         """Change the selected option."""
         self._cluster_handler.data_cache[self._attribute_name] = self._enum[
             option.replace(" ", "_")
         ]
         self.maybe_emit_state_changed_event()
 
-    def restore_external_state_attributes(
-        self,
-        *,
-        state: str,
-    ) -> None:
+    def restore_external_state_attributes(self, *, state: str, **kwargs) -> None:
         """Restore extra state attributes that are stored outside of the ZCL cache."""
         value = state.replace(" ", "_")
         self._cluster_handler.data_cache[self._attribute_name] = self._enum[value]
+        self.maybe_emit_state_changed_event()
 
 
 class NonZCLSelectEntity(EnumSelectEntity):
@@ -262,7 +260,7 @@ class ZCLEnumSelectEntity(PlatformEntity, SelectEntityInterface):
         option = self._enum(option)
         return option.name.replace("_", " ")
 
-    async def async_select_option(self, option: str) -> None:
+    async def async_select_option(self, option: str, **kwargs) -> None:
         """Change the selected option."""
         await self._cluster_handler.write_attributes_safe(
             {self._attribute_name: self._enum[option.replace(" ", "_")]}
@@ -916,6 +914,7 @@ class WebSocketClientSelectEntity(
     ) -> None:
         """Initialize the ZHA select entity."""
         super().__init__(entity_info, device)
+        self._tasks: list[asyncio.Task] = []
 
     @property
     def current_option(self) -> str | None:
@@ -923,6 +922,7 @@ class WebSocketClientSelectEntity(
 
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
+        await self._device.gateway.selects.select_option(self.info_object, option)
 
     def restore_external_state_attributes(
         self,
@@ -930,3 +930,10 @@ class WebSocketClientSelectEntity(
         state: str,
     ) -> None:
         """Restore extra state attributes."""
+        task = asyncio.create_task(
+            self._device.gateway.selects.restore_external_state_attributes(
+                self.info_object, state
+            )
+        )
+        self._tasks.append(task)
+        task.add_done_callback(self._tasks.remove)

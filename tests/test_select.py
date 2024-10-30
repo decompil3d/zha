@@ -2,6 +2,7 @@
 
 from unittest.mock import call, patch
 
+import pytest
 from zhaquirks import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -27,14 +28,19 @@ from tests.common import (
     join_zigpy_device,
     send_attributes_report,
 )
+from tests.conftest import CombinedGateways
 from zha.application import Platform
-from zha.application.gateway import Gateway
-from zha.application.platforms import EntityCategory
+from zha.application.platforms import EntityCategory, PlatformEntity
 from zha.application.platforms.select import AqaraMotionSensitivities
 
 
-async def test_select(zha_gateway: Gateway) -> None:
+@pytest.mark.parametrize(
+    "gateway_type",
+    ["zha_gateway", "ws_gateway"],
+)
+async def test_select(zha_gateways: CombinedGateways, gateway_type: str) -> None:
     """Test zha select platform."""
+    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -63,7 +69,9 @@ async def test_select(zha_gateway: Gateway) -> None:
         "Fire Panic",
         "Emergency Panic",
     ]
-    assert entity._enum == security.IasWd.Warning.WarningMode
+
+    if isinstance(entity, PlatformEntity):
+        assert entity._enum == security.IasWd.Warning.WarningMode
 
     # change value from client
     await entity.async_select_option(security.IasWd.Warning.WarningMode.Burglar.name)
@@ -107,9 +115,16 @@ class MotionSensitivityQuirk(CustomDevice):
     }
 
 
-async def test_on_off_select_attribute_report(zha_gateway: Gateway) -> None:
+@pytest.mark.parametrize(
+    "gateway_type",
+    ["zha_gateway", "ws_gateway"],
+)
+async def test_on_off_select_attribute_report(
+    zha_gateways: CombinedGateways, gateway_type: str
+) -> None:
     """Test ZHA attribute report parsing for select platform."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -126,7 +141,7 @@ async def test_on_off_select_attribute_report(zha_gateway: Gateway) -> None:
 
     zigpy_device = get_device(zigpy_device)
     aqara_sensor = await join_zigpy_device(zha_gateway, zigpy_device)
-    cluster = aqara_sensor.device.endpoints.get(1).opple_cluster
+    cluster = zigpy_device.endpoints.get(1).opple_cluster
 
     entity = get_entity(aqara_sensor, platform=Platform.SELECT)
     assert entity.state["state"] == AqaraMotionSensitivities.Medium.name
@@ -160,11 +175,16 @@ async def test_on_off_select_attribute_report(zha_gateway: Gateway) -> None:
 )
 
 
+@pytest.mark.parametrize(
+    "gateway_type",
+    ["zha_gateway", "ws_gateway"],
+)
 async def test_on_off_select_attribute_report_v2(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways, gateway_type: str
 ) -> None:
     """Test ZHA attribute report parsing for select platform."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -184,7 +204,7 @@ async def test_on_off_select_attribute_report_v2(
 
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
     cluster = zigpy_device.endpoints[1].opple_cluster
-    assert isinstance(zha_device.device, CustomDeviceV2)
+    assert isinstance(zigpy_device, CustomDeviceV2)
 
     entity = get_entity(zha_device, platform=Platform.SELECT)
 
@@ -228,8 +248,15 @@ async def test_on_off_select_attribute_report_v2(
         )
 
 
-async def test_non_zcl_select_state_restoration(zha_gateway: Gateway) -> None:
+@pytest.mark.parametrize(
+    "gateway_type",
+    ["zha_gateway", "ws_gateway"],
+)
+async def test_non_zcl_select_state_restoration(
+    zha_gateways: CombinedGateways, gateway_type: str
+) -> None:
     """Test the non-ZCL select state restoration."""
+    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -251,9 +278,11 @@ async def test_non_zcl_select_state_restoration(zha_gateway: Gateway) -> None:
     entity.restore_external_state_attributes(
         state=security.IasWd.Warning.WarningMode.Burglar.name
     )
+    await zha_gateway.async_block_till_done()  # needed for WS operations
     assert entity.state["state"] == security.IasWd.Warning.WarningMode.Burglar.name
 
     entity.restore_external_state_attributes(
         state=security.IasWd.Warning.WarningMode.Fire.name
     )
+    await zha_gateway.async_block_till_done()  # needed for WS operations
     assert entity.state["state"] == security.IasWd.Warning.WarningMode.Fire.name
