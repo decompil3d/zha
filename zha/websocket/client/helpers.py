@@ -49,12 +49,16 @@ from zha.application.platforms.lock.websocket_api import (
     LockDisableUserLockCodeCommand,
     LockEnableUserLockCodeCommand,
     LockLockCommand,
+    LockRestoreExternalStateAttributesCommand,
     LockSetUserLockCodeCommand,
     LockUnlockCommand,
 )
 from zha.application.platforms.model import BaseEntityInfo, BasePlatformEntityInfo
 from zha.application.platforms.number.websocket_api import NumberSetValueCommand
-from zha.application.platforms.select.websocket_api import SelectSelectOptionCommand
+from zha.application.platforms.select.websocket_api import (
+    SelectRestoreExternalStateAttributesCommand,
+    SelectSelectOptionCommand,
+)
 from zha.application.platforms.siren.websocket_api import (
     SirenTurnOffCommand,
     SirenTurnOnCommand,
@@ -63,7 +67,11 @@ from zha.application.platforms.switch.websocket_api import (
     SwitchTurnOffCommand,
     SwitchTurnOnCommand,
 )
-from zha.application.platforms.websocket_api import PlatformEntityRefreshStateCommand
+from zha.application.platforms.websocket_api import (
+    PlatformEntityDisableCommand,
+    PlatformEntityEnableCommand,
+    PlatformEntityRefreshStateCommand,
+)
 from zha.application.websocket_api import (
     AddGroupMembersCommand,
     CreateGroupCommand,
@@ -552,6 +560,20 @@ class LockHelper:
         )
         return await self._client.async_send_command(command)
 
+    async def restore_external_state_attributes(
+        self,
+        lock_platform_entity: BasePlatformEntityInfo,
+        state: Literal["locked", "unlocked"] | None,
+    ) -> WebSocketCommandResponse:
+        """Restore external state attributes."""
+        ensure_platform_entity(lock_platform_entity, Platform.LOCK)
+        command = LockRestoreExternalStateAttributesCommand(
+            ieee=lock_platform_entity.device_ieee,
+            unique_id=lock_platform_entity.unique_id,
+            state=state,
+        )
+        return await self._client.async_send_command(command)
+
 
 class NumberHelper:
     """Helper to issue number commands."""
@@ -593,6 +615,20 @@ class SelectHelper:
             ieee=select_platform_entity.device_ieee,
             unique_id=select_platform_entity.unique_id,
             option=option,
+        )
+        return await self._client.async_send_command(command)
+
+    async def restore_external_state_attributes(
+        self,
+        select_platform_entity: BasePlatformEntityInfo,
+        state: str | None,
+    ) -> WebSocketCommandResponse:
+        """Restore external state attributes."""
+        ensure_platform_entity(select_platform_entity, Platform.SELECT)
+        command = SelectRestoreExternalStateAttributesCommand(
+            ieee=select_platform_entity.device_ieee,
+            unique_id=select_platform_entity.unique_id,
+            state=state,
         )
         return await self._client.async_send_command(command)
 
@@ -762,6 +798,28 @@ class PlatformEntityHelper:
     ) -> WebSocketCommandResponse:
         """Refresh the state of a platform entity."""
         command = PlatformEntityRefreshStateCommand(
+            ieee=platform_entity.device_ieee,
+            unique_id=platform_entity.unique_id,
+            platform=platform_entity.platform,
+        )
+        return await self._client.async_send_command(command)
+
+    async def enable(
+        self, platform_entity: BasePlatformEntityInfo
+    ) -> WebSocketCommandResponse:
+        """Enable a platform entity."""
+        command = PlatformEntityEnableCommand(
+            ieee=platform_entity.device_ieee,
+            unique_id=platform_entity.unique_id,
+            platform=platform_entity.platform,
+        )
+        return await self._client.async_send_command(command)
+
+    async def disable(
+        self, platform_entity: BasePlatformEntityInfo
+    ) -> WebSocketCommandResponse:
+        """Disable a platform entity."""
+        command = PlatformEntityDisableCommand(
             ieee=platform_entity.device_ieee,
             unique_id=platform_entity.unique_id,
             platform=platform_entity.platform,
