@@ -128,6 +128,27 @@ async def clear_user_lock_code(
     )
 
 
+class LockRestoreExternalStateAttributesCommand(PlatformEntityCommand):
+    """Restore external state attributes command."""
+
+    command: Literal[APICommands.LOCK_RESTORE_EXTERNAL_STATE_ATTRIBUTES] = (
+        APICommands.LOCK_RESTORE_EXTERNAL_STATE_ATTRIBUTES
+    )
+    platform: str = Platform.LOCK
+    state: Literal["locked", "unlocked"] | None
+
+
+@decorators.websocket_command(LockRestoreExternalStateAttributesCommand)
+@decorators.async_response
+async def restore_lock_external_state_attributes(
+    server: Server, client: Client, command: LockRestoreExternalStateAttributesCommand
+) -> None:
+    """Restore externally preserved state for locks."""
+    await execute_platform_entity_command(
+        server, client, command, "restore_external_state_attributes"
+    )
+
+
 def load_api(server: Server) -> None:
     """Load the api command handlers."""
     register_api_command(server, lock)
@@ -136,3 +157,4 @@ def load_api(server: Server) -> None:
     register_api_command(server, enable_user_lock_code)
     register_api_command(server, disable_user_lock_code)
     register_api_command(server, clear_user_lock_code)
+    register_api_command(server, restore_lock_external_state_attributes)

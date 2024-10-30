@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import asyncio
 import functools
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -127,7 +128,9 @@ class DoorLock(PlatformEntity, LockEntityInterface):
         self._state = STATE_UNLOCKED
         self.maybe_emit_state_changed_event()
 
-    async def async_set_lock_user_code(self, code_slot: int, user_code: str) -> None:
+    async def async_set_lock_user_code(
+        self, code_slot: int, user_code: str, **kwargs
+    ) -> None:
         """Set the user_code to index X on the lock."""
         if self._doorlock_cluster_handler:
             await self._doorlock_cluster_handler.async_set_user_code(
@@ -135,19 +138,19 @@ class DoorLock(PlatformEntity, LockEntityInterface):
             )
             self.debug("User code at slot %s set", code_slot)
 
-    async def async_enable_lock_user_code(self, code_slot: int) -> None:
+    async def async_enable_lock_user_code(self, code_slot: int, **kwargs) -> None:
         """Enable user_code at index X on the lock."""
         if self._doorlock_cluster_handler:
             await self._doorlock_cluster_handler.async_enable_user_code(code_slot)
             self.debug("User code at slot %s enabled", code_slot)
 
-    async def async_disable_lock_user_code(self, code_slot: int) -> None:
+    async def async_disable_lock_user_code(self, code_slot: int, **kwargs) -> None:
         """Disable user_code at index X on the lock."""
         if self._doorlock_cluster_handler:
             await self._doorlock_cluster_handler.async_disable_user_code(code_slot)
             self.debug("User code at slot %s disabled", code_slot)
 
-    async def async_clear_lock_user_code(self, code_slot: int) -> None:
+    async def async_clear_lock_user_code(self, code_slot: int, **kwargs) -> None:
         """Clear the user_code at index X on the lock."""
         if self._doorlock_cluster_handler:
             await self._doorlock_cluster_handler.async_clear_user_code(code_slot)
@@ -163,12 +166,11 @@ class DoorLock(PlatformEntity, LockEntityInterface):
         self.maybe_emit_state_changed_event()
 
     def restore_external_state_attributes(
-        self,
-        *,
-        state: Literal["locked", "unlocked"] | None,
+        self, *, state: Literal["locked", "unlocked"] | None, **kwargs
     ) -> None:
         """Restore extra state attributes that are stored outside of the ZCL cache."""
         self._state = state
+        self.maybe_emit_state_changed_event()
 
 
 class WebSocketClientLockEntity(
@@ -183,6 +185,7 @@ class WebSocketClientLockEntity(
     ) -> None:
         """Initialize the ZHA lock entity."""
         super().__init__(entity_info, device)
+        self._tasks: list[asyncio.Task] = []
 
     @property
     def is_locked(self) -> bool:
@@ -191,21 +194,35 @@ class WebSocketClientLockEntity(
 
     async def async_lock(self) -> None:
         """Lock the lock."""
+        await self._device.gateway.locks.lock(self.info_object)
 
     async def async_unlock(self) -> None:
         """Unlock the lock."""
+        await self._device.gateway.locks.unlock(self.info_object)
 
     async def async_set_lock_user_code(self, code_slot: int, user_code: str) -> None:
         """Set the user_code to index X on the lock."""
+        await self._device.gateway.locks.set_user_lock_code(
+            self.info_object, code_slot, user_code
+        )
 
     async def async_enable_lock_user_code(self, code_slot: int) -> None:
         """Enable user_code at index X on the lock."""
+        await self._device.gateway.locks.enable_user_lock_code(
+            self.info_object, code_slot
+        )
 
     async def async_disable_lock_user_code(self, code_slot: int) -> None:
         """Disable user_code at index X on the lock."""
+        await self._device.gateway.locks.disable_user_lock_code(
+            self.info_object, code_slot
+        )
 
     async def async_clear_lock_user_code(self, code_slot: int) -> None:
         """Clear the user_code at index X on the lock."""
+        await self._device.gateway.locks.clear_user_lock_code(
+            self.info_object, code_slot
+        )
 
     def restore_external_state_attributes(
         self,
@@ -213,3 +230,11 @@ class WebSocketClientLockEntity(
         state: Literal["locked", "unlocked"] | None,
     ) -> None:
         """Restore extra state attributes that are stored outside of the ZCL cache."""
+        task = asyncio.create_task(
+            self._device.gateway.locks.restore_external_state_attributes(
+                self.info_object,
+                state=state,
+            )
+        )
+        self._tasks.append(task)
+        task.add_done_callback(self._tasks.remove)
