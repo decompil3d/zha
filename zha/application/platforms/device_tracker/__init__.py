@@ -105,6 +105,7 @@ class DeviceScannerEntity(PlatformEntity, DeviceTrackerEntityInterface):
             {
                 "connected": self._connected,
                 "battery_level": self._battery_level,
+                "source_type": self.source_type,
             }
         )
         return response
@@ -180,7 +181,7 @@ class WebSocketClientDeviceTrackerEntity(
     @property
     def source_type(self) -> SourceType:
         """Return the source type, eg gps or router, of the device."""
-        return self.info_object.source_type
+        return self.info_object.state.source_type
 
     @property
     def battery_level(self) -> float | None:

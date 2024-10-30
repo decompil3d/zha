@@ -4,6 +4,7 @@ import asyncio
 import time
 from unittest.mock import AsyncMock
 
+import pytest
 import zigpy.profiles.zha
 from zigpy.zcl.clusters import general
 
@@ -17,16 +18,23 @@ from tests.common import (
     join_zigpy_device,
     send_attributes_report,
 )
+from tests.conftest import CombinedGateways
 from zha.application import Platform
-from zha.application.gateway import Gateway
+from zha.application.platforms import WebSocketClientEntity
 from zha.application.platforms.device_tracker import SourceType
 from zha.application.registries import SMARTTHINGS_ARRIVAL_SENSOR_DEVICE_TYPE
 
 
+@pytest.mark.parametrize(
+    ("gateway_type"),
+    ["zha_gateway", "ws_gateway"],
+)
 async def test_device_tracker(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
+    gateway_type: str,
 ) -> None:
     """Test ZHA device tracker platform."""
+    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device_dt = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -55,11 +63,27 @@ async def test_device_tracker(
         zha_gateway, cluster, {0x0000: 0, 0x0020: 23, 0x0021: 200, 0x0001: 2}
     )
 
-    entity.async_update = AsyncMock(wraps=entity.async_update)
+    if isinstance(entity, WebSocketClientEntity):
+        server_entity = get_entity(
+            zha_gateway.server_gateway.devices[zha_device.ieee],
+            platform=Platform.DEVICE_TRACKER,
+        )
+        original_async_update = server_entity.async_update
+        server_entity.async_update = AsyncMock(wraps=server_entity.async_update)
+        async_update_mock = server_entity.async_update
+    else:
+        entity.async_update = AsyncMock(wraps=entity.async_update)
+        async_update_mock = entity.async_update
+
+    async_update_mock.reset_mock()
     zigpy_device_dt.last_seen = time.time() + 10
     await asyncio.sleep(48)
     await zha_gateway.async_block_till_done()
-    assert entity.async_update.await_count == 1
+    assert async_update_mock.await_count == 1
+
+    # this is because of the argspec stuff w/ WS calls... Look for a better solution
+    if isinstance(entity, WebSocketClientEntity):
+        server_entity.async_update = original_async_update
 
     assert entity.state["connected"] is True
     assert entity.is_connected is True
