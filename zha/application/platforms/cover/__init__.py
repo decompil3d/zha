@@ -197,6 +197,7 @@ class Cover(PlatformEntity, CoverEntityInterface):
         self._state = state
         self._target_lift_position = target_lift_position
         self._target_tilt_position = target_tilt_position
+        self.maybe_emit_state_changed_event()
 
     @property
     def is_closed(self) -> bool | None:
@@ -701,14 +702,6 @@ class WebSocketClientCoverEntity(
         target_tilt_position: int | None,
     ):
         """Restore external state attributes."""
-
-        def refresh_state():
-            refresh_task = asyncio.create_task(
-                self._device.gateway.entities.refresh_state(self.info_object)
-            )
-            self._tasks.append(refresh_task)
-            refresh_task.add_done_callback(self._tasks.remove)
-
         task = asyncio.create_task(
             self._device.gateway.covers.restore_external_state_attributes(
                 self.info_object,
@@ -719,4 +712,3 @@ class WebSocketClientCoverEntity(
         )
         self._tasks.append(task)
         task.add_done_callback(self._tasks.remove)
-        task.add_done_callback(lambda _: refresh_state())
