@@ -34,7 +34,6 @@ from tests.common import (
 )
 from tests.conftest import CombinedGateways
 from zha.application import Platform
-from zha.application.gateway import Gateway
 from zha.application.platforms import EntityCategory, PlatformEntity
 from zha.application.platforms.button import (
     Button,
@@ -236,7 +235,7 @@ class FakeManufacturerCluster(CustomCluster, ManufacturerSpecificCluster):
     ["zha_gateway", "ws_gateway"],
 )
 async def test_quirks_command_button(
-    zha_gateways: Gateway,
+    zha_gateways: CombinedGateways,
     gateway_type: str,
 ) -> None:
     """Test ZHA button platform."""
@@ -287,7 +286,7 @@ async def test_quirks_command_button(
     ],
 )
 async def test_quirks_write_attr_button(
-    zha_gateways: Gateway,
+    zha_gateways: CombinedGateways,
     gateway_type: str,
     entity_type: type,
 ) -> None:
