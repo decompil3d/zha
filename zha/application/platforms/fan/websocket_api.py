@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Literal, Union
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from pydantic import Field
 
@@ -24,9 +24,9 @@ class FanTurnOnCommand(PlatformEntityCommand):
 
     command: Literal[APICommands.FAN_TURN_ON] = APICommands.FAN_TURN_ON
     platform: str = Platform.FAN
-    speed: Union[str, None]
-    percentage: Union[Annotated[int, Field(ge=0, le=100)], None]
-    preset_mode: Union[str, None]
+    speed: str | None = None
+    percentage: Annotated[int, Field(ge=0, le=100)] | None = None
+    preset_mode: str | None = None
 
 
 @decorators.websocket_command(FanTurnOnCommand)

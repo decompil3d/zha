@@ -214,12 +214,12 @@ class BaseFan(BaseEntity, FanEntityInterface):
         """Turn the entity off."""
         await self.async_set_percentage(0)
 
-    async def async_set_percentage(self, percentage: int) -> None:
+    async def async_set_percentage(self, percentage: int, **kwargs) -> None:
         """Set the speed percentage of the fan."""
         fan_mode = math.ceil(percentage_to_ranged_value(self.speed_range, percentage))
         await self._async_set_fan_mode(fan_mode)
 
-    async def async_set_preset_mode(self, preset_mode: str) -> None:
+    async def async_set_preset_mode(self, preset_mode: str, **kwargs) -> None:
         """Set the preset mode for the fan."""
         try:
             mode = self.preset_name_to_mode[preset_mode]
@@ -230,7 +230,7 @@ class BaseFan(BaseEntity, FanEntityInterface):
         await self._async_set_fan_mode(mode)
 
     @abstractmethod
-    async def _async_set_fan_mode(self, fan_mode: int) -> None:
+    async def _async_set_fan_mode(self, fan_mode: int, **kwargs) -> None:
         """Set the fan mode for the fan."""
 
     def handle_cluster_handler_attribute_updated(
@@ -287,6 +287,8 @@ class Fan(PlatformEntity, BaseFan):
             supported_features=self.supported_features,
             speed_count=self.speed_count,
             speed_list=self.speed_list,
+            default_on_percentage=self.default_on_percentage,
+            percentage_step=self.percentage_step,
         )
 
     @property
@@ -331,7 +333,7 @@ class Fan(PlatformEntity, BaseFan):
             return None
         return self.percentage_to_speed(percentage)
 
-    async def _async_set_fan_mode(self, fan_mode: int) -> None:
+    async def _async_set_fan_mode(self, fan_mode: int, **kwargs) -> None:
         """Set the fan mode for the fan."""
         await self._fan_cluster_handler.async_set_speed(fan_mode)
         self.maybe_emit_state_changed_event()
@@ -395,7 +397,7 @@ class FanGroup(GroupEntity, BaseFan):
             return None
         return self.percentage_to_speed(percentage)
 
-    async def _async_set_fan_mode(self, fan_mode: int) -> None:
+    async def _async_set_fan_mode(self, fan_mode: int, **kwargs) -> None:
         """Set the fan mode for the group."""
 
         with wrap_zigpy_exceptions():
@@ -504,7 +506,7 @@ class IkeaFan(Fan):
         else:
             await super().async_turn_on(speed, percentage, preset_mode)
 
-    async def async_set_percentage(self, percentage: int) -> None:
+    async def async_set_percentage(self, percentage: int, **kwargs) -> None:
         """Set the speed percentage of the fan."""
         fan_mode = math.ceil(percentage_to_ranged_value(self.speed_range, percentage))
         # 1 is a mode, not a speed, so we skip to 2 instead.
@@ -557,6 +559,11 @@ class WebSocketClientFanEntity(
         return self.info_object.preset_modes
 
     @property
+    def default_on_percentage(self) -> int:
+        """Return the default on percentage."""
+        return self.info_object.default_on_percentage
+
+    @property
     def speed_list(self) -> list[str]:
         """Get the list of available speeds."""
         return self.info_object.speed_list
@@ -591,6 +598,11 @@ class WebSocketClientFanEntity(
         """Return the current speed."""
         return self.info_object.state.speed
 
+    @property
+    def percentage_step(self) -> float:
+        """Return the step size for percentage."""
+        return self.info_object.percentage_step
+
     async def async_turn_on(
         self,
         speed: str | None = None,
@@ -609,8 +621,10 @@ class WebSocketClientFanEntity(
 
     async def async_set_percentage(self, percentage: int) -> None:
         """Set the speed percentage of the fan."""
-        await self._device.gateway.fans.set_percentage(self.info_object, percentage)
+        await self._device.gateway.fans.set_fan_percentage(self.info_object, percentage)
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set the preset mode for the fan."""
-        await self._device.gateway.fans.set_preset_mode(self.info_object, preset_mode)
+        await self._device.gateway.fans.set_fan_preset_mode(
+            self.info_object, preset_mode
+        )

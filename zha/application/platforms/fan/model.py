@@ -29,7 +29,8 @@ class FanEntityInfo(BasePlatformEntityInfo):
     class_name: Literal["Fan", "IkeaFan", "KofFan", "FanGroup"]
     preset_modes: list[str]
     supported_features: FanEntityFeature
+    default_on_percentage: int
     speed_count: int
     speed_list: list[str]
-    percentage_step: float | None = None
+    percentage_step: float
     state: FanState

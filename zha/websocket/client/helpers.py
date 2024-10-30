@@ -39,7 +39,6 @@ from zha.application.platforms.fan.websocket_api import (
     FanTurnOffCommand,
     FanTurnOnCommand,
 )
-from zha.application.platforms.light.model import LightEntityInfo
 from zha.application.platforms.light.websocket_api import (
     LightTurnOffCommand,
     LightTurnOnCommand,
@@ -139,12 +138,8 @@ class LightHelper:
         """Turn on a light."""
         ensure_platform_entity(light_platform_entity, Platform.LIGHT)
         command = LightTurnOnCommand(
-            ieee=light_platform_entity.device_ieee
-            if not isinstance(light_platform_entity, LightEntityInfo)
-            else None,
-            group_id=light_platform_entity.group_id
-            if isinstance(light_platform_entity, LightEntityInfo)
-            else None,
+            ieee=light_platform_entity.device_ieee,
+            group_id=light_platform_entity.group_id,
             unique_id=light_platform_entity.unique_id,
             brightness=brightness,
             transition=transition,
@@ -164,12 +159,8 @@ class LightHelper:
         """Turn off a light."""
         ensure_platform_entity(light_platform_entity, Platform.LIGHT)
         command = LightTurnOffCommand(
-            ieee=light_platform_entity.device_ieee
-            if not isinstance(light_platform_entity, LightEntityInfo)
-            else None,
-            group_id=light_platform_entity.group_id
-            if isinstance(light_platform_entity, LightEntityInfo)
-            else None,
+            ieee=light_platform_entity.device_ieee,
+            group_id=light_platform_entity.group_id,
             unique_id=light_platform_entity.unique_id,
             transition=transition,
             flash=flash,
@@ -404,12 +395,8 @@ class FanHelper:
         """Turn on a fan."""
         ensure_platform_entity(fan_platform_entity, Platform.FAN)
         command = FanTurnOnCommand(
-            ieee=fan_platform_entity.device_ieee
-            if not isinstance(fan_platform_entity, FanEntityInfo)
-            else None,
-            group_id=fan_platform_entity.group_id
-            if isinstance(fan_platform_entity, FanEntityInfo)
-            else None,
+            ieee=fan_platform_entity.device_ieee,
+            group_id=fan_platform_entity.group_id,
             unique_id=fan_platform_entity.unique_id,
             speed=speed,
             percentage=percentage,
@@ -424,12 +411,8 @@ class FanHelper:
         """Turn off a fan."""
         ensure_platform_entity(fan_platform_entity, Platform.FAN)
         command = FanTurnOffCommand(
-            ieee=fan_platform_entity.device_ieee
-            if not isinstance(fan_platform_entity, FanEntityInfo)
-            else None,
-            group_id=fan_platform_entity.group_id
-            if isinstance(fan_platform_entity, FanEntityInfo)
-            else None,
+            ieee=fan_platform_entity.device_ieee,
+            group_id=fan_platform_entity.group_id,
             unique_id=fan_platform_entity.unique_id,
         )
         return await self._client.async_send_command(command)
@@ -442,12 +425,8 @@ class FanHelper:
         """Set a fan percentage."""
         ensure_platform_entity(fan_platform_entity, Platform.FAN)
         command = FanSetPercentageCommand(
-            ieee=fan_platform_entity.device_ieee
-            if not isinstance(fan_platform_entity, FanEntityInfo)
-            else None,
-            group_id=fan_platform_entity.group_id
-            if isinstance(fan_platform_entity, FanEntityInfo)
-            else None,
+            ieee=fan_platform_entity.device_ieee,
+            group_id=fan_platform_entity.group_id,
             unique_id=fan_platform_entity.unique_id,
             percentage=percentage,
         )
@@ -461,12 +440,8 @@ class FanHelper:
         """Set a fan preset mode."""
         ensure_platform_entity(fan_platform_entity, Platform.FAN)
         command = FanSetPresetModeCommand(
-            ieee=fan_platform_entity.device_ieee
-            if not isinstance(fan_platform_entity, FanEntityInfo)
-            else None,
-            group_id=fan_platform_entity.group_id
-            if isinstance(fan_platform_entity, FanEntityInfo)
-            else None,
+            ieee=fan_platform_entity.device_ieee,
+            group_id=fan_platform_entity.group_id,
             unique_id=fan_platform_entity.unique_id,
             preset_mode=preset_mode,
         )
