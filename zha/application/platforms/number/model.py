@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 from zha.application.platforms.model import BasePlatformEntityInfo, GenericState
+from zha.application.platforms.number.const import NumberMode
 
 
 class NumberEntityInfo(BasePlatformEntityInfo):
@@ -35,6 +36,10 @@ class NumberEntityInfo(BasePlatformEntityInfo):
     step: float | None = None  # TODO: how should we represent this when it is None?
     min_value: float
     max_value: float
+    mode: NumberMode = NumberMode.AUTO
+    unit: str | None = None
+    description: str | None = None
+    icon: str | None = None
     state: GenericState
 
 

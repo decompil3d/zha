@@ -34,7 +34,9 @@ async def set_value(
     server: Server, client: Client, command: NumberSetValueCommand
 ) -> None:
     """Select an option."""
-    await execute_platform_entity_command(server, client, command, "async_set_value")
+    await execute_platform_entity_command(
+        server, client, command, "async_set_native_value"
+    )
 
 
 def load_api(server: Server) -> None:

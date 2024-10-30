@@ -136,6 +136,10 @@ class Number(PlatformEntity, NumberEntityInterface):
             min_value=self.native_min_value,
             max_value=self.native_max_value,
             step=self.native_step,
+            mode=self.mode,
+            description=self.description,
+            icon=self.icon,
+            unit=self.native_unit_of_measurement,
         )
 
     @property
@@ -198,7 +202,7 @@ class Number(PlatformEntity, NumberEntityInterface):
         """Return the mode of the entity."""
         return self._attr_mode
 
-    async def async_set_native_value(self, value: float) -> None:
+    async def async_set_native_value(self, value: float, **kwargs) -> None:
         """Update the current value from HA."""
         await self._analog_output_cluster_handler.async_set_present_value(float(value))
         self.maybe_emit_state_changed_event()
@@ -359,7 +363,7 @@ class NumberConfigurationEntity(PlatformEntity):
         """Return the mode of the entity."""
         return self._attr_mode
 
-    async def async_set_native_value(self, value: float) -> None:
+    async def async_set_native_value(self, value: float, **kwargs) -> None:
         """Update the current value from HA."""
         await self._cluster_handler.write_attributes_safe(
             {self._attribute_name: int(value / self._attr_multiplier)}
@@ -1134,6 +1138,7 @@ class WebSocketClientNumberEntity(
     @property
     def native_unit_of_measurement(self) -> str | None:
         """Return the unit the value is expressed in."""
+        return self.info_object.unit
 
     @property
     def mode(self) -> NumberMode:
@@ -1149,6 +1154,10 @@ class WebSocketClientNumberEntity(
     def icon(self) -> str | None:
         """Return the icon of the number entity."""
         return self.info_object.icon
+
+    async def async_set_value(self, value: float) -> None:
+        """Update the current value from HA."""
+        await self.async_set_native_value(value)
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value from HA."""
