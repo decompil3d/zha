@@ -599,3 +599,18 @@ class WebSocketClientFanEntity(
         **kwargs: Any,
     ) -> None:
         """Turn the entity on."""
+        await self._device.gateway.fans.turn_on(
+            self.info_object, speed, percentage, preset_mode
+        )
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn the entity off."""
+        await self._device.gateway.fans.turn_off(self.info_object)
+
+    async def async_set_percentage(self, percentage: int) -> None:
+        """Set the speed percentage of the fan."""
+        await self._device.gateway.fans.set_percentage(self.info_object, percentage)
+
+    async def async_set_preset_mode(self, preset_mode: str) -> None:
+        """Set the preset mode for the fan."""
+        await self._device.gateway.fans.set_preset_mode(self.info_object, preset_mode)

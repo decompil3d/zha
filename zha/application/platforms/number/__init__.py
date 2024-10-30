@@ -1152,3 +1152,4 @@ class WebSocketClientNumberEntity(
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value from HA."""
+        await self._device.gateway.numbers.set_value(self.info_object, value)

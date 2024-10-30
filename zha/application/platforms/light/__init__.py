@@ -1400,6 +1400,8 @@ class WebSocketClientLightEntity(
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the entity on."""
+        await self._device.gateway.lights.turn_on(self.info_object, **kwargs)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the entity off."""
+        await self._device.gateway.lights.turn_off(self.info_object, **kwargs)
