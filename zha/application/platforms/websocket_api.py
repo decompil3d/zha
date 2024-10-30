@@ -100,6 +100,40 @@ async def refresh_state(
     await execute_platform_entity_command(server, client, command, "async_update")
 
 
+class PlatformEntityEnableCommand(PlatformEntityCommand):
+    """Platform entity enable command."""
+
+    command: Literal[APICommands.PLATFORM_ENTITY_ENABLE] = (
+        APICommands.PLATFORM_ENTITY_ENABLE
+    )
+
+
+@decorators.websocket_command(PlatformEntityEnableCommand)
+@decorators.async_response
+async def enable(
+    server: Server, client: Client, command: PlatformEntityEnableCommand
+) -> None:
+    """Enable the platform entity."""
+    await execute_platform_entity_command(server, client, command, "enable")
+
+
+class PlatformEntityDisableCommand(PlatformEntityCommand):
+    """Platform entity disable command."""
+
+    command: Literal[APICommands.PLATFORM_ENTITY_DISABLE] = (
+        APICommands.PLATFORM_ENTITY_DISABLE
+    )
+
+
+@decorators.websocket_command(PlatformEntityDisableCommand)
+@decorators.async_response
+async def disable(
+    server: Server, client: Client, command: PlatformEntityDisableCommand
+) -> None:
+    """Disable the platform entity."""
+    await execute_platform_entity_command(server, client, command, "disable")
+
+
 # pylint: disable=import-outside-toplevel
 def load_platform_entity_apis(server: Server) -> None:
     """Load the ws apis for all platform entities types."""
@@ -128,6 +162,8 @@ def load_platform_entity_apis(server: Server) -> None:
     )
 
     register_api_command(server, refresh_state)
+    register_api_command(server, enable)
+    register_api_command(server, disable)
     load_alarm_control_panel_api(server)
     load_button_api(server)
     load_climate_api(server)

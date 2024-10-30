@@ -47,6 +47,7 @@ class APICommands(StrEnum):
     LOCK_ENAABLE_USER_CODE = "lock_enable_user_lock_code"
     LOCK_DISABLE_USER_CODE = "lock_disable_user_lock_code"
     LOCK_CLEAR_USER_CODE = "lock_clear_user_lock_code"
+    LOCK_RESTORE_EXTERNAL_STATE_ATTRIBUTES = "lock_restore_external_state_attributes"
 
     CLIMATE_SET_TEMPERATURE = "climate_set_temperature"
     CLIMATE_SET_HVAC_MODE = "climate_set_hvac_mode"
@@ -77,10 +78,15 @@ class APICommands(StrEnum):
     ALARM_CONTROL_PANEL_TRIGGER = "alarm_control_panel_trigger"
 
     SELECT_SELECT_OPTION = "select_select_option"
+    SELECT_RESTORE_EXTERNAL_STATE_ATTRIBUTES = (
+        "select_restore_external_state_attributes"
+    )
 
     NUMBER_SET_VALUE = "number_set_value"
 
     PLATFORM_ENTITY_REFRESH_STATE = "platform_entity_refresh_state"
+    PLATFORM_ENTITY_ENABLE = "platform_entity_enable"
+    PLATFORM_ENTITY_DISABLE = "platform_entity_disable"
 
     CLIENT_LISTEN = "client_listen"
     CLIENT_LISTEN_RAW_ZCL = "client_listen_raw_zcl"
