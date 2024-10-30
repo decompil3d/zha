@@ -192,10 +192,12 @@ class BaseEntity(LogMixin, EventBase):
     def enable(self) -> None:
         """Enable the entity."""
         self.enabled = True
+        self.maybe_emit_state_changed_event()
 
     def disable(self) -> None:
         """Disable the entity."""
         self.enabled = False
+        self.maybe_emit_state_changed_event()
 
     async def on_remove(self) -> None:
         """Cancel tasks and timers this entity owns."""
@@ -501,6 +503,7 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
         )
         self._attr_device_class = self._entity_info.device_class
         self._attr_state_class = self._entity_info.state_class
+        self._tasks: list[asyncio.Task] = []
 
     @functools.cached_property
     def info_object(self) -> BaseEntityInfoType:
@@ -516,6 +519,23 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
     def state(self, value: dict[str, Any]) -> None:
         """Set the state of the entity."""
         self._entity_info.state = value
+        self._attr_enabled = self._entity_info.enabled
+
+    def enable(self) -> None:
+        """Enable the entity."""
+        task = asyncio.create_task(
+            self._device.gateway.entities.enable(self._entity_info)
+        )
+        self._tasks.append(task)
+        task.add_done_callback(self._tasks.remove)
+
+    def disable(self) -> None:
+        """Disable the entity."""
+        task = asyncio.create_task(
+            self._device.gateway.entities.disable(self._entity_info)
+        )
+        self._tasks.append(task)
+        task.add_done_callback(self._tasks.remove)
 
     async def async_update(self) -> None:
         """Retrieve latest state."""
