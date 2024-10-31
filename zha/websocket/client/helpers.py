@@ -132,7 +132,7 @@ class LightHelper:
         transition: int | None = None,
         flash: str | None = None,
         effect: str | None = None,
-        hs_color: tuple | None = None,
+        xy_color: tuple | None = None,
         color_temp: int | None = None,
     ) -> WebSocketCommandResponse:
         """Turn on a light."""
@@ -145,7 +145,7 @@ class LightHelper:
             transition=transition,
             flash=flash,
             effect=effect,
-            hs_color=hs_color,
+            xy_color=xy_color,
             color_temp=color_temp,
         )
         return await self._client.async_send_command(command)

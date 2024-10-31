@@ -27,10 +27,10 @@ class LightTurnOnCommand(PlatformEntityCommand):
 
     command: Literal[APICommands.LIGHT_TURN_ON] = APICommands.LIGHT_TURN_ON
     platform: str = Platform.LIGHT
-    brightness: Union[Annotated[int, Field(ge=0, le=255)], None]
-    transition: Union[Annotated[float, Field(ge=0, le=6553)], None]
-    flash: Union[Literal["short", "long"], None]
-    effect: Union[str, None]
+    brightness: Union[Annotated[int, Field(ge=0, le=255)], None] = None
+    transition: Union[Annotated[float, Field(ge=0, le=6553)], None] = None
+    flash: Union[Literal["short", "long"], None] = None
+    effect: Union[str, None] = None
     hs_color: Union[
         None,
         (
@@ -38,8 +38,8 @@ class LightTurnOnCommand(PlatformEntityCommand):
                 Annotated[int, Field(ge=0, le=360)], Annotated[int, Field(ge=0, le=100)]
             ]
         ),
-    ]
-    color_temp: Union[int, None]
+    ] = None
+    color_temp: Union[int, None] = None
 
     @field_validator("color_temp", mode="before", check_fields=False)
     @classmethod
@@ -68,8 +68,8 @@ class LightTurnOffCommand(PlatformEntityCommand):
 
     command: Literal[APICommands.LIGHT_TURN_OFF] = APICommands.LIGHT_TURN_OFF
     platform: str = Platform.LIGHT
-    transition: Union[Annotated[float, Field(ge=0, le=6553)], None]
-    flash: Union[Literal["short", "long"], None]
+    transition: Union[Annotated[float, Field(ge=0, le=6553)], None] = None
+    flash: Union[Literal["short", "long"], None] = None
 
 
 @decorators.websocket_command(LightTurnOffCommand)
