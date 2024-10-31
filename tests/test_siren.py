@@ -165,6 +165,7 @@ async def test_siren_timed_off(
 
     # test that the state has changed to on
     assert entity.state["state"] is True
+    assert entity.is_on is True
 
     await asyncio.sleep(6)
 

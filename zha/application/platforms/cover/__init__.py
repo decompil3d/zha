@@ -173,6 +173,7 @@ class Cover(PlatformEntity, CoverEntityInterface):
         response.update(
             {
                 ATTR_CURRENT_POSITION: self.current_cover_position,
+                "current_tilt_position": self.current_cover_tilt_position,
                 "state": self._state,
                 "is_opening": self.is_opening,
                 "is_closing": self.is_closing,
@@ -651,12 +652,12 @@ class WebSocketClientCoverEntity(
     @property
     def current_cover_position(self) -> int | None:
         """Return the current position of the cover."""
-        return self.info_object.state.current_cover_position
+        return self.info_object.state.current_position
 
     @property
     def current_cover_tilt_position(self) -> int | None:
         """Return the current tilt position of the cover."""
-        return self.info_object.state.current_cover_tilt_position
+        return self.info_object.state.current_tilt_position
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""

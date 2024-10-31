@@ -133,10 +133,12 @@ async def test_switch(
     # turn on at switch
     await send_attributes_report(zha_gateway, cluster, {1: 0, 0: 1, 2: 2})
     assert bool(entity.state["state"]) is True
+    assert bool(entity.is_on) is True
 
     # turn off at switch
     await send_attributes_report(zha_gateway, cluster, {1: 1, 0: 0, 2: 2})
     assert bool(entity.state["state"]) is False
+    assert bool(entity.is_on) is False
 
     # turn on from client
     with patch(

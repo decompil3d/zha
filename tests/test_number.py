@@ -139,6 +139,7 @@ async def test_number(
 
     # test that the state is 15.0
     assert entity.state["state"] == 15.0
+    assert entity.native_value == 15.0
 
     # test attributes
     assert entity.info_object.min_value == 1.0

@@ -227,6 +227,7 @@ async def test_lock_state_restoration(
     entity = get_entity(zha_device, platform=Platform.LOCK)
 
     assert entity.state["is_locked"] is False
+    assert entity.is_locked is False
 
     entity.restore_external_state_attributes(state=STATE_LOCKED)
     await zha_gateway.async_block_till_done()  # needed for WS commands

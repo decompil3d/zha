@@ -25,7 +25,11 @@ from zha.application.platforms.alarm_control_panel import (
     AlarmControlPanel,
     WebSocketClientAlarmControlPanel,
 )
-from zha.application.platforms.alarm_control_panel.const import AlarmState
+from zha.application.platforms.alarm_control_panel.const import (
+    AlarmControlPanelEntityFeature,
+    AlarmState,
+    CodeFormat,
+)
 from zha.zigbee.device import Device
 
 _LOGGER = logging.getLogger(__name__)
@@ -90,6 +94,15 @@ async def test_alarm_control_panel(
     )
     assert alarm_entity is not None
     assert isinstance(alarm_entity, entity_type)
+
+    assert alarm_entity.code_format == CodeFormat.NUMBER
+    assert alarm_entity.code_arm_required is False
+    assert alarm_entity.supported_features == (
+        AlarmControlPanelEntityFeature.ARM_HOME
+        | AlarmControlPanelEntityFeature.ARM_AWAY
+        | AlarmControlPanelEntityFeature.ARM_NIGHT
+        | AlarmControlPanelEntityFeature.TRIGGER
+    )
 
     # test that the state is STATE_ALARM_DISARMED
     assert alarm_entity.state["state"] == AlarmState.DISARMED

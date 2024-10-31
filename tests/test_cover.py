@@ -228,12 +228,15 @@ async def test_cover(
         zha_gateway, cluster, {WCAttrs.current_position_lift_percentage.id: 100}
     )
     assert entity.state["state"] == STATE_CLOSED
+    assert entity.current_cover_position == 0
+    assert entity.is_closed is True
 
     # test to see if it opens
     await send_attributes_report(
         zha_gateway, cluster, {WCAttrs.current_position_lift_percentage.id: 0}
     )
     assert entity.state["state"] == STATE_OPEN
+    assert entity.is_closed is False
 
     # test that the state remains after tilting to 100%
     await send_attributes_report(
@@ -246,6 +249,7 @@ async def test_cover(
         zha_gateway, cluster, {WCAttrs.current_position_tilt_percentage.id: 0}
     )
     assert entity.state["state"] == STATE_OPEN
+    assert entity.current_cover_tilt_position == 100
 
     cluster.PLUGGED_ATTR_READS = {1: 100}
     update_attribute_cache(cluster)
@@ -304,6 +308,7 @@ async def test_cover(
         assert cluster.request.call_args[1]["expect_reply"] is True
 
         assert entity.state["state"] == STATE_OPENING
+        assert entity.is_opening is True
 
         await send_attributes_report(
             zha_gateway, cluster, {WCAttrs.current_position_lift_percentage.id: 0}

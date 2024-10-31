@@ -14,6 +14,7 @@ class CoverState(BaseModel):
 
     class_name: Literal["Cover"] = "Cover"
     current_position: int | None = None
+    current_tilt_position: int | None = None
     target_lift_position: int | None = None
     target_tilt_position: int | None = None
     state: str | None = None
