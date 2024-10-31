@@ -1120,6 +1120,8 @@ class WebSocketClientGateway(BaseGateway):
         group_id: int | None = None,
     ) -> WebSocketClientGroup | None:
         """Create a new Zigpy Zigbee group."""
+        response = await self.groups_helper.create_group(name, group_id, members)
+        return self._groups.get(response.group_id)
 
     def get_device(self, ieee: EUI64) -> WebSocketClientDevice | None:
         """Return Device for given ieee."""
@@ -1136,12 +1138,15 @@ class WebSocketClientGateway(BaseGateway):
 
     async def async_remove_device(self, ieee: EUI64) -> None:
         """Remove a device from ZHA."""
+        await self.devices_helper.remove_device(self.devices[ieee].extended_device_info)
 
     async def async_remove_zigpy_group(self, group_id: int) -> None:
         """Remove a Zigbee group from Zigpy."""
+        await self.groups_helper.remove_groups([self.groups[group_id].info_object])
 
     async def shutdown(self) -> None:
         """Stop ZHA Controller Application."""
+        await self.server_helper.stop_server()
 
     def handle_state_changed(self, event: EntityStateChangedEvent) -> None:
         """Handle a platform_entity_event from the websocket server."""
