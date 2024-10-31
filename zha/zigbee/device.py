@@ -1293,4 +1293,5 @@ class WebSocketClientDevice(BaseDevice[WebSocketClientEntity]):
                 f"Entity not found: {event.platform}.{event.unique_id}",
             )
         entity.state = event.state
+        entity.maybe_emit_state_changed_event()
         self.emit(f"{event.unique_id}_{event.event}", event)

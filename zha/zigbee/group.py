@@ -409,4 +409,5 @@ class WebSocketClientGroup(BaseGroup):
         entity = self.group_entities.get(event.unique_id)
         if entity is not None:
             entity.state = event.state
+            entity.maybe_emit_state_changed_event()
             self.emit(f"{event.unique_id}_{event.event}", event)
