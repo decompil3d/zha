@@ -341,6 +341,11 @@ class CombinedWebsocketGateways:
         self.server_gateway = server_gateway
         self.application_controller = server_gateway.application_controller
 
+    @property
+    def config(self) -> ZHAData:
+        """Return the ZHA configuration."""
+        return self.server_gateway.config
+
     async def async_block_till_done(self) -> None:
         """Block until all gateways are done."""
         await self.server_gateway.async_block_till_done()
