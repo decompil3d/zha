@@ -716,6 +716,8 @@ class Device(BaseDevice[PlatformEntity]):
             last_seen=self.last_seen,
             last_seen_time=update_time,
             available=self.available,
+            on_network=self.on_network,
+            is_groupable=self.is_groupable,
             device_type=self.device_type,
             signature=self.zigbee_signature,
         )
@@ -1269,6 +1271,11 @@ class WebSocketClientDevice(BaseDevice[WebSocketClientEntity]):
     def available(self):
         """Return True if device is available."""
         return self._extended_device_info.available
+
+    @property
+    def on_network(self):
+        """Return True if device is currently on the network."""
+        return self._extended_device_info.on_network
 
     @cached_property
     def zigbee_signature(self) -> dict[str, Any]:

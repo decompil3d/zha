@@ -88,6 +88,8 @@ class DeviceInfo(BaseModel):
     last_seen: float | None = None
     last_seen_time: str | None = None
     available: bool
+    on_network: bool
+    is_groupable: bool
     device_type: str
     signature: dict[str, Any]
 
