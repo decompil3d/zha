@@ -159,6 +159,7 @@ class ErrorResponse(WebSocketCommandResponse):
         "error.client_disconnect",
         "error.reconfigure_device",
         "error.UpdateNetworkTopologyCommand",
+        "error.create_group",
     ]
 
 
