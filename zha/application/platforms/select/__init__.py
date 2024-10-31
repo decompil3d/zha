@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-import asyncio
 from enum import Enum
 import functools
 import logging
@@ -914,7 +913,6 @@ class WebSocketClientSelectEntity(
     ) -> None:
         """Initialize the ZHA select entity."""
         super().__init__(entity_info, device)
-        self._tasks: list[asyncio.Task] = []
 
     @property
     def current_option(self) -> str | None:
@@ -930,10 +928,8 @@ class WebSocketClientSelectEntity(
         state: str,
     ) -> None:
         """Restore extra state attributes."""
-        task = asyncio.create_task(
+        self._device.gateway.create_and_track_task(
             self._device.gateway.selects.restore_external_state_attributes(
                 self.info_object, state
             )
         )
-        self._tasks.append(task)
-        task.add_done_callback(self._tasks.remove)

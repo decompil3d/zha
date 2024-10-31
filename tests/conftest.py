@@ -348,6 +348,7 @@ class CombinedWebsocketGateways:
 
     async def async_block_till_done(self) -> None:
         """Block until all gateways are done."""
+        await self.client_gateway.async_block_till_done()
         await self.server_gateway.async_block_till_done()
 
     async def async_device_initialized(self, device: zigpy.device.Device) -> None:

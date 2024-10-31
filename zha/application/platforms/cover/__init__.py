@@ -627,7 +627,6 @@ class WebSocketClientCoverEntity(
     ) -> None:
         """Initialize the ZHA fan entity."""
         super().__init__(entity_info, device)
-        self._tasks: list[asyncio.Task] = []
 
     @property
     def supported_features(self) -> CoverEntityFeature:
@@ -703,7 +702,7 @@ class WebSocketClientCoverEntity(
         target_tilt_position: int | None,
     ):
         """Restore external state attributes."""
-        task = asyncio.create_task(
+        self._device.gateway.create_and_track_task(
             self._device.gateway.covers.restore_external_state_attributes(
                 self.info_object,
                 state=state,
@@ -711,5 +710,3 @@ class WebSocketClientCoverEntity(
                 target_tilt_position=target_tilt_position,
             )
         )
-        self._tasks.append(task)
-        task.add_done_callback(self._tasks.remove)

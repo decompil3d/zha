@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-import asyncio
 import functools
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -185,7 +184,6 @@ class WebSocketClientLockEntity(
     ) -> None:
         """Initialize the ZHA lock entity."""
         super().__init__(entity_info, device)
-        self._tasks: list[asyncio.Task] = []
 
     @property
     def is_locked(self) -> bool:
@@ -230,11 +228,9 @@ class WebSocketClientLockEntity(
         state: Literal["locked", "unlocked"] | None,
     ) -> None:
         """Restore extra state attributes that are stored outside of the ZCL cache."""
-        task = asyncio.create_task(
+        self._device.gateway.create_and_track_task(
             self._device.gateway.locks.restore_external_state_attributes(
                 self.info_object,
                 state=state,
             )
         )
-        self._tasks.append(task)
-        task.add_done_callback(self._tasks.remove)
