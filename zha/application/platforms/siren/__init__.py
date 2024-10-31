@@ -230,6 +230,8 @@ class WebSocketClientSirenEntity(
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the siren."""
+        await self._device.gateway.sirens.turn_on(self.info_object, **kwargs)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the siren."""
+        await self._device.gateway.sirens.turn_off(self.info_object, **kwargs)
