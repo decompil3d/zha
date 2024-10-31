@@ -261,9 +261,11 @@ async def test_climate_local_temperature(
     thrm_cluster = zigpy_device.endpoints[1].thermostat
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
     assert entity.state["current_temperature"] is None
+    assert entity.current_temperature is None
 
     await send_attributes_report(zha_gateway, thrm_cluster, {0: 2100})
     assert entity.state["current_temperature"] == 21.0
+    assert entity.current_temperature == 21.0
 
 
 @pytest.mark.parametrize(
@@ -280,6 +282,7 @@ async def test_climate_outdoor_temperature(
     thrm_cluster = zigpy_device.endpoints[1].thermostat
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
     assert entity.state["outdoor_temperature"] is None
+    assert entity.outdoor_temperature is None
 
     await send_attributes_report(
         zha_gateway,
@@ -287,6 +290,7 @@ async def test_climate_outdoor_temperature(
         {Thermostat.AttributeDefs.outdoor_temperature.id: 2150},
     )
     assert entity.state["outdoor_temperature"] == 21.5
+    assert entity.outdoor_temperature == 21.5
 
 
 @pytest.mark.parametrize(
@@ -312,42 +316,49 @@ async def test_climate_hvac_action_running_state(
     sensor_entity.on_event(STATE_CHANGED, subscriber)
 
     assert entity.state["hvac_action"] == "off"
+    assert entity.hvac_action == "off"
     assert sensor_entity.state["state"] == "off"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x001E: Thermostat.RunningMode.Off}
     )
     assert entity.state["hvac_action"] == "off"
+    assert entity.hvac_action == "off"
     assert sensor_entity.state["state"] == "off"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x001C: Thermostat.SystemMode.Auto}
     )
     assert entity.state["hvac_action"] == "idle"
+    assert entity.hvac_action == "idle"
     assert sensor_entity.state["state"] == "idle"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x001E: Thermostat.RunningMode.Cool}
     )
     assert entity.state["hvac_action"] == "cooling"
+    assert entity.hvac_action == "cooling"
     assert sensor_entity.state["state"] == "cooling"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x001E: Thermostat.RunningMode.Heat}
     )
     assert entity.state["hvac_action"] == "heating"
+    assert entity.hvac_action == "heating"
     assert sensor_entity.state["state"] == "heating"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x001E: Thermostat.RunningMode.Off}
     )
     assert entity.state["hvac_action"] == "idle"
+    assert entity.hvac_action == "idle"
     assert sensor_entity.state["state"] == "idle"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x0029: Thermostat.RunningState.Fan_State_On}
     )
     assert entity.state["hvac_action"] == "fan"
+    assert entity.hvac_action == "fan"
     assert sensor_entity.state["state"] == "fan"
 
     # Both entities are updated!
@@ -476,60 +487,70 @@ async def test_climate_hvac_action_running_state_zen(
     )
 
     assert entity.state["hvac_action"] is None
+    assert entity.hvac_action is None
     assert sensor_entity.state["state"] is None
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x0029: Thermostat.RunningState.Cool_2nd_Stage_On}
     )
     assert entity.state["hvac_action"] == "cooling"
+    assert entity.hvac_action == "cooling"
     assert sensor_entity.state["state"] == "cooling"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x0029: Thermostat.RunningState.Fan_State_On}
     )
     assert entity.state["hvac_action"] == "fan"
+    assert entity.hvac_action == "fan"
     assert sensor_entity.state["state"] == "fan"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x0029: Thermostat.RunningState.Heat_2nd_Stage_On}
     )
     assert entity.state["hvac_action"] == "heating"
+    assert entity.hvac_action == "heating"
     assert sensor_entity.state["state"] == "heating"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x0029: Thermostat.RunningState.Fan_2nd_Stage_On}
     )
     assert entity.state["hvac_action"] == "fan"
+    assert entity.hvac_action == "fan"
     assert sensor_entity.state["state"] == "fan"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x0029: Thermostat.RunningState.Cool_State_On}
     )
     assert entity.state["hvac_action"] == "cooling"
+    assert entity.hvac_action == "cooling"
     assert sensor_entity.state["state"] == "cooling"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x0029: Thermostat.RunningState.Fan_3rd_Stage_On}
     )
     assert entity.state["hvac_action"] == "fan"
+    assert entity.hvac_action == "fan"
     assert sensor_entity.state["state"] == "fan"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x0029: Thermostat.RunningState.Heat_State_On}
     )
     assert entity.state["hvac_action"] == "heating"
+    assert entity.hvac_action == "heating"
     assert sensor_entity.state["state"] == "heating"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x0029: Thermostat.RunningState.Idle}
     )
     assert entity.state["hvac_action"] == "off"
+    assert entity.hvac_action == "off"
     assert sensor_entity.state["state"] == "off"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x001C: Thermostat.SystemMode.Heat}
     )
     assert entity.state["hvac_action"] == "idle"
+    assert entity.hvac_action == "idle"
     assert sensor_entity.state["state"] == "idle"
 
 
@@ -548,27 +569,33 @@ async def test_climate_hvac_action_pi_demand(
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
 
     assert entity.state["hvac_action"] is None
+    assert entity.hvac_action is None
 
     await send_attributes_report(zha_gateway, thrm_cluster, {0x0007: 10})
     assert entity.state["hvac_action"] == "cooling"
+    assert entity.hvac_action == "cooling"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {0x0008: 20})
     assert entity.state["hvac_action"] == "heating"
+    assert entity.hvac_action == "heating"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {0x0007: 0})
     await send_attributes_report(zha_gateway, thrm_cluster, {0x0008: 0})
 
     assert entity.state["hvac_action"] == "off"
+    assert entity.hvac_action == "off"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x001C: Thermostat.SystemMode.Heat}
     )
     assert entity.state["hvac_action"] == "idle"
+    assert entity.hvac_action == "idle"
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x001C: Thermostat.SystemMode.Cool}
     )
     assert entity.state["hvac_action"] == "idle"
+    assert entity.hvac_action == "idle"
 
 
 @pytest.mark.parametrize(
@@ -593,17 +620,21 @@ async def test_hvac_mode(
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
 
     assert entity.state["hvac_mode"] == "off"
+    assert entity.hvac_mode == "off"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {0x001C: sys_mode})
     assert entity.state["hvac_mode"] == hvac_mode
+    assert entity.hvac_mode == hvac_mode
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {0x001C: Thermostat.SystemMode.Off}
     )
     assert entity.state["hvac_mode"] == "off"
+    assert entity.hvac_mode == "off"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {0x001C: 0xFF})
     assert entity.state["hvac_mode"] is None
+    assert entity.hvac_mode is None
 
 
 @pytest.mark.parametrize(
@@ -703,6 +734,7 @@ async def test_target_temperature_high(
         await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_high"] == target_temp
+    assert entity.target_temperature_high == target_temp
 
 
 @pytest.mark.parametrize(
@@ -738,6 +770,7 @@ async def test_target_temperature_low(
         await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_low"] == target_temp
+    assert entity.target_temperature_low == target_temp
 
 
 @pytest.mark.parametrize(
@@ -763,12 +796,14 @@ async def test_set_hvac_mode(
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
 
     assert entity.state["hvac_mode"] == "off"
+    assert entity.hvac_mode == "off"
 
     await entity.async_set_hvac_mode(hvac_mode)
     await zha_gateway.async_block_till_done()
 
     if sys_mode is not None:
         assert entity.state["hvac_mode"] == hvac_mode
+        assert entity.hvac_mode == hvac_mode
         assert thrm_cluster.write_attributes.call_count == 1
         assert thrm_cluster.write_attributes.call_args[0][0] == {
             "system_mode": sys_mode
@@ -776,6 +811,7 @@ async def test_set_hvac_mode(
     else:
         assert thrm_cluster.write_attributes.call_count == 0
         assert entity.state["hvac_mode"] == "off"
+        assert entity.hvac_mode == "off"
 
     # turn off
     thrm_cluster.write_attributes.reset_mock()
@@ -783,6 +819,7 @@ async def test_set_hvac_mode(
     await zha_gateway.async_block_till_done()
 
     assert entity.state["hvac_mode"] == "off"
+    assert entity.hvac_mode == "off"
     assert thrm_cluster.write_attributes.call_count == 1
     assert thrm_cluster.write_attributes.call_args[0][0] == {
         "system_mode": Thermostat.SystemMode.Off
@@ -804,6 +841,7 @@ async def test_preset_setting(
     entity: ThermostatEntity = get_entity(dev_climate_sinope, platform=Platform.CLIMATE)
 
     assert entity.state["preset_mode"] == "none"
+    assert entity.preset_mode == "none"
 
     # unsuccessful occupancy change
     thrm_cluster.write_attributes.return_value = [
@@ -822,6 +860,7 @@ async def test_preset_setting(
         await zha_gateway.async_block_till_done()
 
     assert entity.state["preset_mode"] == "none"
+    assert entity.preset_mode == "none"
     assert thrm_cluster.write_attributes.call_count == 1
     assert thrm_cluster.write_attributes.call_args[0][0] == {"set_occupancy": 0}
 
@@ -834,6 +873,7 @@ async def test_preset_setting(
     await zha_gateway.async_block_till_done()
 
     assert entity.state["preset_mode"] == "away"
+    assert entity.preset_mode == "away"
     assert thrm_cluster.write_attributes.call_count == 1
     assert thrm_cluster.write_attributes.call_args[0][0] == {"set_occupancy": 0}
 
@@ -856,6 +896,7 @@ async def test_preset_setting(
         await zha_gateway.async_block_till_done()
 
     assert entity.state["preset_mode"] == "away"
+    assert entity.preset_mode == "away"
     assert thrm_cluster.write_attributes.call_count == 1
     assert thrm_cluster.write_attributes.call_args[0][0] == {"set_occupancy": 1}
 
@@ -869,6 +910,7 @@ async def test_preset_setting(
     await zha_gateway.async_block_till_done()
 
     assert entity.state["preset_mode"] == "none"
+    assert entity.preset_mode == "none"
     assert thrm_cluster.write_attributes.call_count == 1
     assert thrm_cluster.write_attributes.call_args[0][0] == {"set_occupancy": 1}
 
@@ -888,10 +930,12 @@ async def test_preset_setting_invalid(
     entity: ThermostatEntity = get_entity(dev_climate_sinope, platform=Platform.CLIMATE)
 
     assert entity.state["preset_mode"] == "none"
+    assert entity.preset_mode == "none"
     await entity.async_set_preset_mode("invalid_preset")
     await zha_gateway.async_block_till_done()
 
     assert entity.state["preset_mode"] == "none"
+    assert entity.preset_mode == "none"
     assert thrm_cluster.write_attributes.call_count == 0
 
 
@@ -911,10 +955,12 @@ async def test_set_temperature_hvac_mode(
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
 
     assert entity.state["hvac_mode"] == "off"
+    assert entity.hvac_mode == "off"
     await entity.async_set_temperature(hvac_mode="heat_cool", temperature=20)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["hvac_mode"] == "heat_cool"
+    assert entity.hvac_mode == "heat_cool"
     assert thrm_cluster.write_attributes.await_count == 1
     assert thrm_cluster.write_attributes.call_args[0][0] == {
         "system_mode": Thermostat.SystemMode.Auto
@@ -949,19 +995,24 @@ async def test_set_temperature_heat_cool(
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
 
     assert entity.state["hvac_mode"] == "heat_cool"
+    assert entity.hvac_mode == "heat_cool"
 
     await entity.async_set_temperature(temperature=20)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_low"] == 20.0
+    assert entity.target_temperature_low == 20.0
     assert entity.state["target_temperature_high"] == 25.0
+    assert entity.target_temperature_high == 25.0
     assert thrm_cluster.write_attributes.await_count == 0
 
     await entity.async_set_temperature(target_temp_high=26, target_temp_low=19)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_low"] == 19.0
+    assert entity.target_temperature_low == 19.0
     assert entity.state["target_temperature_high"] == 26.0
+    assert entity.target_temperature_high == 26.0
     assert thrm_cluster.write_attributes.await_count == 2
     assert thrm_cluster.write_attributes.call_args_list[0][0][0] == {
         "occupied_heating_setpoint": 1900
@@ -978,7 +1029,9 @@ async def test_set_temperature_heat_cool(
     await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_low"] == 15.0
+    assert entity.target_temperature_low == 15.0
     assert entity.state["target_temperature_high"] == 30.0
+    assert entity.target_temperature_high == 30.0
     assert thrm_cluster.write_attributes.await_count == 2
     assert thrm_cluster.write_attributes.call_args_list[0][0][0] == {
         "unoccupied_heating_setpoint": 1500
@@ -1016,21 +1069,28 @@ async def test_set_temperature_heat(
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
 
     assert entity.state["hvac_mode"] == "heat"
+    assert entity.hvac_mode == "heat"
 
     await entity.async_set_temperature(target_temp_high=30, target_temp_low=15)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_low"] is None
+    assert entity.target_temperature_low is None
     assert entity.state["target_temperature_high"] is None
+    assert entity.target_temperature_high is None
     assert entity.state["target_temperature"] == 20.0
+    assert entity.target_temperature == 20.0
     assert thrm_cluster.write_attributes.await_count == 0
 
     await entity.async_set_temperature(temperature=21)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_low"] is None
+    assert entity.target_temperature_low is None
     assert entity.state["target_temperature_high"] is None
+    assert entity.target_temperature_high is None
     assert entity.state["target_temperature"] == 21.0
+    assert entity.target_temperature == 21.0
     assert thrm_cluster.write_attributes.await_count == 1
     assert thrm_cluster.write_attributes.call_args_list[0][0][0] == {
         "occupied_heating_setpoint": 2100
@@ -1044,8 +1104,11 @@ async def test_set_temperature_heat(
     await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_low"] is None
+    assert entity.target_temperature_low is None
     assert entity.state["target_temperature_high"] is None
+    assert entity.target_temperature_high is None
     assert entity.state["target_temperature"] == 22.0
+    assert entity.target_temperature == 22.0
     assert thrm_cluster.write_attributes.await_count == 1
     assert thrm_cluster.write_attributes.call_args_list[0][0][0] == {
         "unoccupied_heating_setpoint": 2200
@@ -1080,21 +1143,28 @@ async def test_set_temperature_cool(
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
 
     assert entity.state["hvac_mode"] == "cool"
+    assert entity.hvac_mode == "cool"
 
     await entity.async_set_temperature(target_temp_high=30, target_temp_low=15)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_low"] is None
+    assert entity.target_temperature_low is None
     assert entity.state["target_temperature_high"] is None
+    assert entity.target_temperature_high is None
     assert entity.state["target_temperature"] == 25.0
+    assert entity.target_temperature == 25.0
     assert thrm_cluster.write_attributes.await_count == 0
 
     await entity.async_set_temperature(temperature=21)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_low"] is None
+    assert entity.target_temperature_low is None
     assert entity.state["target_temperature_high"] is None
+    assert entity.target_temperature_high is None
     assert entity.state["target_temperature"] == 21.0
+    assert entity.target_temperature == 21.0
     assert thrm_cluster.write_attributes.await_count == 1
     assert thrm_cluster.write_attributes.call_args_list[0][0][0] == {
         "occupied_cooling_setpoint": 2100
@@ -1108,8 +1178,11 @@ async def test_set_temperature_cool(
     await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_low"] is None
+    assert entity.target_temperature_low is None
     assert entity.state["target_temperature_high"] is None
+    assert entity.target_temperature_high is None
     assert entity.state["target_temperature"] == 22.0
+    assert entity.target_temperature == 22.0
     assert thrm_cluster.write_attributes.await_count == 1
     assert thrm_cluster.write_attributes.call_args_list[0][0][0] == {
         "unoccupied_cooling_setpoint": 2200
@@ -1148,13 +1221,17 @@ async def test_set_temperature_wrong_mode(
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
 
     assert entity.state["hvac_mode"] == "dry"
+    assert entity.hvac_mode == "dry"
 
     await entity.async_set_temperature(temperature=24)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["target_temperature_low"] is None
+    assert entity.target_temperature_low is None
     assert entity.state["target_temperature_high"] is None
+    assert entity.target_temperature_high is None
     assert entity.state["target_temperature"] is None
+    assert entity.target_temperature is None
     assert thrm_cluster.write_attributes.await_count == 0
 
 
@@ -1173,12 +1250,14 @@ async def test_occupancy_reset(
     entity: ThermostatEntity = get_entity(dev_climate_sinope, platform=Platform.CLIMATE)
 
     assert entity.state["preset_mode"] == "none"
+    assert entity.preset_mode == "none"
 
     await entity.async_set_preset_mode("away")
     await zha_gateway.async_block_till_done()
     thrm_cluster.write_attributes.reset_mock()
 
     assert entity.state["preset_mode"] == "away"
+    assert entity.preset_mode == "away"
 
     await send_attributes_report(
         zha_gateway,
@@ -1186,6 +1265,7 @@ async def test_occupancy_reset(
         {"occupied_heating_setpoint": zigpy.types.uint16_t(1950)},
     )
     assert entity.state["preset_mode"] == "none"
+    assert entity.preset_mode == "none"
 
 
 @pytest.mark.parametrize(
@@ -1206,6 +1286,7 @@ async def test_fan_mode(
 
     assert set(entity.fan_modes) == {FanState.AUTO, FanState.ON}
     assert entity.state["fan_mode"] == FanState.AUTO
+    assert entity.fan_mode == FanState.AUTO
 
     await send_attributes_report(
         zha_gateway,
@@ -1213,11 +1294,13 @@ async def test_fan_mode(
         {"running_state": Thermostat.RunningState.Fan_State_On},
     )
     assert entity.state["fan_mode"] == FanState.ON
+    assert entity.fan_mode == FanState.ON
 
     await send_attributes_report(
         zha_gateway, thrm_cluster, {"running_state": Thermostat.RunningState.Idle}
     )
     assert entity.state["fan_mode"] == FanState.AUTO
+    assert entity.fan_mode == FanState.AUTO
 
     await send_attributes_report(
         zha_gateway,
@@ -1225,6 +1308,7 @@ async def test_fan_mode(
         {"running_state": Thermostat.RunningState.Fan_2nd_Stage_On},
     )
     assert entity.state["fan_mode"] == FanState.ON
+    assert entity.fan_mode == FanState.ON
 
 
 @pytest.mark.parametrize(
@@ -1265,6 +1349,7 @@ async def test_set_fan_mode(
     entity: ThermostatEntity = get_entity(device_climate_fan, platform=Platform.CLIMATE)
 
     assert entity.state["fan_mode"] == FanState.AUTO
+    assert entity.fan_mode == FanState.AUTO
 
     await entity.async_set_fan_mode(FanState.ON)
     await zha_gateway.async_block_till_done()
@@ -1302,6 +1387,7 @@ async def test_set_moes_preset(
     )
 
     assert entity.state["preset_mode"] == "none"
+    assert entity.preset_mode == "none"
 
     await entity.async_set_preset_mode("away")
     await zha_gateway.async_block_till_done()
@@ -1405,30 +1491,37 @@ async def test_set_moes_operation_mode(
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 0})
 
     assert entity.state["preset_mode"] == "away"
+    assert entity.preset_mode == "away"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 1})
 
     assert entity.state["preset_mode"] == "Schedule"
+    assert entity.preset_mode == "Schedule"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 2})
 
     assert entity.state["preset_mode"] == "none"
+    assert entity.preset_mode == "none"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 3})
 
     assert entity.state["preset_mode"] == "comfort"
+    assert entity.preset_mode == "comfort"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 4})
 
     assert entity.state["preset_mode"] == "eco"
+    assert entity.preset_mode == "eco"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 5})
 
     assert entity.state["preset_mode"] == "boost"
+    assert entity.preset_mode == "boost"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 6})
 
     assert entity.state["preset_mode"] == "Complex"
+    assert entity.preset_mode == "Complex"
 
 
 # Device is running an energy-saving mode
@@ -1469,6 +1562,7 @@ async def test_beca_operation_mode_update(
     )
 
     assert entity.state[ATTR_PRESET_MODE] == preset_mode
+    assert entity.preset_mode == preset_mode
 
     await entity.async_set_preset_mode(preset_mode)
     await zha_gateway.async_block_till_done()
@@ -1504,6 +1598,7 @@ async def test_set_zonnsmart_preset(
     )
 
     assert entity.state[ATTR_PRESET_MODE] == PRESET_NONE
+    assert entity.preset_mode == PRESET_NONE
 
     await entity.async_set_preset_mode(PRESET_SCHEDULE)
     await zha_gateway.async_block_till_done()
@@ -1573,19 +1668,24 @@ async def test_set_zonnsmart_operation_mode(
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 0})
 
     assert entity.state[ATTR_PRESET_MODE] == PRESET_SCHEDULE
+    assert entity.preset_mode == PRESET_SCHEDULE
 
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 1})
 
     assert entity.state[ATTR_PRESET_MODE] == PRESET_NONE
+    assert entity.preset_mode == PRESET_NONE
 
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 2})
 
     assert entity.state[ATTR_PRESET_MODE] == "holiday"
+    assert entity.preset_mode == "holiday"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 3})
 
     assert entity.state[ATTR_PRESET_MODE] == "holiday"
+    assert entity.preset_mode == "holiday"
 
     await send_attributes_report(zha_gateway, thrm_cluster, {"operation_preset": 4})
 
     assert entity.state[ATTR_PRESET_MODE] == "frost protect"
+    assert entity.preset_mode == "frost protect"
