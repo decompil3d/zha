@@ -55,6 +55,8 @@ def test_ser_deser_zha_event():
         last_seen=123456789.0,
         last_seen_time=None,
         available=True,
+        on_network=True,
+        is_groupable=True,
         device_type="test",
         signature={"foo": "bar"},
     )
@@ -79,6 +81,8 @@ def test_ser_deser_zha_event():
         "last_seen": 123456789.0,
         "last_seen_time": None,
         "available": True,
+        "on_network": True,
+        "is_groupable": True,
         "device_type": "test",
         "signature": {"foo": "bar"},
     }
@@ -88,7 +92,7 @@ def test_ser_deser_zha_event():
         '"manufacturer":"test","model":"test","name":"test","quirk_applied":true,'
         '"quirk_class":"test","quirk_id":"test","manufacturer_code":0,"power_source":"test",'
         '"lqi":1,"rssi":2,"last_seen":123456789.0,"last_seen_time":null,"available":true,'
-        '"device_type":"test","signature":{"foo":"bar"}}'
+        '"on_network":true,"is_groupable":true,"device_type":"test","signature":{"foo":"bar"}}'
     )
 
 
