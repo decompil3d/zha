@@ -45,6 +45,7 @@ from zha.zigbee.device import (
     get_device_automation_triggers,
 )
 from zha.zigbee.group import Group
+from zha.zigbee.model import ExtendedDeviceInfo
 
 
 def zigpy_device(
@@ -743,6 +744,99 @@ async def test_device_properties(
     assert zha_device.manufacturer == "FakeManufacturer"
     assert zha_device.model == "FakeModel"
     assert zha_device.is_groupable is False
+
+    assert zha_device.device_automation_commands == {}
+    assert zha_device.device_automation_triggers == {
+        ("device_offline", "device_offline"): {"device_event_type": "device_offline"}
+    }
+    assert zha_device.sw_version is None
+    assert isinstance(zha_device.extended_device_info, ExtendedDeviceInfo)
+    assert zha_device.extended_device_info.manufacturer == "FakeManufacturer"
+    assert zha_device.extended_device_info.model == "FakeModel"
+    assert zha_device.extended_device_info.power_source == "Battery or Unknown"
+    assert zha_device.extended_device_info.device_type == "EndDevice"
+    assert zha_device.extended_device_info.ieee == zigpy_dev.ieee
+    assert zha_device.extended_device_info.nwk == zigpy_dev.nwk
+    assert zha_device.extended_device_info.manufacturer_code == 0x1037
+    assert zha_device.extended_device_info.name == "FakeManufacturer FakeModel"
+    assert zha_device.extended_device_info.is_groupable is False
+    assert zha_device.extended_device_info.on_network is True
+    assert zha_device.extended_device_info.last_seen is not None
+    assert zha_device.extended_device_info.last_seen < time.time()
+    assert zha_device.extended_device_info.quirk_applied is False
+    assert zha_device.extended_device_info.quirk_class == "zigpy.device.Device"
+    assert zha_device.extended_device_info.quirk_id is None
+    assert zha_device.extended_device_info.sw_version is None
+    assert zha_device.extended_device_info.device_type == "EndDevice"
+    assert zha_device.extended_device_info.power_source == "Battery or Unknown"
+    assert zha_device.extended_device_info.last_seen_time is not None
+    assert zha_device.extended_device_info.available is True
+    assert zha_device.extended_device_info.lqi is None
+    assert zha_device.extended_device_info.rssi is None
+
+    # TODO this needs to be fixed
+    if gateway_type == "zha_gateway":
+        assert zha_device.zigbee_signature == {
+            "endpoints": {
+                3: {
+                    "device_type": "0x0000",
+                    "input_clusters": [
+                        "0x0000",
+                        "0x0006",
+                    ],
+                    "output_clusters": [],
+                    "profile_id": "",
+                },
+            },
+            "manufacturer": "FakeManufacturer",
+            "model": "FakeModel",
+            "node_descriptor": zdo_t.NodeDescriptor(
+                logical_type=zdo_t.LogicalType.EndDevice,
+                complex_descriptor_available=0,
+                user_descriptor_available=0,
+                reserved=0,
+                aps_flags=0,
+                frequency_band=zdo_t._NodeDescriptorEnums.FrequencyBand.Freq2400MHz,
+                mac_capability_flags=zdo_t._NodeDescriptorEnums.MACCapabilityFlags.AllocateAddress,
+                manufacturer_code=4151,
+                maximum_buffer_size=127,
+                maximum_incoming_transfer_size=100,
+                server_mask=10752,
+                maximum_outgoing_transfer_size=100,
+                descriptor_capability_field=zdo_t._NodeDescriptorEnums.DescriptorCapability.NONE,
+            ),
+        }
+    else:
+        assert zha_device.zigbee_signature == {
+            "endpoints": {
+                "3": {
+                    "device_type": "0x0000",
+                    "input_clusters": [
+                        "0x0000",
+                        "0x0006",
+                    ],
+                    "output_clusters": [],
+                    "profile_id": "",
+                },
+            },
+            "manufacturer": "FakeManufacturer",
+            "model": "FakeModel",
+            "node_descriptor": {
+                "aps_flags": 0,
+                "complex_descriptor_available": 0,
+                "descriptor_capability_field": 0,
+                "frequency_band": 8,
+                "logical_type": 2,
+                "mac_capability_flags": 128,
+                "manufacturer_code": 4151,
+                "maximum_buffer_size": 127,
+                "maximum_incoming_transfer_size": 100,
+                "maximum_outgoing_transfer_size": 100,
+                "reserved": 0,
+                "server_mask": 10752,
+                "user_descriptor_available": 0,
+            },
+        }
 
     if gateway_type == "zha_gateway":
         assert zha_device.power_configuration_ch is None

@@ -720,6 +720,7 @@ class Device(BaseDevice[PlatformEntity]):
             is_groupable=self.is_groupable,
             device_type=self.device_type,
             signature=self.zigbee_signature,
+            sw_version=self.sw_version,
         )
 
     @property

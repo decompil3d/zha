@@ -92,6 +92,7 @@ class DeviceInfo(BaseModel):
     is_groupable: bool
     device_type: str
     signature: dict[str, Any]
+    sw_version: int | None = None
 
     @field_serializer("signature", check_fields=False)
     def serialize_signature(self, signature: dict[str, Any]):
