@@ -153,14 +153,17 @@ async def test_fan(
 
     entity = get_entity(zha_device, platform=Platform.FAN)
     assert entity.state["is_on"] is False
+    assert entity.is_on is False
 
     # turn on at fan
     await send_attributes_report(zha_gateway, cluster, {1: 2, 0: 1, 2: 3})
     assert entity.state["is_on"] is True
+    assert entity.is_on is True
 
     # turn off at fan
     await send_attributes_report(zha_gateway, cluster, {1: 1, 0: 0, 2: 2})
     assert entity.state["is_on"] is False
+    assert entity.is_on is False
 
     # turn on from client
     cluster.write_attributes.reset_mock()
@@ -170,6 +173,7 @@ async def test_fan(
         {"fan_mode": 2}, manufacturer=None
     )
     assert entity.state["is_on"] is True
+    assert entity.is_on is True
 
     # turn off from client
     cluster.write_attributes.reset_mock()
@@ -189,6 +193,7 @@ async def test_fan(
     )
     assert entity.state["is_on"] is True
     assert entity.state["speed"] == SPEED_HIGH
+    assert entity.speed == SPEED_HIGH
 
     # change preset_mode from client
     cluster.write_attributes.reset_mock()
@@ -199,6 +204,7 @@ async def test_fan(
     )
     assert entity.state["is_on"] is True
     assert entity.state["preset_mode"] == PRESET_MODE_ON
+    assert entity.preset_mode == PRESET_MODE_ON
 
     # test set percentage from client
     cluster.write_attributes.reset_mock()
@@ -210,6 +216,7 @@ async def test_fan(
     )
     # this is converted to a ranged value
     assert entity.state["percentage"] == 66
+    assert entity.percentage == 66
     assert entity.state["is_on"] is True
 
     # set invalid preset_mode from client
