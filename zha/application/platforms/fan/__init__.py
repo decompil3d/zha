@@ -362,6 +362,8 @@ class FanGroup(GroupEntity, BaseFan):
             supported_features=self.supported_features,
             speed_count=self.speed_count,
             speed_list=self.speed_list,
+            default_on_percentage=self.default_on_percentage,
+            percentage_step=self.percentage_step,
         )
 
     @property
