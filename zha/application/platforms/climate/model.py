@@ -25,6 +25,7 @@ class ThermostatState(BaseModel):
         "ZONNSMARTThermostat",
     ]
     current_temperature: float | None = None
+    outdoor_temperature: float | None = None
     target_temperature: float | None = None
     target_temperature_low: float | None = None
     target_temperature_high: float | None = None
@@ -32,6 +33,14 @@ class ThermostatState(BaseModel):
     hvac_mode: HVACMode | None = None
     preset_mode: str
     fan_mode: str | None = None
+    system_mode: str | None = None
+    occupancy: int | None = None
+    occupied_cooling_setpoint: int | None = None
+    occupied_heating_setpoint: int | None = None
+    unoccupied_heating_setpoint: int | None = None
+    unoccupied_cooling_setpoint: int | None = None
+    pi_cooling_demand: int | None = None
+    pi_heating_demand: int | None = None
 
 
 class ThermostatEntityInfo(BasePlatformEntityInfo):

@@ -473,7 +473,7 @@ class Thermostat(PlatformEntity, ClimateEntityInterface):
         )
         self.maybe_emit_state_changed_event()
 
-    async def async_set_fan_mode(self, fan_mode: str) -> None:
+    async def async_set_fan_mode(self, fan_mode: str, **kwargs) -> None:
         """Set fan mode."""
         if not self.fan_modes or fan_mode not in self.fan_modes:
             self.warning("Unsupported '%s' fan mode", fan_mode)
@@ -483,7 +483,7 @@ class Thermostat(PlatformEntity, ClimateEntityInterface):
 
         await self._fan_cluster_handler.async_set_speed(mode)
 
-    async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
+    async def async_set_hvac_mode(self, hvac_mode: HVACMode, **kwargs) -> None:
         """Set new target operation mode."""
         if hvac_mode not in self.hvac_modes:
             self.warning(
@@ -498,7 +498,7 @@ class Thermostat(PlatformEntity, ClimateEntityInterface):
         ):
             self.maybe_emit_state_changed_event()
 
-    async def async_set_preset_mode(self, preset_mode: str) -> None:
+    async def async_set_preset_mode(self, preset_mode: str, **kwargs) -> None:
         """Set new preset mode."""
         if not self.preset_modes or preset_mode not in self.preset_modes:
             self.debug("Preset mode '%s' is not supported", preset_mode)
@@ -559,7 +559,9 @@ class Thermostat(PlatformEntity, ClimateEntityInterface):
 
         self.maybe_emit_state_changed_event()
 
-    async def async_preset_handler(self, preset: str, enable: bool = False) -> None:
+    async def async_preset_handler(
+        self, preset: str, enable: bool = False, **kwargs
+    ) -> None:
         """Set the preset mode via handler."""
 
         handler = getattr(self, f"async_preset_handler_{preset}")
@@ -658,7 +660,7 @@ class SinopeTechnologiesThermostat(Thermostat):
             {"secs_since_2k": secs_2k}, manufacturer=self.manufacturer
         )
 
-    async def async_preset_handler_away(self, is_away: bool = False) -> None:
+    async def async_preset_handler_away(self, is_away: bool = False, **kwargs) -> None:
         """Set occupancy."""
         mfg_code = self._device.manufacturer_code
         await self._thermostat_cluster_handler.write_attributes_safe(
@@ -755,7 +757,9 @@ class MoesThermostat(Thermostat):
                 self._preset = Preset.COMPLEX
         super().handle_cluster_handler_attribute_updated(event)
 
-    async def async_preset_handler(self, preset: str, enable: bool = False) -> None:
+    async def async_preset_handler(
+        self, preset: str, enable: bool = False, **kwargs
+    ) -> None:
         """Set the preset mode."""
         mfg_code = self._device.manufacturer_code
         if not enable:
@@ -841,7 +845,9 @@ class BecaThermostat(Thermostat):
                 self._preset = Preset.TEMP_MANUAL
         super().handle_cluster_handler_attribute_updated(event)
 
-    async def async_preset_handler(self, preset: str, enable: bool = False) -> None:
+    async def async_preset_handler(
+        self, preset: str, enable: bool = False, **kwargs
+    ) -> None:
         """Set the preset mode."""
         mfg_code = self._device.manufacturer_code
         if not enable:
@@ -941,7 +947,9 @@ class ZONNSMARTThermostat(Thermostat):
                 self._preset = self.PRESET_FROST
         super().handle_cluster_handler_attribute_updated(event)
 
-    async def async_preset_handler(self, preset: str, enable: bool = False) -> None:
+    async def async_preset_handler(
+        self, preset: str, enable: bool = False, **kwargs
+    ) -> None:
         """Set the preset mode."""
         mfg_code = self._device.manufacturer_code
         if not enable:
@@ -1052,15 +1060,28 @@ class WebSocketClientThermostatEntity(
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set fan mode."""
+        await self._device.gateway.thermostats.set_fan_mode(self.info_object, fan_mode)
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set new target operation mode."""
+        await self._device.gateway.thermostats.set_hvac_mode(
+            self.info_object, hvac_mode
+        )
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
+        await self._device.gateway.thermostats.set_preset_mode(
+            self.info_object, preset_mode
+        )
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
+        await self._device.gateway.thermostats.set_temperature(
+            self.info_object, **kwargs
+        )
 
     async def async_preset_handler(self, preset: str, enable: bool = False) -> None:
         """Set the preset mode via handler."""
+        await self._device.gateway.thermostats.preset_handler(
+            self.info_object, preset, enable
+        )

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, Union
+from typing import TYPE_CHECKING, Literal
 
 from zha.application.discovery import Platform
 from zha.application.platforms.websocket_api import (
@@ -93,10 +93,10 @@ class ClimateSetTemperatureCommand(PlatformEntityCommand):
         APICommands.CLIMATE_SET_TEMPERATURE
     )
     platform: str = Platform.CLIMATE
-    temperature: Union[float, None]
-    target_temp_high: Union[float, None]
-    target_temp_low: Union[float, None]
-    hvac_mode: Optional[
+    temperature: float | None = None
+    target_temp_high: float | None = None
+    target_temp_low: float | None = None
+    hvac_mode: (
         (
             Literal[
                 "off",  # All activity disabled / Device is off/standby
@@ -108,7 +108,8 @@ class ClimateSetTemperatureCommand(PlatformEntityCommand):
                 "fan_only",  # Only the fan is on, not fan and another mode like cool
             ]
         )
-    ]
+        | None
+    ) = None
 
 
 @decorators.websocket_command(ClimateSetTemperatureCommand)
