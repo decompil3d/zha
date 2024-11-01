@@ -311,35 +311,34 @@ async def test_zha_group_fan_entity(
         GroupMemberReference(ieee=device_fan_2.ieee, endpoint_id=1),
     ]
 
-    # test creating a group with 2 members
-    if gateway_type == "zha_gateway":
-        zha_group = await zha_gateway.async_create_zigpy_group("Test Group", members)
-        await zha_gateway.async_block_till_done()
-    else:
-        zha_group = await zha_gateway.server_gateway.async_create_zigpy_group(
-            "Test Group", members
-        )
-        await zha_gateway.async_block_till_done()
+    zha_group = await zha_gateway.async_create_zigpy_group("Test Group", members)
+    await zha_gateway.async_block_till_done()
 
     assert zha_group is not None
     assert len(zha_group.members) == 2
     for member in zha_group.members:
         assert member.device.ieee in member_ieee_addresses
         assert member.group == zha_group
-        assert member.endpoint is not None
+        if gateway_type == "zha_gateway":  # we only have / need this on the server side
+            assert member.endpoint is not None
+        assert member.endpoint_id == 1
 
     entity: GroupEntity = get_group_entity(zha_group, platform=Platform.FAN)
 
     assert entity.group_id == zha_group.group_id
-    assert isinstance(entity, GroupEntity)
+    assert isinstance(
+        entity, GroupEntity if gateway_type == "zha_gateway" else WebSocketClientEntity
+    )
     assert entity.info_object.fallback_name == zha_group.name
 
-    group_fan_cluster = zha_group.zigpy_group.endpoint[hvac.Fan.cluster_id]
-
     if gateway_type == "zha_gateway":
+        group_fan_cluster = zha_group.zigpy_group.endpoint[hvac.Fan.cluster_id]
         dev1_fan_cluster = device_fan_1.device.endpoints[1].fan
         dev2_fan_cluster = device_fan_2.device.endpoints[1].fan
     else:
+        group_fan_cluster = zha_gateway.server_gateway.groups[
+            zha_group.group_id
+        ].zigpy_group.endpoint[hvac.Fan.cluster_id]
         dev1_fan_cluster = (
             zha_gateway.server_gateway.devices[device_fan_1.ieee]
             .device.endpoints[1]

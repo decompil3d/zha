@@ -262,45 +262,45 @@ async def group_entity_availability_test(
     assert entity.state["available"] is True
 
     device_1.on_network = False
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
     assert entity.state["available"] is True
 
     device_2.on_network = False
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["available"] is False
 
     device_1.on_network = True
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
     assert entity.state["available"] is True
 
     device_2.on_network = True
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["available"] is True
 
-    device_1.available = False
-    await asyncio.sleep(0.1)
+    device_1.update_available(available=False, on_network=device_1.on_network)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
     assert entity.state["available"] is True
 
-    device_2.available = False
-    await asyncio.sleep(0.1)
+    device_2.update_available(available=False, on_network=device_2.on_network)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["available"] is False
 
-    device_1.available = True
-    await asyncio.sleep(0.1)
+    device_1.update_available(available=True, on_network=device_1.on_network)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
     assert entity.state["available"] is True
 
-    device_2.available = True
-    await asyncio.sleep(0.1)
+    device_2.update_available(available=True, on_network=device_2.on_network)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
 
     assert entity.state["available"] is True

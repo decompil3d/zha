@@ -88,7 +88,7 @@ async def device_switch_1(
         ieee=IEEE_GROUPABLE_DEVICE,
     )
     zha_device = await join_zigpy_device(server, zigpy_device)
-    zha_device.available = True
+    zha_device.update_available(available=True, on_network=zha_device.on_network)
     return zha_device
 
 
@@ -120,7 +120,7 @@ async def device_switch_2(
         ieee=IEEE_GROUPABLE_DEVICE2,
     )
     zha_device = await join_zigpy_device(server, zigpy_device)
-    zha_device.available = True
+    zha_device.update_available(available=True, on_network=zha_device.on_network)
     return zha_device
 
 
@@ -363,7 +363,17 @@ async def test_controller_groups(
     assert entity2 is not None
 
     response: GroupInfo = await controller.groups_helper.create_group(
-        members=[entity1.info_object, entity2.info_object], name="Test Group Controller"
+        members=[
+            GroupMemberReference(
+                ieee=entity1.info_object.device_ieee,
+                endpoint_id=entity1.info_object.endpoint_id,
+            ),
+            GroupMemberReference(
+                ieee=entity2.info_object.device_ieee,
+                endpoint_id=entity2.info_object.endpoint_id,
+            ),
+        ],
+        name="Test Group Controller",
     )
     await server.async_block_till_done()
     assert len(controller.groups) == 2
@@ -374,7 +384,13 @@ async def test_controller_groups(
 
     # test remove member from group from controller
     response = await controller.groups_helper.remove_group_members(
-        response, [entity2.info_object]
+        response,
+        [
+            GroupMemberReference(
+                ieee=entity2.info_object.device_ieee,
+                endpoint_id=entity2.info_object.endpoint_id,
+            )
+        ],
     )
     await server.async_block_till_done()
     assert len(controller.groups) == 2
@@ -385,7 +401,13 @@ async def test_controller_groups(
 
     # test add member to group from controller
     response = await controller.groups_helper.add_group_members(
-        response, [entity2.info_object]
+        response,
+        [
+            GroupMemberReference(
+                ieee=entity2.info_object.device_ieee,
+                endpoint_id=entity2.info_object.endpoint_id,
+            )
+        ],
     )
     await server.async_block_till_done()
     assert len(controller.groups) == 2

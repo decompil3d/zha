@@ -114,7 +114,7 @@ from zha.websocket.server.client import (
     ClientListenCommand,
     ClientListenRawZCLCommand,
 )
-from zha.zigbee.model import ExtendedDeviceInfo, GroupInfo
+from zha.zigbee.model import ExtendedDeviceInfo, GroupInfo, GroupMemberReference
 
 
 class LightHelper:
@@ -829,17 +829,17 @@ class GroupHelper:
     async def create_group(
         self,
         name: str,
-        unique_id: int | None = None,
-        members: list[BasePlatformEntityInfo] | None = None,
+        group_id: int | None = None,
+        members: list[GroupMemberReference] | None = None,
     ) -> GroupInfo:
         """Create a new group."""
         request_data: dict[str, Any] = {
             "group_name": name,
-            "group_id": unique_id,
+            "group_id": group_id,
         }
         if members is not None:
             request_data["members"] = [
-                {"ieee": member.device_ieee, "endpoint_id": member.endpoint_id}
+                {"ieee": member.ieee, "endpoint_id": member.endpoint_id}
                 for member in members
             ]
 
@@ -863,13 +863,13 @@ class GroupHelper:
         return response.groups
 
     async def add_group_members(
-        self, group: GroupInfo, members: list[BasePlatformEntityInfo]
+        self, group: GroupInfo, members: list[GroupMemberReference]
     ) -> GroupInfo:
         """Add members to a group."""
         request_data: dict[str, Any] = {
             "group_id": group.group_id,
             "members": [
-                {"ieee": member.device_ieee, "endpoint_id": member.endpoint_id}
+                {"ieee": member.ieee, "endpoint_id": member.endpoint_id}
                 for member in members
             ],
         }
@@ -882,13 +882,13 @@ class GroupHelper:
         return response.group
 
     async def remove_group_members(
-        self, group: GroupInfo, members: list[BasePlatformEntityInfo]
+        self, group: GroupInfo, members: list[GroupMemberReference]
     ) -> GroupInfo:
         """Remove members from a group."""
         request_data: dict[str, Any] = {
             "group_id": group.group_id,
             "members": [
-                {"ieee": member.device_ieee, "endpoint_id": member.endpoint_id}
+                {"ieee": member.ieee, "endpoint_id": member.endpoint_id}
                 for member in members
             ],
         }

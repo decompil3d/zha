@@ -40,6 +40,8 @@ from zha.application.helpers import (
     ZHAData,
 )
 from zha.async_ import ZHAJob
+from zha.zigbee.group import WebSocketClientGroup
+from zha.zigbee.model import GroupMemberReference
 
 FIXTURE_GRP_ID = 0x1001
 FIXTURE_GRP_NAME = "fixture group"
@@ -362,6 +364,19 @@ class CombinedWebsocketGateways:
     async def async_remove_zigpy_group(self, group_id: int) -> None:
         """Remove a Zigbee group from Zigpy."""
         await self.client_gateway.async_remove_zigpy_group(group_id)
+
+    async def async_create_zigpy_group(
+        self,
+        name: str,
+        members: list[GroupMemberReference] | None,
+        group_id: int | None = None,
+    ) -> WebSocketClientGroup | None:
+        """Create a new Zigpy Zigbee group."""
+        group = await self.client_gateway.async_create_zigpy_group(
+            name, members, group_id
+        )
+        await self.async_block_till_done()
+        return self.client_gateway.groups.get(group.group_id)
 
     async def shutdown(self) -> None:
         """Stop ZHA Controller Application."""

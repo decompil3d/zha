@@ -31,7 +31,7 @@ from tests.common import (
 from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.gateway import Gateway
-from zha.application.platforms import GroupEntity, PlatformEntity
+from zha.application.platforms import GroupEntity, PlatformEntity, WebSocketClientEntity
 from zha.application.platforms.light.const import (
     FLASH_EFFECTS,
     FLASH_LONG,
@@ -514,9 +514,12 @@ async def async_test_on_off_from_light(
     await zha_gateway.async_block_till_done()
 
     # group member updates are debounced
-    if isinstance(entity, GroupEntity):
+    if isinstance(entity, GroupEntity) or (
+        isinstance(entity, WebSocketClientEntity)
+        and "Group" in entity.info_object.class_name
+    ):
         assert bool(entity.state["on"]) is False
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(1)
         await zha_gateway.async_block_till_done()
 
     assert bool(entity.state["on"]) is True
@@ -526,9 +529,12 @@ async def async_test_on_off_from_light(
     await zha_gateway.async_block_till_done()
 
     # group member updates are debounced
-    if isinstance(entity, GroupEntity):
+    if isinstance(entity, GroupEntity) or (
+        isinstance(entity, WebSocketClientEntity)
+        and "Group" in entity.info_object.class_name
+    ):
         assert bool(entity.state["on"]) is True
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(1)
         await zha_gateway.async_block_till_done()
 
     assert bool(entity.state["on"]) is False
@@ -547,9 +553,12 @@ async def async_test_on_from_light(
     await zha_gateway.async_block_till_done()
 
     # group member updates are debounced
-    if isinstance(entity, GroupEntity):
+    if isinstance(entity, GroupEntity) or (
+        isinstance(entity, WebSocketClientEntity)
+        and "Group" in entity.info_object.class_name
+    ):
         assert bool(entity.state["on"]) is False
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(1)
         await zha_gateway.async_block_till_done()
 
     assert bool(entity.state["on"]) is True
@@ -713,8 +722,11 @@ async def async_test_dimmer_from_light(
         assert entity.state["brightness"] is None
     else:
         # group member updates are debounced
-        if isinstance(entity, GroupEntity):
-            await asyncio.sleep(0.1)
+        if isinstance(entity, GroupEntity) or (
+            isinstance(entity, WebSocketClientEntity)
+            and "Group" in entity.info_object.class_name
+        ):
+            await asyncio.sleep(1)
             await zha_gateway.async_block_till_done()
         assert entity.state["brightness"] == level
 
@@ -784,21 +796,17 @@ async def test_zha_group_light_entity(
     ]
 
     # test creating a group with 2 members
-    if gateway_type == "zha_gateway":
-        zha_group = await zha_gateway.async_create_zigpy_group("Test Group", members)
-        await zha_gateway.async_block_till_done()
-    else:
-        zha_group = await zha_gateway.server_gateway.async_create_zigpy_group(
-            "Test Group", members
-        )
-        await zha_gateway.async_block_till_done()
+    zha_group = await zha_gateway.async_create_zigpy_group("Test Group", members)
+    await zha_gateway.async_block_till_done()
 
     assert zha_group is not None
     assert len(zha_group.members) == 2
     for member in zha_group.members:
         assert member.device.ieee in member_ieee_addresses
         assert member.group == zha_group
-        assert member.endpoint is not None
+        if gateway_type == "zha_gateway":
+            assert member.endpoint is not None
+        assert member.endpoint_id == 1
 
     entity: GroupEntity = get_group_entity(zha_group, platform=Platform.LIGHT)
     assert entity.group_id == zha_group.group_id
@@ -815,20 +823,32 @@ async def test_zha_group_light_entity(
     assert device_2_light_entity.unique_id in zha_group.all_member_entity_unique_ids
     assert device_3_light_entity.unique_id not in zha_group.all_member_entity_unique_ids
 
-    group_cluster_on_off = zha_group.zigpy_group.endpoint[general.OnOff.cluster_id]
-    group_cluster_level = zha_group.zigpy_group.endpoint[
-        general.LevelControl.cluster_id
-    ]
-    group_cluster_identify = zha_group.zigpy_group.endpoint[general.Identify.cluster_id]
-    assert group_cluster_identify is not None
-
     if gateway_type == "zha_gateway":
+        group_cluster_on_off = zha_group.zigpy_group.endpoint[general.OnOff.cluster_id]
+        group_cluster_level = zha_group.zigpy_group.endpoint[
+            general.LevelControl.cluster_id
+        ]
+        group_cluster_identify = zha_group.zigpy_group.endpoint[
+            general.Identify.cluster_id
+        ]
+        assert group_cluster_identify is not None
+
         dev1_cluster_on_off = device_light_1.device.endpoints[1].on_off
         dev1_cluster_level = device_light_1.device.endpoints[1].level
 
         dev2_cluster_on_off = device_light_2.device.endpoints[1].on_off
         dev3_cluster_on_off = device_light_3.device.endpoints[1].on_off
     else:
+        group_cluster_on_off = zha_gateway.server_gateway.groups[
+            zha_group.group_id
+        ].endpoint[general.OnOff.cluster_id]
+        group_cluster_level = zha_gateway.server_gateway.groups[
+            zha_group.group_id
+        ].endpoint[general.LevelControl.cluster_id]
+        group_cluster_identify = zha_gateway.server_gateway.groups[
+            zha_group.group_id
+        ].endpoint[general.Identify.cluster_id]
+        assert group_cluster_identify is not None
         dev1_cluster_on_off = (
             zha_gateway.server_gateway.devices[device_light_1.ieee]
             .device.endpoints[1]
@@ -935,7 +955,7 @@ async def test_zha_group_light_entity(
 
     # group member updates are debounced
     assert bool(entity.state["on"]) is True
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
     assert bool(entity.state["on"]) is False
 
@@ -947,7 +967,7 @@ async def test_zha_group_light_entity(
     assert device_2_light_entity.state["on"] is False
     # group member updates are debounced
     assert bool(entity.state["on"]) is False
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
     assert bool(entity.state["on"]) is True
 
@@ -970,7 +990,7 @@ async def test_zha_group_light_entity(
     assert device_2_light_entity.state["on"] is False
     # group member updates are debounced
     assert bool(entity.state["on"]) is True
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
     assert bool(entity.state["on"]) is False
 
@@ -991,7 +1011,7 @@ async def test_zha_group_light_entity(
     assert device_3_light_entity.state["on"] is True
     # group member updates are debounced
     assert bool(entity.state["on"]) is False
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
     assert bool(entity.state["on"]) is True
 
@@ -1031,7 +1051,7 @@ async def test_zha_group_light_entity(
     await zha_gateway.async_block_till_done()
     # group member updates are debounced
     assert bool(entity.state["on"]) is True
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
     assert bool(entity.state["on"]) is False
 
@@ -1046,11 +1066,12 @@ async def test_zha_group_light_entity(
     assert len(zha_group.members) == 4
     entity = get_group_entity(zha_group, platform=Platform.LIGHT)
     assert entity is not None
+    assert bool(entity.state["on"]) is False
     await send_attributes_report(zha_gateway, dev2_cluster_on_off, {0: 1})
     await zha_gateway.async_block_till_done()
     # group member updates are debounced
     assert bool(entity.state["on"]) is False
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(1)
     await zha_gateway.async_block_till_done()
     assert bool(entity.state["on"]) is True
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import asyncio
 from collections.abc import Callable
-from functools import cached_property
 import logging
 from typing import TYPE_CHECKING, Any, Generic
 
@@ -22,22 +21,65 @@ from zha.zigbee.model import GroupInfo, GroupMemberInfo, GroupMemberReference
 if TYPE_CHECKING:
     from zigpy.group import Group as ZigpyGroup, GroupEndpoint
 
-    from zha.application.gateway import Gateway
+    from zha.application.gateway import Gateway, WebSocketClientGateway
     from zha.application.platforms import GroupEntity
     from zha.application.platforms.events import EntityStateChangedEvent
-    from zha.zigbee.device import Device
+    from zha.zigbee.device import Device, WebSocketClientDevice
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class GroupMember(LogMixin):
+class BaseGroupMember(LogMixin, ABC):
+    """Composite object that represents a device endpoint in a Zigbee group."""
+
+    def __init__(self, zha_group, device, endpoint_id: int) -> None:
+        """Initialize the group member."""
+        self._group = zha_group
+        self._device = device
+        self._endpoint_id: int = endpoint_id
+
+    @property
+    @abstractmethod
+    def group(self):
+        """Return the group this member belongs to."""
+
+    @property
+    def endpoint_id(self) -> int:
+        """Return the endpoint id for this group member."""
+        return self._endpoint_id
+
+    @property
+    @abstractmethod
+    def device(self):
+        """Return the ZHA device for this group member."""
+
+    @property
+    @abstractmethod
+    def member_info(self) -> GroupMemberInfo:
+        """Get ZHA group info."""
+
+    @property
+    @abstractmethod
+    def associated_entities(self) -> list[PlatformEntity]:
+        """Return the list of entities that were derived from this endpoint."""
+
+    @abstractmethod
+    async def async_remove_from_group(self) -> None:
+        """Remove the device endpoint from the provided zigbee group."""
+
+    def log(self, level: int, msg: str, *args: Any, **kwargs) -> None:
+        """Log a message."""
+        msg = f"[%s](%s): {msg}"
+        args = (f"0x{self._group.group_id:04x}", self.endpoint_id) + args
+        _LOGGER.log(level, msg, *args, **kwargs)
+
+
+class GroupMember(BaseGroupMember):
     """Composite object that represents a device endpoint in a Zigbee group."""
 
     def __init__(self, zha_group: Group, device: Device, endpoint_id: int) -> None:
         """Initialize the group member."""
-        self._group: Group = zha_group
-        self._device: Device = device
-        self._endpoint_id: int = endpoint_id
+        super().__init__(zha_group, device, endpoint_id)
 
     @property
     def group(self) -> Group:
@@ -45,11 +87,6 @@ class GroupMember(LogMixin):
         return self._group
 
     @property
-    def endpoint_id(self) -> int:
-        """Return the endpoint id for this group member."""
-        return self._endpoint_id
-
-    @cached_property
     def endpoint(self) -> GroupEndpoint:
         """Return the endpoint for this group member."""
         return self._device.device.endpoints.get(self.endpoint_id)
@@ -59,7 +96,7 @@ class GroupMember(LogMixin):
         """Return the ZHA device for this group member."""
         return self._device
 
-    @cached_property
+    @property
     def member_info(self) -> GroupMemberInfo:
         """Get ZHA group info."""
         return GroupMemberInfo(
@@ -72,7 +109,7 @@ class GroupMember(LogMixin):
             },
         )
 
-    @cached_property
+    @property
     def associated_entities(self) -> list[PlatformEntity]:
         """Return the list of entities that were derived from this endpoint."""
         return [
@@ -100,11 +137,50 @@ class GroupMember(LogMixin):
                 str(ex),
             )
 
-    def log(self, level: int, msg: str, *args: Any, **kwargs) -> None:
-        """Log a message."""
-        msg = f"[%s](%s): {msg}"
-        args = (f"0x{self._group.group_id:04x}", self.endpoint_id) + args
-        _LOGGER.log(level, msg, *args, **kwargs)
+
+class WebSocketClientGroupMember(BaseGroupMember):
+    """Composite object that represents a device endpoint in a Zigbee group."""
+
+    def __init__(
+        self,
+        zha_group: WebSocketClientGroup,
+        device: WebSocketClientDevice,
+        endpoint_id: int,
+        member_info: GroupMemberInfo,
+    ) -> None:
+        """Initialize the group member."""
+        super().__init__(zha_group, device, endpoint_id)
+        self._member_info = member_info
+
+    @property
+    def group(self) -> WebSocketClientGroup:
+        """Return the group this member belongs to."""
+        return self._group
+
+    @property
+    def device(self) -> WebSocketClientDevice:
+        """Return the ZHA device for this group member."""
+        return self._device
+
+    @property
+    def member_info(self) -> GroupMemberInfo:
+        """Get ZHA group info."""
+        return self._member_info
+
+    @property
+    def associated_entities(self) -> list[PlatformEntity]:
+        """Return the list of entities that were derived from this endpoint."""
+        return [
+            platform_entity
+            for platform_entity in self._device.platform_entities.values()
+            if platform_entity.info_object.endpoint_id == self.endpoint_id
+        ]
+
+    async def async_remove_from_group(self) -> None:
+        """Remove the device endpoint from the provided zigbee group."""
+        await self.group.gateway.groups_helper.remove_group_members(
+            self.group.info_object, [self.member_info]
+        )
 
 
 class BaseGroup(LogMixin, EventBase, ABC, Generic[T]):
@@ -138,12 +214,12 @@ class BaseGroup(LogMixin, EventBase, ABC, Generic[T]):
     def group_entities(self) -> dict[str, T]:
         """Return the platform entities of the group."""
 
-    @cached_property
+    @property
     @abstractmethod
-    def members(self) -> list[GroupMember]:
+    def members(self):
         """Return the ZHA devices that are members of this group."""
 
-    @cached_property
+    @property
     @abstractmethod
     def info_object(self) -> GroupInfo:
         """Get ZHA group info."""
@@ -193,7 +269,7 @@ class Group(BaseGroup):
         """Return the gateway for this group."""
         return self._gateway
 
-    @cached_property
+    @property
     def members(self) -> list[GroupMember]:
         """Return the ZHA devices that are members of this group."""
         return [
@@ -202,7 +278,7 @@ class Group(BaseGroup):
             if member_ieee in self._gateway.devices
         ]
 
-    @cached_property
+    @property
     def info_object(self) -> GroupInfo:
         """Get ZHA group info."""
         return GroupInfo(
@@ -215,7 +291,7 @@ class Group(BaseGroup):
             },
         )
 
-    @cached_property
+    @property
     def all_member_entity_unique_ids(self) -> list[str]:
         """Return all platform entities unique ids for the members of this group."""
         all_entity_unique_ids: list[str] = []
@@ -249,15 +325,6 @@ class Group(BaseGroup):
         if tasks:
             await asyncio.gather(*tasks)
 
-    def clear_caches(self) -> None:
-        """Clear cached properties."""
-        if hasattr(self, "all_member_entity_unique_ids"):
-            delattr(self, "all_member_entity_unique_ids")
-        if hasattr(self, "info_object"):
-            delattr(self, "info_object")
-        if hasattr(self, "members"):
-            delattr(self, "members")
-
     def update_entity_subscriptions(self) -> None:
         """Update the entity event subscriptions.
 
@@ -268,7 +335,6 @@ class Group(BaseGroup):
         for group entities and the platrom entities that we processed. Then we loop over all of the unsub ids and we
         execute the unsubscribe method for each one that isn't in the combined list.
         """
-        self.clear_caches()
 
         group_entity_ids = list(self._group_entities.keys())
         processed_platform_entity_ids = []
@@ -361,7 +427,7 @@ class WebSocketClientGroup(BaseGroup):
     def __init__(
         self,
         group_info: GroupInfo,
-        gateway: Gateway,
+        gateway: WebSocketClientGateway,
     ) -> None:
         """Initialize the group."""
         super().__init__(gateway)
@@ -383,10 +449,25 @@ class WebSocketClientGroup(BaseGroup):
         """Return the platform entities of the group."""
         return self._entities
 
-    @cached_property
-    def members(self) -> list[GroupMember]:
+    @property
+    def members(self) -> list[WebSocketClientGroupMember]:
         """Return the ZHA devices that are members of this group."""
-        return []
+        return [
+            WebSocketClientGroupMember(
+                self, self._gateway.devices[member.ieee], member.endpoint_id, member
+            )
+            for member in self._group_info.members
+        ]
+
+    @property
+    def all_member_entity_unique_ids(self) -> list[str]:
+        """Return all platform entities unique ids for the members of this group."""
+        all_entity_unique_ids: list[str] = []
+        for member in self.members:
+            entities = member.associated_entities
+            for entity in entities:
+                all_entity_unique_ids.append(entity.unique_id)
+        return all_entity_unique_ids
 
     @property
     def info_object(self) -> GroupInfo:
@@ -411,3 +492,13 @@ class WebSocketClientGroup(BaseGroup):
             entity.state = event.state
             entity.maybe_emit_state_changed_event()
             self.emit(f"{event.unique_id}_{event.event}", event)
+
+    async def async_add_members(self, members: list[GroupMemberReference]) -> None:
+        """Add members to this group."""
+        await self._gateway.groups_helper.add_group_members(self.info_object, members)
+
+    async def async_remove_members(self, members: list[GroupMemberReference]) -> None:
+        """Remove members from this group."""
+        await self._gateway.groups_helper.remove_group_members(
+            self.info_object, members
+        )
