@@ -359,6 +359,10 @@ class CombinedWebsocketGateways:
         """Return Device for given ieee."""
         return self.client_gateway.get_device(ieee)
 
+    async def async_remove_zigpy_group(self, group_id: int) -> None:
+        """Remove a Zigbee group from Zigpy."""
+        await self.client_gateway.async_remove_zigpy_group(group_id)
+
     async def shutdown(self) -> None:
         """Stop ZHA Controller Application."""
         await self.server_gateway.stop_server()
