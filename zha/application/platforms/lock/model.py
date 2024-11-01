@@ -13,6 +13,7 @@ class LockState(BaseModel):
 
     class_name: Literal["Lock", "DoorLock"] = "Lock"
     is_locked: bool
+    available: bool
 
 
 class LockEntityInfo(BasePlatformEntityInfo):

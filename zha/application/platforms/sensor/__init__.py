@@ -202,7 +202,7 @@ class Sensor(PlatformEntity):
                 entity_metadata.unit
             ).value
 
-    @functools.cached_property
+    @property
     def info_object(self) -> SensorEntityInfo:
         """Return a representation of the sensor."""
         return SensorEntityInfo(
@@ -405,7 +405,7 @@ class DeviceCounterSensor(BaseEntity):
             **super().identifiers.__dict__, device_ieee=str(self._device.ieee)
         )
 
-    @functools.cached_property
+    @property
     def info_object(self) -> DeviceCounterEntityInfo:
         """Return a representation of the platform entity."""
         data = super().info_object.__dict__
@@ -426,6 +426,7 @@ class DeviceCounterSensor(BaseEntity):
         """Return the state for this sensor."""
         response = super().state
         response["state"] = self._zigpy_counter.value
+        response["available"] = self._device.available
         return response
 
     @property

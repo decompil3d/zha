@@ -278,7 +278,7 @@ class Fan(PlatformEntity, BaseFan):
                 self.handle_cluster_handler_attribute_updated,
             )
 
-    @functools.cached_property
+    @property
     def info_object(self) -> FanEntityInfo:
         """Return a representation of the binary sensor."""
         return FanEntityInfo(
@@ -349,11 +349,9 @@ class FanGroup(GroupEntity, BaseFan):
         super().__init__(group)
         self._percentage = None
         self._preset_mode = None
-        if hasattr(self, "info_object"):
-            delattr(self, "info_object")
         self.update()
 
-    @functools.cached_property
+    @property
     def info_object(self) -> FanEntityInfo:
         """Return a representation of the binary sensor."""
         return FanEntityInfo(

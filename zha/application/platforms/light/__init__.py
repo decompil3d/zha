@@ -791,7 +791,7 @@ class Light(PlatformEntity, BaseLight):
         self._refresh_task: asyncio.Task | None = None
         self.start_polling()
 
-    @functools.cached_property
+    @property
     def info_object(self) -> LightEntityInfo:
         """Return a representation of the select."""
         return LightEntityInfo(
@@ -1141,11 +1141,9 @@ class LightGroup(GroupEntity, BaseLight):
             function=self._force_member_updates,
         )
 
-        if hasattr(self, "info_object"):
-            delattr(self, "info_object")
         self.update()
 
-    @functools.cached_property
+    @property
     def info_object(self) -> LightEntityInfo:
         """Return a representation of the select."""
         return LightEntityInfo(
@@ -1322,6 +1320,7 @@ class LightGroup(GroupEntity, BaseLight):
         xy_color: tuple[float, float] | None,
         color_mode: ColorMode | None,
         effect: str | None,
+        **kwargs: Any,
     ) -> None:
         """Restore extra state attributes."""
         # Group state is calculated from the members,
@@ -1330,6 +1329,7 @@ class LightGroup(GroupEntity, BaseLight):
             self._off_with_transition = off_with_transition
         if off_brightness is not None:
             self._off_brightness = off_brightness
+        self.maybe_emit_state_changed_event()
 
 
 class WebSocketClientLightEntity(

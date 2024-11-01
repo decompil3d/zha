@@ -25,6 +25,7 @@ class BatteryState(BaseModel):
     battery_size: str | None = None
     battery_quantity: int | None = None
     battery_voltage: float | None = None
+    available: bool
 
 
 class ElectricalMeasurementState(BaseModel):
@@ -44,6 +45,7 @@ class ElectricalMeasurementState(BaseModel):
     active_power_max: str | None = None
     rms_current_max: str | None = None
     rms_voltage_max: int | None = None
+    available: bool
 
 
 class SmartEnergyMeteringState(BaseModel):
@@ -55,6 +57,7 @@ class SmartEnergyMeteringState(BaseModel):
     state: str | float | int | None = None
     device_type: str | None = None
     status: str | None = None
+    available: bool
 
 
 class DeviceCounterSensorState(BaseModel):
@@ -62,6 +65,7 @@ class DeviceCounterSensorState(BaseModel):
 
     class_name: Literal["DeviceCounterSensor"] = "DeviceCounterSensor"
     state: int
+    available: bool
 
 
 class BaseSensorEntityInfo(BasePlatformEntityInfo):
@@ -144,12 +148,18 @@ class DeviceCounterSensorEntityInfo(BaseEventedModel, BaseEntityInfo):
                 return DeviceCounterSensorState(state=state)
             if isinstance(state, dict):
                 if "state" in state:
-                    return DeviceCounterSensorState(state=state["state"])
+                    return DeviceCounterSensorState(
+                        state=state["state"], available=state["available"]
+                    )
                 else:
                     return DeviceCounterSensorState(
-                        state=validation_info.data["counter_value"]
+                        state=validation_info.data["counter_value"],
+                        available=state["available"],
                     )
-        return DeviceCounterSensorState(state=validation_info.data["counter_value"])
+        return DeviceCounterSensorState(
+            state=validation_info.data["counter_value"],
+            available=validation_info.data["available"],
+        )
 
 
 class BatteryEntityInfo(BaseSensorEntityInfo):

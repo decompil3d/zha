@@ -700,6 +700,7 @@ class WebSocketClientCoverEntity(
         ],  # FIXME: why must these be expanded?
         target_lift_position: int | None,
         target_tilt_position: int | None,
+        **kwargs: Any,
     ):
         """Restore external state attributes."""
         self._device.gateway.create_and_track_task(

@@ -27,6 +27,7 @@ class LightState(BaseModel):
     off_brightness: int | None = None
     color_mode: ColorMode | None = None
     off_with_transition: bool = False
+    available: bool
 
 
 class LightEntityInfo(BasePlatformEntityInfo):

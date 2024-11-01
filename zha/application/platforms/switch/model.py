@@ -28,6 +28,7 @@ class SwitchState(BaseModel):
         "OnOffWindowDetectionFunctionConfigurationEntity",
     ]
     state: bool
+    available: bool
 
 
 class SwitchEntityInfo(BasePlatformEntityInfo):

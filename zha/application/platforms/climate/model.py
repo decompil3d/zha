@@ -41,6 +41,7 @@ class ThermostatState(BaseModel):
     unoccupied_cooling_setpoint: int | None = None
     pi_cooling_demand: int | None = None
     pi_heating_demand: int | None = None
+    available: bool
 
 
 class ThermostatEntityInfo(BasePlatformEntityInfo):

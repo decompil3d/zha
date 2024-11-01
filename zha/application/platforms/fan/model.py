@@ -21,6 +21,7 @@ class FanState(BaseModel):
     )
     is_on: bool
     speed: str | None = None
+    available: bool
 
 
 class FanEntityInfo(BasePlatformEntityInfo):

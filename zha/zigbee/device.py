@@ -480,11 +480,6 @@ class Device(BaseDevice[PlatformEntity]):
         """Return True if device is available."""
         return self.is_active_coordinator or (self._available and self.on_network)
 
-    @available.setter
-    def available(self, new_availability: bool) -> None:
-        """Set device availability."""
-        self._available = new_availability
-
     @property
     def on_network(self):
         """Return True if device is currently on the network."""
@@ -493,8 +488,7 @@ class Device(BaseDevice[PlatformEntity]):
     @on_network.setter
     def on_network(self, new_on_network: bool) -> None:
         """Set device on_network flag."""
-        self.update_available(new_on_network)
-        self._on_network = new_on_network
+        self.update_available(available=new_on_network, on_network=new_on_network)
         if not new_on_network:
             self.debug("Device is not on the network, marking unavailable")
 
@@ -599,7 +593,7 @@ class Device(BaseDevice[PlatformEntity]):
             return
         if self.last_seen is None:
             self.debug("last_seen is None, marking the device unavailable")
-            self.update_available(False)
+            self.update_available(available=False, on_network=self.on_network)
             return
 
         difference = time.time() - self.last_seen
@@ -607,7 +601,7 @@ class Device(BaseDevice[PlatformEntity]):
             self.debug(
                 "Device seen - marking the device available and resetting counter"
             )
-            self.update_available(True)
+            self.update_available(available=True, on_network=self.on_network)
             self._checkins_missed_count = 0
             return
 
@@ -624,7 +618,7 @@ class Device(BaseDevice[PlatformEntity]):
                     ),
                     difference,
                 )
-                self.update_available(False)
+                self.update_available(available=False, on_network=self.on_network)
                 return
 
             self._checkins_missed_count += 1
@@ -634,7 +628,7 @@ class Device(BaseDevice[PlatformEntity]):
             )
             if not self._basic_ch:
                 self.debug("does not have a mandatory basic cluster")
-                self.update_available(False)
+                self.update_available(available=False, on_network=self.on_network)
                 return
             res = await self._basic_ch.get_attribute_value(
                 ATTR_MANUFACTURER, from_cache=False
@@ -642,7 +636,9 @@ class Device(BaseDevice[PlatformEntity]):
             if res is not None:
                 self._checkins_missed_count = 0
 
-    def update_available(self, available: bool) -> None:
+    def update_available(
+        self, available: bool = False, on_network: bool = False
+    ) -> None:
         """Update device availability and signal entities."""
         self.debug(
             (
@@ -654,7 +650,8 @@ class Device(BaseDevice[PlatformEntity]):
             self.available ^ available,
         )
         availability_changed = self.available ^ available
-        self.available = available
+        self._available = available
+        self._on_network = on_network
         if availability_changed and available:
             # reinit cluster handlers then signal entities
             self.debug(

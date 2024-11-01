@@ -105,7 +105,7 @@ class Siren(PlatformEntity, SirenEntityInterface):
         self._attr_is_on: bool = False
         self._off_listener: asyncio.TimerHandle | None = None
 
-    @functools.cached_property
+    @property
     def info_object(self) -> SirenEntityInfo:
         """Return representation of the siren."""
         return SirenEntityInfo(

@@ -126,7 +126,7 @@ class Number(PlatformEntity, NumberEntityInterface):
             self.handle_cluster_handler_attribute_updated,
         )
 
-    @functools.cached_property
+    @property
     def info_object(self) -> NumberEntityInfo:
         """Return a representation of the number entity."""
         return NumberEntityInfo(
@@ -304,7 +304,7 @@ class NumberConfigurationEntity(PlatformEntity):
                 entity_metadata.unit
             ).value
 
-    @functools.cached_property
+    @property
     def info_object(self) -> NumberConfigurationEntityInfo:
         """Return a representation of the number entity."""
         return NumberConfigurationEntityInfo(

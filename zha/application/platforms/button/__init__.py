@@ -76,7 +76,7 @@ class Button(PlatformEntity, ButtonEntityInterface):
         self._args = entity_metadata.args
         self._kwargs = entity_metadata.kwargs
 
-    @functools.cached_property
+    @property
     def info_object(self) -> CommandButtonEntityInfo:
         """Return a representation of the button."""
         return CommandButtonEntityInfo(
@@ -164,7 +164,7 @@ class WriteAttributeButton(PlatformEntity):
         self._attribute_name = entity_metadata.attribute_name
         self._attribute_value = entity_metadata.attribute_value
 
-    @functools.cached_property
+    @property
     def info_object(self) -> WriteAttributeButtonEntityInfo:
         """Return a representation of the button."""
         return WriteAttributeButtonEntityInfo(

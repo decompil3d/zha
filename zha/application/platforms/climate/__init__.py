@@ -216,7 +216,7 @@ class Thermostat(PlatformEntity, ClimateEntityInterface):
         if self._fan_cluster_handler is not None:
             self._supported_features |= ClimateEntityFeature.FAN_MODE
 
-    @functools.cached_property
+    @property
     def info_object(self) -> ThermostatEntityInfo:
         """Return a representation of the thermostat."""
         return ThermostatEntityInfo(

@@ -507,7 +507,6 @@ class Gateway(AsyncUtilMixin, BaseGateway):
         """Handle zigpy group member removed event."""
         # need to handle endpoint correctly on groups
         zha_group = self.get_or_create_group(zigpy_group)
-        zha_group.clear_caches()
         discovery.GROUP_PROBE.discover_group_entities(zha_group)
         zha_group.info("group_member_removed - endpoint: %s", endpoint)
         self._emit_group_gateway_message(zigpy_group, GroupMemberRemovedEvent)
@@ -518,7 +517,6 @@ class Gateway(AsyncUtilMixin, BaseGateway):
         """Handle zigpy group member added event."""
         # need to handle endpoint correctly on groups
         zha_group = self.get_or_create_group(zigpy_group)
-        zha_group.clear_caches()
         discovery.GROUP_PROBE.discover_group_entities(zha_group)
         zha_group.info("group_member_added - endpoint: %s", endpoint)
         self._emit_group_gateway_message(zigpy_group, GroupMemberAddedEvent)
@@ -615,7 +613,9 @@ class Gateway(AsyncUtilMixin, BaseGateway):
             device = self.devices[sender.ieee]
             # avoid a race condition during new joins
             if device.status is DeviceStatus.INITIALIZED:
-                device.update_available(available)
+                device.update_available(
+                    available=available, on_network=device.on_network
+                )
 
     async def async_device_initialized(self, device: zigpy.device.Device) -> None:
         """Handle device joined and basic information discovered (async)."""
@@ -654,8 +654,8 @@ class Gateway(AsyncUtilMixin, BaseGateway):
         )
 
     async def _async_device_joined(self, zha_device: Device) -> None:
-        zha_device.available = True
-        zha_device.on_network = True
+        zha_device._available = True
+        zha_device._on_network = True
         await zha_device.async_configure()
         device_info = ExtendedDeviceInfoWithPairingStatus(
             pairing_status=DevicePairingStatus.CONFIGURED,
@@ -685,9 +685,7 @@ class Gateway(AsyncUtilMixin, BaseGateway):
             ZHA_GW_MSG_DEVICE_FULL_INIT,
             DeviceFullyInitializedEvent(device_info=device_info),
         )
-        # force async_initialize() to fire so don't explicitly call it
-        zha_device.available = False
-        zha_device.on_network = True
+        await zha_device.async_initialize(False)
 
     async def async_create_zigpy_group(
         self,

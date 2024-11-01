@@ -151,8 +151,6 @@ class SwitchGroup(GroupEntity, BaseSwitch):
         super().__init__(group)
         self._state: bool
         self._on_off_cluster_handler = group.zigpy_group.endpoint[OnOff.cluster_id]
-        if hasattr(self, "info_object"):
-            delattr(self, "info_object")
         self.update()
 
     @property
@@ -258,7 +256,7 @@ class ConfigurableAttributeSwitch(PlatformEntity):
         self._off_value = entity_metadata.off_value
         self._on_value = entity_metadata.on_value
 
-    @functools.cached_property
+    @property
     def info_object(self) -> ConfigurableAttributeSwitchInfo:
         """Return representation of the switch configuration entity."""
         return ConfigurableAttributeSwitchInfo(

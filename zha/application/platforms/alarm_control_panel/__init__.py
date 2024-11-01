@@ -109,7 +109,7 @@ class AlarmControlPanel(PlatformEntity, AlarmControlPanelEntityInterface):
             CLUSTER_HANDLER_STATE_CHANGED, self._handle_event_protocol
         )
 
-    @functools.cached_property
+    @property
     def info_object(self) -> AlarmControlPanelEntityInfo:
         """Return a representation of the alarm control panel."""
         return AlarmControlPanelEntityInfo(

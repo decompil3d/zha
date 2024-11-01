@@ -92,7 +92,7 @@ class EnumSelectEntity(PlatformEntity, SelectEntityInterface):
         self._attr_options = [entry.name.replace("_", " ") for entry in self._enum]
         super().__init__(unique_id, cluster_handlers, endpoint, device, **kwargs)
 
-    @functools.cached_property
+    @property
     def info_object(self) -> EnumSelectInfo:
         """Return a representation of the select."""
         return EnumSelectInfo(
@@ -234,7 +234,7 @@ class ZCLEnumSelectEntity(PlatformEntity, SelectEntityInterface):
         self._attribute_name = entity_metadata.attribute_name
         self._enum = entity_metadata.enum
 
-    @functools.cached_property
+    @property
     def info_object(self) -> EnumSelectInfo:
         """Return a representation of the select."""
         return EnumSelectInfo(
@@ -278,6 +278,7 @@ class ZCLEnumSelectEntity(PlatformEntity, SelectEntityInterface):
         self,
         *,
         state: str,
+        **kwargs,
     ) -> None:
         """Restore extra state attributes."""
         # Select entities backed by the ZCL cache don't need to restore their state!

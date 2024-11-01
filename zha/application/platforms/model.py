@@ -164,6 +164,7 @@ class BooleanState(BaseModel):
         "DanfossPreheatStatus",
     ]
     state: bool
+    available: bool
 
 
 class BasePlatformEntityInfo(EventBase, BaseEntityInfo):

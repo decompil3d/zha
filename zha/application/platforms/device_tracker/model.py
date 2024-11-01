@@ -16,6 +16,7 @@ class DeviceTrackerState(BaseModel):
     connected: bool
     battery_level: float | None = None
     source_type: SourceType
+    available: bool
 
 
 class DeviceTrackerEntityInfo(BasePlatformEntityInfo):

@@ -5,7 +5,6 @@ from __future__ import annotations
 from abc import abstractmethod
 import asyncio
 from contextlib import suppress
-import functools
 from functools import cached_property
 import logging
 from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar, final
@@ -147,7 +146,7 @@ class BaseEntity(LogMixin, EventBase):
             platform=self.PLATFORM,
         )
 
-    @cached_property
+    @property
     def info_object(self) -> BaseEntityInfo:
         """Return a representation of the platform entity."""
 
@@ -329,7 +328,7 @@ class PlatformEntity(BaseEntity):
             endpoint_id=self.endpoint.id,
         )
 
-    @cached_property
+    @property
     def info_object(self) -> BaseEntityInfo:
         """Return a representation of the platform entity."""
         return super().info_object.model_copy(
@@ -422,10 +421,12 @@ class GroupEntity(BaseEntity):
             group_id=self.group_id,
         )
 
-    @cached_property
+    @property
     def info_object(self) -> BaseEntityInfo:
         """Return a representation of the group."""
-        return super().info_object.model_copy(update={"group_id": self.group_id})
+        return super().info_object.model_copy(
+            update={"group_id": self.group_id, "available": self.available}
+        )
 
     @property
     def state(self) -> dict[str, Any]:
@@ -505,7 +506,7 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
         self._attr_device_class = self._entity_info.device_class
         self._attr_state_class = self._entity_info.state_class
 
-    @functools.cached_property
+    @property
     def info_object(self) -> BaseEntityInfoType:
         """Return a representation of the alarm control panel."""
         return self._entity_info
@@ -520,6 +521,11 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
         """Set the state of the entity."""
         self._entity_info.state = value
         self._attr_enabled = self._entity_info.enabled
+
+    @property
+    def group_id(self) -> int | None:
+        """Return the group id."""
+        return self._entity_info.group_id
 
     def enable(self) -> None:
         """Enable the entity."""

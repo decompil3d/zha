@@ -160,7 +160,7 @@ class FirmwareUpdateEntity(PlatformEntity, FirmwareUpdateEntityInterface):
             self.handle_cluster_handler_attribute_updated,
         )
 
-    @functools.cached_property
+    @property
     def info_object(self) -> FirmwareUpdateEntityInfo:
         """Return a representation of the entity."""
         return FirmwareUpdateEntityInfo(

@@ -21,6 +21,7 @@ class CoverState(BaseModel):
     is_opening: bool
     is_closing: bool
     is_closed: bool | None = None
+    available: bool
 
 
 class ShadeState(BaseModel):
@@ -32,6 +33,7 @@ class ShadeState(BaseModel):
     )
     is_closed: bool | None = None
     state: str | None = None
+    available: bool
 
 
 class CoverEntityInfo(BasePlatformEntityInfo):

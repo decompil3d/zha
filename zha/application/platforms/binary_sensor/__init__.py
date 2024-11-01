@@ -92,7 +92,7 @@ class BinarySensor(PlatformEntity, BinarySensorEntityInterface):
                 _LOGGER,
             )
 
-    @functools.cached_property
+    @property
     def info_object(self) -> BinarySensorEntityInfo:
         """Return a representation of the binary sensor."""
         return BinarySensorEntityInfo(
