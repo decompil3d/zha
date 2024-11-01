@@ -33,6 +33,7 @@ class APICommands(StrEnum):
     # Light API commands
     LIGHT_TURN_ON = "light_turn_on"
     LIGHT_TURN_OFF = "light_turn_off"
+    LIGHT_RESTORE_EXTERNAL_STATE_ATTRIBUTES = "light_restore_external_state_attributes"
 
     # Switch API commands
     SWITCH_TURN_ON = "switch_turn_on"

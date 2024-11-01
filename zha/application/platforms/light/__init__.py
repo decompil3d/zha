@@ -1016,6 +1016,7 @@ class Light(PlatformEntity, BaseLight):
         xy_color: tuple[float, float] | None,
         color_mode: ColorMode | None,
         effect: str | None,
+        **kwargs,
     ) -> None:
         """Restore extra state attributes that are stored outside of the ZCL cache."""
         if state is not None:
@@ -1034,6 +1035,7 @@ class Light(PlatformEntity, BaseLight):
             self._color_mode = color_mode
         if effect is not None:
             self._effect = effect
+        self.maybe_emit_state_changed_event()
 
 
 @STRICT_MATCH(
@@ -1405,3 +1407,30 @@ class WebSocketClientLightEntity(
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the entity off."""
         await self._device.gateway.lights.turn_off(self.info_object, **kwargs)
+
+    def restore_external_state_attributes(
+        self,
+        *,
+        state: bool | None,
+        off_with_transition: bool | None,
+        off_brightness: int | None,
+        brightness: int | None,
+        color_temp: int | None,
+        xy_color: tuple[float, float] | None,
+        color_mode: ColorMode | None,
+        effect: str | None,
+    ) -> None:
+        """Restore extra state attributes that are stored outside of the ZCL cache."""
+        self._device.gateway.create_and_track_task(
+            self._device.gateway.lights.restore_external_state_attributes(
+                self.info_object,
+                state=state,
+                off_with_transition=off_with_transition,
+                off_brightness=off_brightness,
+                brightness=brightness,
+                color_temp=color_temp,
+                xy_color=xy_color,
+                color_mode=color_mode,
+                effect=effect,
+            )
+        )

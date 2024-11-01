@@ -28,6 +28,7 @@ from tests.common import (
     send_attributes_report,
     update_attribute_cache,
 )
+from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.gateway import Gateway
 from zha.application.platforms import GroupEntity, PlatformEntity
@@ -38,7 +39,7 @@ from zha.application.platforms.light.const import (
     ColorMode,
 )
 from zha.zigbee.device import Device
-from zha.zigbee.group import Group, GroupMemberReference
+from zha.zigbee.group import GroupMemberReference
 
 ON = 1
 OFF = 0
@@ -276,10 +277,16 @@ async def eWeLink_light_mock(
     return zha_device
 
 
+@pytest.mark.parametrize(
+    "gateway_type",
+    ["zha_gateway", "ws_gateway"],
+)
 async def test_light_refresh(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
+    gateway_type: str,
 ):
     """Test zha light platform refresh."""
+    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(zha_gateway, LIGHT_ON_OFF)
     on_off_cluster = zigpy_device.endpoints[1].on_off
     on_off_cluster.PLUGGED_ATTR_READS = {"on_off": 0}
@@ -317,6 +324,7 @@ async def test_light_refresh(
     read_await_count = on_off_cluster.read_attributes.await_count
 
     entity.disable()
+    await zha_gateway.async_block_till_done()
 
     assert entity.enabled is False
 
@@ -328,6 +336,7 @@ async def test_light_refresh(
     assert bool(entity.state["on"]) is False
 
     entity.enable()
+    await zha_gateway.async_block_till_done()
 
     assert entity.enabled is True
 
@@ -356,16 +365,25 @@ async def test_light_refresh(
     new=AsyncMock(return_value=[sentinel.data, zcl_f.Status.SUCCESS]),
 )
 @pytest.mark.parametrize(
-    "device, reporting",
-    [(LIGHT_ON_OFF, (1, 0, 0)), (LIGHT_LEVEL, (1, 1, 0)), (LIGHT_COLOR, (1, 1, 3))],
+    "device, reporting, gateway_type",
+    [
+        (LIGHT_ON_OFF, (1, 0, 0), "zha_gateway"),
+        (LIGHT_LEVEL, (1, 1, 0), "zha_gateway"),
+        (LIGHT_COLOR, (1, 1, 3), "zha_gateway"),
+        (LIGHT_ON_OFF, (1, 0, 0), "ws_gateway"),
+        (LIGHT_LEVEL, (1, 1, 0), "ws_gateway"),
+        (LIGHT_COLOR, (1, 1, 3), "ws_gateway"),
+    ],
 )
 async def test_light(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
     device: dict,
     reporting: tuple,  # pylint: disable=unused-argument
+    gateway_type: str,
 ) -> None:
     """Test zha light platform."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     # create zigpy devices
     zigpy_device = create_mock_zigpy_device(zha_gateway, device)
     cluster_color: lighting.Color = getattr(
@@ -462,12 +480,12 @@ async def test_light(
         cluster_color.request.reset_mock()
 
         # test color xy from the client
-        assert entity.state["xy_color"] != [13369, 18087]
-        await entity.async_turn_on(brightness=50, xy_color=[13369, 18087])
+        assert entity.state["xy_color"] != (13369, 18087)
+        await entity.async_turn_on(brightness=50, xy_color=(13369, 18087))
         await zha_gateway.async_block_till_done()
         assert entity.state["color_mode"] == ColorMode.XY
         assert entity.state["brightness"] == 50
-        assert entity.state["xy_color"] == [13369, 18087]
+        assert entity.state["xy_color"] == (13369, 18087)
         assert cluster_color.request.call_count == 1
         assert cluster_color.request.await_count == 1
         assert cluster_color.request.call_args == call(
@@ -743,11 +761,17 @@ async def async_test_flash_from_client(
     "zigpy.zcl.clusters.general.OnOff.request",
     new=AsyncMock(return_value=[sentinel.data, zcl_f.Status.SUCCESS]),
 )
+@pytest.mark.parametrize(
+    "gateway_type",
+    ["zha_gateway", "ws_gateway"],
+)
 async def test_zha_group_light_entity(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
+    gateway_type: str,
 ) -> None:
     """Test the light entity for a ZHA group."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     coordinator = await coordinator_mock(zha_gateway)
     device_light_1 = await device_light_1_mock(zha_gateway)
     device_light_2 = await device_light_2_mock(zha_gateway)
@@ -760,8 +784,14 @@ async def test_zha_group_light_entity(
     ]
 
     # test creating a group with 2 members
-    zha_group: Group = await zha_gateway.async_create_zigpy_group("Test Group", members)
-    await zha_gateway.async_block_till_done()
+    if gateway_type == "zha_gateway":
+        zha_group = await zha_gateway.async_create_zigpy_group("Test Group", members)
+        await zha_gateway.async_block_till_done()
+    else:
+        zha_group = await zha_gateway.server_gateway.async_create_zigpy_group(
+            "Test Group", members
+        )
+        await zha_gateway.async_block_till_done()
 
     assert zha_group is not None
     assert len(zha_group.members) == 2
@@ -792,11 +822,34 @@ async def test_zha_group_light_entity(
     group_cluster_identify = zha_group.zigpy_group.endpoint[general.Identify.cluster_id]
     assert group_cluster_identify is not None
 
-    dev1_cluster_on_off = device_light_1.device.endpoints[1].on_off
-    dev2_cluster_on_off = device_light_2.device.endpoints[1].on_off
-    dev3_cluster_on_off = device_light_3.device.endpoints[1].on_off
+    if gateway_type == "zha_gateway":
+        dev1_cluster_on_off = device_light_1.device.endpoints[1].on_off
+        dev1_cluster_level = device_light_1.device.endpoints[1].level
 
-    dev1_cluster_level = device_light_1.device.endpoints[1].level
+        dev2_cluster_on_off = device_light_2.device.endpoints[1].on_off
+        dev3_cluster_on_off = device_light_3.device.endpoints[1].on_off
+    else:
+        dev1_cluster_on_off = (
+            zha_gateway.server_gateway.devices[device_light_1.ieee]
+            .device.endpoints[1]
+            .on_off
+        )
+        dev1_cluster_level = (
+            zha_gateway.server_gateway.devices[device_light_1.ieee]
+            .device.endpoints[1]
+            .level
+        )
+
+        dev2_cluster_on_off = (
+            zha_gateway.server_gateway.devices[device_light_2.ieee]
+            .device.endpoints[1]
+            .on_off
+        )
+        dev3_cluster_on_off = (
+            zha_gateway.server_gateway.devices[device_light_3.ieee]
+            .device.endpoints[1]
+            .on_off
+        )
 
     # test that the lights were created and are off
     assert bool(entity.state["on"]) is False
@@ -813,6 +866,7 @@ async def test_zha_group_light_entity(
         color_mode=ColorMode.XY,
         effect="colorloop",
     )
+    await zha_gateway.async_block_till_done()
 
     assert bool(entity.state["on"]) is False
     assert bool(entity.state["off_with_transition"]) is False
@@ -897,9 +951,17 @@ async def test_zha_group_light_entity(
     await zha_gateway.async_block_till_done()
     assert bool(entity.state["on"]) is True
 
-    await group_entity_availability_test(
-        zha_gateway, device_light_1, device_light_2, entity
-    )
+    if gateway_type == "zha_gateway":
+        await group_entity_availability_test(
+            zha_gateway, device_light_1, device_light_2, entity
+        )
+    else:
+        await group_entity_availability_test(
+            zha_gateway,
+            zha_gateway.server_gateway.devices[device_light_1.ieee],
+            zha_gateway.server_gateway.devices[device_light_2.ieee],
+            entity,
+        )
 
     # turn it off to test a new member add being tracked
     await send_attributes_report(zha_gateway, dev1_cluster_on_off, {0: 0})
@@ -1010,7 +1072,7 @@ async def test_zha_group_light_entity(
 
 
 @pytest.mark.parametrize(
-    ("plugged_attr_reads", "config_override", "expected_state"),
+    ("plugged_attr_reads", "config_override", "expected_state", "gateway_type"),
     [
         # HS light without cached hue or saturation
         (
@@ -1021,6 +1083,7 @@ async def test_zha_group_light_entity(
             },
             {},
             {},
+            "zha_gateway",
         ),
         # HS light with cached hue
         (
@@ -1032,6 +1095,7 @@ async def test_zha_group_light_entity(
             },
             {},
             {},
+            "zha_gateway",
         ),
         # HS light with cached saturation
         (
@@ -1043,6 +1107,7 @@ async def test_zha_group_light_entity(
             },
             {},
             {},
+            "zha_gateway",
         ),
         # HS light with both
         (
@@ -1055,19 +1120,70 @@ async def test_zha_group_light_entity(
             },
             {},
             {},
+            "zha_gateway",
+        ),
+        # HS light without cached hue or saturation
+        (
+            {
+                "color_capabilities": (
+                    lighting.Color.ColorCapabilities.Hue_and_saturation
+                ),
+            },
+            {},
+            {},
+            "ws_gateway",
+        ),
+        # HS light with cached hue
+        (
+            {
+                "color_capabilities": (
+                    lighting.Color.ColorCapabilities.Hue_and_saturation
+                ),
+                "current_hue": 100,
+            },
+            {},
+            {},
+            "ws_gateway",
+        ),
+        # HS light with cached saturation
+        (
+            {
+                "color_capabilities": (
+                    lighting.Color.ColorCapabilities.Hue_and_saturation
+                ),
+                "current_saturation": 100,
+            },
+            {},
+            {},
+            "ws_gateway",
+        ),
+        # HS light with both
+        (
+            {
+                "color_capabilities": (
+                    lighting.Color.ColorCapabilities.Hue_and_saturation
+                ),
+                "current_hue": 100,
+                "current_saturation": 100,
+            },
+            {},
+            {},
+            "ws_gateway",
         ),
     ],
 )
 # TODO expected_state is not used
 # TODO remove? No light will ever only support HS, we no longer support it
 async def test_light_initialization(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
     plugged_attr_reads: dict[str, Any],
     config_override: dict[str, Any],
     expected_state: dict[str, Any],  # pylint: disable=unused-argument
+    gateway_type: str,
 ) -> None:
     """Test ZHA light initialization with cached attributes and color modes."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     # create zigpy devices
     zigpy_device = create_mock_zigpy_device(zha_gateway, LIGHT_COLOR)
 
@@ -1099,11 +1215,17 @@ async def test_light_initialization(
     "zigpy.zcl.clusters.general.OnOff.request",
     new=AsyncMock(return_value=[sentinel.data, zcl_f.Status.SUCCESS]),
 )
+@pytest.mark.parametrize(
+    "gateway_type",
+    ["zha_gateway", "ws_gateway"],
+)
 async def test_transitions(
-    zha_gateway: Gateway,
+    zha_gateways: CombinedGateways,
+    gateway_type: str,
 ) -> None:
     """Test ZHA light transition code."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     device_light_1 = await device_light_1_mock(zha_gateway)
     device_light_2 = await device_light_2_mock(zha_gateway)
     eWeLink_light = await eWeLink_light_mock(zha_gateway)
@@ -1114,8 +1236,14 @@ async def test_transitions(
     ]
 
     # test creating a group with 2 members
-    zha_group: Group = await zha_gateway.async_create_zigpy_group("Test Group", members)
-    await zha_gateway.async_block_till_done()
+    if gateway_type == "zha_gateway":
+        zha_group = await zha_gateway.async_create_zigpy_group("Test Group", members)
+        await zha_gateway.async_block_till_done()
+    else:
+        zha_group = await zha_gateway.server_gateway.async_create_zigpy_group(
+            "Test Group", members
+        )
+        await zha_gateway.async_block_till_done()
 
     assert zha_group is not None
     assert len(zha_group.members) == 2
@@ -1139,17 +1267,66 @@ async def test_transitions(
     assert device_2_light_entity.unique_id in zha_group.all_member_entity_unique_ids
     assert eWeLink_light_entity.unique_id not in zha_group.all_member_entity_unique_ids
 
-    dev1_cluster_on_off = device_light_1.device.endpoints[1].on_off
-    dev2_cluster_on_off = device_light_2.device.endpoints[1].on_off
-    eWeLink_cluster_on_off = eWeLink_light.device.endpoints[1].on_off
+    if gateway_type == "zha_gateway":
+        dev1_cluster_on_off = device_light_1.device.endpoints[1].on_off
+        dev1_cluster_level = device_light_1.device.endpoints[1].level
+        dev1_cluster_color = device_light_1.device.endpoints[1].light_color
 
-    dev1_cluster_level = device_light_1.device.endpoints[1].level
-    dev2_cluster_level = device_light_2.device.endpoints[1].level
-    eWeLink_cluster_level = eWeLink_light.device.endpoints[1].level
+        dev2_cluster_on_off = device_light_2.device.endpoints[1].on_off
+        dev2_cluster_level = device_light_2.device.endpoints[1].level
+        dev2_cluster_color = device_light_2.device.endpoints[1].light_color
 
-    dev1_cluster_color = device_light_1.device.endpoints[1].light_color
-    dev2_cluster_color = device_light_2.device.endpoints[1].light_color
-    eWeLink_cluster_color = eWeLink_light.device.endpoints[1].light_color
+        eWeLink_cluster_on_off = eWeLink_light.device.endpoints[1].on_off
+        eWeLink_cluster_level = eWeLink_light.device.endpoints[1].level
+        eWeLink_cluster_color = eWeLink_light.device.endpoints[1].light_color
+    else:
+        dev1_cluster_on_off = (
+            zha_gateway.server_gateway.devices[device_light_1.ieee]
+            .device.endpoints[1]
+            .on_off
+        )
+        dev1_cluster_level = (
+            zha_gateway.server_gateway.devices[device_light_1.ieee]
+            .device.endpoints[1]
+            .level
+        )
+        dev1_cluster_color = (
+            zha_gateway.server_gateway.devices[device_light_1.ieee]
+            .device.endpoints[1]
+            .light_color
+        )
+
+        dev2_cluster_on_off = (
+            zha_gateway.server_gateway.devices[device_light_2.ieee]
+            .device.endpoints[1]
+            .on_off
+        )
+        dev2_cluster_level = (
+            zha_gateway.server_gateway.devices[device_light_2.ieee]
+            .device.endpoints[1]
+            .level
+        )
+        dev2_cluster_color = (
+            zha_gateway.server_gateway.devices[device_light_2.ieee]
+            .device.endpoints[1]
+            .light_color
+        )
+
+        eWeLink_cluster_on_off = (
+            zha_gateway.server_gateway.devices[eWeLink_light.ieee]
+            .device.endpoints[1]
+            .on_off
+        )
+        eWeLink_cluster_level = (
+            zha_gateway.server_gateway.devices[eWeLink_light.ieee]
+            .device.endpoints[1]
+            .level
+        )
+        eWeLink_cluster_color = (
+            zha_gateway.server_gateway.devices[eWeLink_light.ieee]
+            .device.endpoints[1]
+            .light_color
+        )
 
     # test that the lights were created and are off
     assert bool(entity.state["on"]) is False
@@ -1159,6 +1336,7 @@ async def test_transitions(
     # first test 0 length transition with no color and no brightness provided
     dev1_cluster_on_off.request.reset_mock()
     dev1_cluster_level.request.reset_mock()
+    dev1_cluster_color.request.reset_mock()
     await device_1_light_entity.async_turn_on(transition=0)
     await zha_gateway.async_block_till_done()
     assert dev1_cluster_on_off.request.call_count == 0
@@ -1760,12 +1938,37 @@ async def test_transitions(
     "zigpy.zcl.clusters.general.OnOff.request",
     new=AsyncMock(return_value=[sentinel.data, zcl_f.Status.SUCCESS]),
 )
-async def test_on_with_off_color(zha_gateway: Gateway) -> None:
+@pytest.mark.parametrize(
+    "gateway_type",
+    ["zha_gateway", "ws_gateway"],
+)
+async def test_on_with_off_color(
+    zha_gateways: CombinedGateways, gateway_type: str
+) -> None:
     """Test turning on the light and sending color commands before on/level commands for supporting lights."""
+    zha_gateway = getattr(zha_gateways, gateway_type)
     device_light_1 = await device_light_1_mock(zha_gateway)
-    dev1_cluster_on_off = device_light_1.device.endpoints[1].on_off
-    dev1_cluster_level = device_light_1.device.endpoints[1].level
-    dev1_cluster_color = device_light_1.device.endpoints[1].light_color
+
+    if gateway_type == "zha_gateway":
+        dev1_cluster_on_off = device_light_1.device.endpoints[1].on_off
+        dev1_cluster_level = device_light_1.device.endpoints[1].level
+        dev1_cluster_color = device_light_1.device.endpoints[1].light_color
+    else:
+        dev1_cluster_on_off = (
+            zha_gateway.server_gateway.devices[device_light_1.ieee]
+            .device.endpoints[1]
+            .on_off
+        )
+        dev1_cluster_level = (
+            zha_gateway.server_gateway.devices[device_light_1.ieee]
+            .device.endpoints[1]
+            .level
+        )
+        dev1_cluster_color = (
+            zha_gateway.server_gateway.devices[device_light_1.ieee]
+            .device.endpoints[1]
+            .light_color
+        )
 
     entity = get_entity(device_light_1, platform=Platform.LIGHT)
 
@@ -1812,12 +2015,15 @@ async def test_on_with_off_color(zha_gateway: Gateway) -> None:
     assert entity.state["color_temp"] == 235
     assert entity.state["color_mode"] == ColorMode.COLOR_TEMP
     assert entity.supported_color_modes == {ColorMode.COLOR_TEMP, ColorMode.XY}
-    assert entity._supported_color_modes == {
-        ColorMode.COLOR_TEMP,
-        ColorMode.XY,
-        ColorMode.ONOFF,
-        ColorMode.BRIGHTNESS,
-    }
+
+    # TODO what do we do here...
+    if gateway_type == "zha_gateway":
+        assert entity._supported_color_modes == {
+            ColorMode.COLOR_TEMP,
+            ColorMode.XY,
+            ColorMode.ONOFF,
+            ColorMode.BRIGHTNESS,
+        }
 
     # now let's turn off the Execute_if_off option and see if the old behavior is restored
     dev1_cluster_color.PLUGGED_ATTR_READS = {"options": 0}
@@ -1886,9 +2092,16 @@ async def test_on_with_off_color(zha_gateway: Gateway) -> None:
     "zigpy.zcl.clusters.general.LevelControl.request",
     new=AsyncMock(return_value=[sentinel.data, zcl_f.Status.SUCCESS]),
 )
-async def test_group_member_assume_state(zha_gateway: Gateway) -> None:
+@pytest.mark.parametrize(
+    "gateway_type",
+    ["zha_gateway", "ws_gateway"],
+)
+async def test_group_member_assume_state(
+    zha_gateways: CombinedGateways, gateway_type: str
+) -> None:
     """Test the group members assume state function."""
 
+    zha_gateway = getattr(zha_gateways, gateway_type)
     coordinator = await coordinator_mock(zha_gateway)
     device_light_1 = await device_light_1_mock(zha_gateway)
     device_light_2 = await device_light_2_mock(zha_gateway)
@@ -1907,8 +2120,14 @@ async def test_group_member_assume_state(zha_gateway: Gateway) -> None:
     ]
 
     # test creating a group with 2 members
-    zha_group: Group = await zha_gateway.async_create_zigpy_group("Test Group", members)
-    await zha_gateway.async_block_till_done()
+    if gateway_type == "zha_gateway":
+        zha_group = await zha_gateway.async_create_zigpy_group("Test Group", members)
+        await zha_gateway.async_block_till_done()
+    else:
+        zha_group = await zha_gateway.server_gateway.async_create_zigpy_group(
+            "Test Group", members
+        )
+        await zha_gateway.async_block_till_done()
 
     assert zha_group is not None
     assert len(zha_group.members) == 2
@@ -1978,8 +2197,15 @@ async def test_group_member_assume_state(zha_gateway: Gateway) -> None:
     assert device_2_light_entity.state["brightness"] == 100
 
 
-async def test_light_state_restoration(zha_gateway: Gateway) -> None:
+@pytest.mark.parametrize(
+    "gateway_type",
+    ["zha_gateway", "ws_gateway"],
+)
+async def test_light_state_restoration(
+    zha_gateways: CombinedGateways, gateway_type: str
+) -> None:
     """Test the light state restoration function."""
+    zha_gateway = getattr(zha_gateways, gateway_type)
     device_light_3 = await device_light_3_mock(zha_gateway)
     entity = get_entity(device_light_3, platform=Platform.LIGHT)
     entity.restore_external_state_attributes(
@@ -1992,6 +2218,7 @@ async def test_light_state_restoration(zha_gateway: Gateway) -> None:
         color_mode=ColorMode.XY,
         effect="colorloop",
     )
+    await zha_gateway.async_block_till_done()
 
     assert entity.state["on"] is True
     assert entity.state["brightness"] == 34
@@ -2010,6 +2237,7 @@ async def test_light_state_restoration(zha_gateway: Gateway) -> None:
         color_mode=None,
         effect=None,
     )
+    await zha_gateway.async_block_till_done()
 
     assert entity.state["on"] is True
     assert entity.state["brightness"] == 34

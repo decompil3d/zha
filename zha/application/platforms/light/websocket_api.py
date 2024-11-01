@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Annotated, Literal, Union
 from pydantic import Field, ValidationInfo, field_validator
 
 from zha.application.discovery import Platform
+from zha.application.platforms.light.const import ColorMode
 from zha.application.platforms.websocket_api import (
     PlatformEntityCommand,
     execute_platform_entity_command,
@@ -81,7 +82,36 @@ async def turn_off(
     await execute_platform_entity_command(server, client, command, "async_turn_off")
 
 
+class LightRestoreExternalStateAttributesCommand(PlatformEntityCommand):
+    """Light restore external state attributes command."""
+
+    command: Literal[APICommands.LIGHT_RESTORE_EXTERNAL_STATE_ATTRIBUTES] = (
+        APICommands.LIGHT_RESTORE_EXTERNAL_STATE_ATTRIBUTES
+    )
+    platform: str = Platform.LIGHT
+    state: bool | None = None
+    off_with_transition: bool | None = None
+    off_brightness: int | None = None
+    brightness: int | None = None
+    color_temp: int | None = None
+    xy_color: tuple[float, float] | None = None
+    color_mode: ColorMode | None = None
+    effect: str | None = None
+
+
+@decorators.websocket_command(LightRestoreExternalStateAttributesCommand)
+@decorators.async_response
+async def restore_light_external_state_attributes(
+    server: Server, client: Client, command: LightRestoreExternalStateAttributesCommand
+) -> None:
+    """Restore external state attributes for lights."""
+    await execute_platform_entity_command(
+        server, client, command, "restore_external_state_attributes"
+    )
+
+
 def load_api(server: Server) -> None:
     """Load the api command handlers."""
     register_api_command(server, turn_on)
     register_api_command(server, turn_off)
+    register_api_command(server, restore_light_external_state_attributes)

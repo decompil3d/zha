@@ -43,8 +43,10 @@ from zha.application.platforms.fan.websocket_api import (
     FanTurnOffCommand,
     FanTurnOnCommand,
 )
+from zha.application.platforms.light.const import ColorMode
 from zha.application.platforms.light.model import LightEntityInfo
 from zha.application.platforms.light.websocket_api import (
+    LightRestoreExternalStateAttributesCommand,
     LightTurnOffCommand,
     LightTurnOnCommand,
 )
@@ -161,6 +163,34 @@ class LightHelper:
             flash=flash,
         )
         return await self._client.async_send_command(command)
+
+    async def restore_external_state_attributes(
+        self,
+        light_platform_entity: LightEntityInfo,
+        state: bool | None,
+        off_with_transition: bool | None,
+        off_brightness: int | None,
+        brightness: int | None,
+        color_temp: int | None,
+        xy_color: tuple[float, float] | None,
+        color_mode: ColorMode | None,
+        effect: str | None,
+    ) -> None:
+        """Restore extra state attributes that are stored outside of the ZCL cache."""
+        command = LightRestoreExternalStateAttributesCommand(
+            ieee=light_platform_entity.device_ieee,
+            group_id=light_platform_entity.group_id,
+            unique_id=light_platform_entity.unique_id,
+            state=state,
+            off_with_transition=off_with_transition,
+            off_brightness=off_brightness,
+            brightness=brightness,
+            color_temp=color_temp,
+            xy_color=xy_color,
+            color_mode=color_mode,
+            effect=effect,
+        )
+        await self._client.async_send_command(command)
 
 
 class SwitchHelper:
