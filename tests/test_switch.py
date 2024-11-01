@@ -378,10 +378,16 @@ async def test_zha_group_switch_entity(
     # test that group light is now back on
     assert bool(entity.state["state"]) is True
 
-    # TODO remove when availability is implemented
     if gateway_type == "zha_gateway":
         await group_entity_availability_test(
             zha_gateway, device_switch_1, device_switch_2, entity
+        )
+    else:
+        await group_entity_availability_test(
+            zha_gateway,
+            zha_gateway.server_gateway.devices[device_switch_1.ieee],
+            zha_gateway.server_gateway.devices[device_switch_2.ieee],
+            entity,
         )
 
 
