@@ -1018,11 +1018,12 @@ class WebSocketClientGateway(BaseGateway):
         """Disconnect from the websocket server."""
         await self.disconnect()
 
-    def create_and_track_task(self, coroutine: Coroutine) -> None:
+    def create_and_track_task(self, coroutine: Coroutine) -> asyncio.Task:
         """Create and track a task."""
         task = asyncio.create_task(coroutine)
         self._tasks.append(task)
         task.add_done_callback(self._tasks.remove)
+        return task
 
     async def _await_and_log_pending(
         self, pending: Collection[asyncio.Future[Any]]

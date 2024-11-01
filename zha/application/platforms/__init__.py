@@ -29,6 +29,7 @@ from zha.mixins import LogMixin
 from zha.model import BaseEvent
 
 if TYPE_CHECKING:
+    from zha.websocket.server.api.model import WebSocketCommandResponse
     from zha.zigbee.cluster_handlers import ClusterHandler
     from zha.zigbee.device import Device, WebSocketClientDevice
     from zha.zigbee.endpoint import Endpoint
@@ -522,15 +523,33 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
 
     def enable(self) -> None:
         """Enable the entity."""
-        self._device.gateway.create_and_track_task(
+        task = self._device.gateway.create_and_track_task(
             self._device.gateway.entities.enable(self._entity_info)
         )
+        task.add_done_callback(self._enable)
 
     def disable(self) -> None:
         """Disable the entity."""
-        self._device.gateway.create_and_track_task(
+        task = self._device.gateway.create_and_track_task(
             self._device.gateway.entities.disable(self._entity_info)
         )
+        task.add_done_callback(self._disable)
+
+    def _enable(self, future: asyncio.Future) -> None:
+        """Enable the entity."""
+        response: WebSocketCommandResponse = future.result()
+        if response.success:
+            self._entity_info.enabled = True
+            self._attr_enabled = True
+            self.maybe_emit_state_changed_event()
+
+    def _disable(self, future: asyncio.Future) -> None:
+        """Disable the entity."""
+        response: WebSocketCommandResponse = future.result()
+        if response.success:
+            self._entity_info.enabled = False
+            self._attr_enabled = False
+            self.maybe_emit_state_changed_event()
 
     async def async_update(self) -> None:
         """Retrieve latest state."""

@@ -425,28 +425,28 @@ async def test_sinope_time(
     write_attributes.reset_mock()
     async_update_time_mock.reset_mock()
 
-    # TODO remove this when enable / disable are working
-    if gateway_type == "zha_gateway":
-        entity.disable()
+    entity.disable()
+    await zha_gateway.async_block_till_done()
 
-        assert entity.enabled is False
+    assert entity.enabled is False
 
-        await asyncio.sleep(4600)
+    await asyncio.sleep(4600)
 
-        assert async_update_time_mock.await_count == 0
-        assert mfg_cluster.write_attributes.await_count == 0
+    assert async_update_time_mock.await_count == 0
+    assert mfg_cluster.write_attributes.await_count == 0
 
-        entity.enable()
+    entity.enable()
+    await zha_gateway.async_block_till_done()
 
-        assert entity.enabled is True
+    assert entity.enabled is True
 
-        await asyncio.sleep(4600)
+    await asyncio.sleep(4600)
 
-        assert async_update_time_mock.await_count == 1
-        assert mfg_cluster.write_attributes.await_count == 1
+    assert async_update_time_mock.await_count == 1
+    assert mfg_cluster.write_attributes.await_count == 1
 
-        write_attributes.reset_mock()
-        entity._async_update_time.reset_mock()
+    write_attributes.reset_mock()
+    async_update_time_mock.reset_mock()
 
     if isinstance(entity, WebSocketClientEntity):
         server_entity = get_entity(
