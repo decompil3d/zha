@@ -152,7 +152,7 @@ class ClusterHandler(LogMixin, EventBase):
         """Filter the cluster match for specific devices."""
         return True
 
-    @functools.cached_property
+    @property
     def info_object(self) -> ClusterHandlerInfo:
         """Return info about this cluster handler."""
         return ClusterHandlerInfo(
