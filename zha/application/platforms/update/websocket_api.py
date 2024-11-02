@@ -20,9 +20,7 @@ if TYPE_CHECKING:
 class InstallFirmwareCommand(PlatformEntityCommand):
     """Install firmware command."""
 
-    command: Literal[APICommands.SELECT_SELECT_OPTION] = (
-        APICommands.SELECT_SELECT_OPTION
-    )
+    command: Literal[APICommands.FIRMWARE_INSTALL] = APICommands.FIRMWARE_INSTALL
     platform: str = Platform.UPDATE
     version: str | None = None
 
