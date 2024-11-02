@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable
 import json
 import logging
@@ -55,8 +54,8 @@ class Client:
 
     def disconnect(self) -> None:
         """Disconnect this client and close the websocket."""
-        self._client_manager.server.track_ws_task(
-            asyncio.create_task(self._websocket.close())
+        self._client_manager.server.async_create_task(
+            self._websocket.close(), name="disconnect", eager_start=True
         )
 
     def send_event(self, message: BaseEvent) -> None:
@@ -127,8 +126,8 @@ class Client:
             _LOGGER.exception("Couldn't serialize data: %s", message, exc_info=exc)
             raise exc
         else:
-            self._client_manager.server.track_ws_task(
-                asyncio.create_task(self._websocket.send(message_json))
+            self._client_manager.server.async_create_task(
+                self._websocket.send(message_json), name="send_data", eager_start=True
             )
 
     async def _handle_incoming_message(self, message: str | bytes) -> None:
@@ -169,8 +168,10 @@ class Client:
     async def listen(self) -> None:
         """Listen for incoming messages."""
         async for message in self._websocket:
-            self._client_manager.server.track_ws_task(
-                asyncio.create_task(self._handle_incoming_message(message))
+            self._client_manager.server.async_create_task(
+                self._handle_incoming_message(message),
+                name="handle_incoming_message",
+                eager_start=True,
             )
 
     def will_accept_message(self, message: BaseEvent) -> bool:

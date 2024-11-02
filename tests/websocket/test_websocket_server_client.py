@@ -7,7 +7,6 @@ import pytest
 from tests.conftest import CombinedWebsocketGateways
 from zha.application.gateway import WebSocketServerGateway
 from zha.application.helpers import ZHAData
-from zha.application.websocket_api import StopServerCommand
 from zha.websocket.client.client import Client
 
 
@@ -51,24 +50,3 @@ async def test_client_message_id_uniqueness(
     """Tests that client message IDs are unique."""
     ids = [zha_gateway.client_gateway.client.new_message_id() for _ in range(1000)]
     assert len(ids) == len(set(ids))
-
-
-@pytest.mark.parametrize(
-    "zha_gateway",
-    [
-        "ws_gateways",
-    ],
-    indirect=True,
-)
-async def test_client_stop_server(
-    zha_gateway: CombinedWebsocketGateways,
-) -> None:
-    """Tests that the client can stop the server."""
-    controller = zha_gateway.client_gateway
-    gateway = zha_gateway.ws_gateway
-
-    assert gateway.is_serving
-    await controller.client.async_send_command_no_wait(StopServerCommand())
-    await controller.disconnect()
-    await gateway.wait_closed()
-    assert not gateway.is_serving

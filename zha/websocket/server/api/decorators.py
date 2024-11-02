@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable
 from functools import wraps
 import logging
@@ -49,8 +48,10 @@ def async_response(
         """Schedule the handler."""
         # As the webserver is now started before the start
         # event we do not want to block for websocket responders
-        server.track_ws_task(
-            asyncio.create_task(_handle_async_response(func, server, client, msg))
+        server.async_create_task(
+            _handle_async_response(func, server, client, msg),
+            "_handle_async_response",
+            eager_start=True,
         )
 
     return schedule_handler

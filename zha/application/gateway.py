@@ -806,7 +806,6 @@ class WebSocketServerGateway(Gateway):
         self._ws_server: websockets.WebSocketServer | None = None
         self._client_manager: ClientManager = ClientManager(self)
         self._stopped_event: asyncio.Event = asyncio.Event()
-        self._tracked_ws_tasks: set[asyncio.Task] = set()
         self.data: dict[Any, Any] = {}
         for platform in discovery.PLATFORMS:
             self.data.setdefault(platform, [])
@@ -861,13 +860,6 @@ class WebSocketServerGateway(Gateway):
         """Wait until the server is not running."""
         await self._stopped_event.wait()
         _LOGGER.info("Server stopped. Completing remaining tasks...")
-        tasks = [t for t in self._tracked_ws_tasks if not (t.done() or t.cancelled())]
-        for task in tasks:
-            _LOGGER.debug("Cancelling task: %s", task)
-            task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await asyncio.gather(*tasks, return_exceptions=True)
-
         tasks = [
             t
             for t in self._tracked_completable_tasks
@@ -878,11 +870,6 @@ class WebSocketServerGateway(Gateway):
             task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await asyncio.gather(*tasks, return_exceptions=True)
-
-    def track_ws_task(self, task: asyncio.Task) -> None:
-        """Create a tracked ws task."""
-        self._tracked_ws_tasks.add(task)
-        task.add_done_callback(self._tracked_ws_tasks.remove)
 
     async def __aenter__(self) -> WebSocketServerGateway:
         """Enter the context manager."""

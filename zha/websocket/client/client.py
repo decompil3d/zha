@@ -49,6 +49,7 @@ class Client(EventBase):
         self._loop = asyncio.get_running_loop()
         self._result_futures: dict[int, asyncio.Future] = {}
         self._listen_task: asyncio.Task | None = None
+        self._tasks: set[asyncio.Task] = set()
 
         self._message_id = 0
 
@@ -99,7 +100,12 @@ class Client(EventBase):
     async def async_send_command_no_wait(self, command: WebSocketCommand) -> None:
         """Send a command without waiting for the response."""
         command.message_id = self.new_message_id()
-        await self._send_json_message(command.model_dump_json(exclude_none=True))
+        task = asyncio.create_task(
+            self._send_json_message(command.model_dump_json(exclude_none=True)),
+            name=f"async_send_command_no_wait:{command.command}",
+        )
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.remove)
 
     async def connect(self) -> None:
         """Connect to the websocket server."""

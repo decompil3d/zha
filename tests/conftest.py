@@ -353,7 +353,7 @@ class CombinedWebsocketGateways:
 
     async def async_block_till_done(self) -> None:
         """Block until all gateways are done."""
-        await asyncio.sleep(0.001)
+        await asyncio.sleep(0.005)
         await self.ws_gateway.async_block_till_done()
         await asyncio.sleep(0.001)
 
