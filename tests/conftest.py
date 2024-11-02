@@ -434,36 +434,6 @@ class CombinedWebsocketGatewaysContextManager:
 
 
 @pytest.fixture
-async def connected_client_and_server(
-    zha_data: ZHAData,
-    zigpy_app_controller: ControllerApplication,
-    caplog: pytest.LogCaptureFixture,  # pylint: disable=unused-argument
-) -> AsyncGenerator[tuple[WebSocketClientGateway, WebSocketServerGateway], None]:
-    """Return the connected client and server fixture."""
-
-    with (
-        patch(
-            "bellows.zigbee.application.ControllerApplication.new",
-            return_value=zigpy_app_controller,
-        ),
-        patch(
-            "bellows.zigbee.application.ControllerApplication",
-            return_value=zigpy_app_controller,
-        ),
-    ):
-        ws_gateway = await WebSocketServerGateway.async_from_config(zha_data)
-        await ws_gateway.async_initialize()
-        await ws_gateway.async_block_till_done()
-        await ws_gateway.async_initialize_devices_and_entities()
-        async with (
-            ws_gateway as gateway,
-            WebSocketClientGateway(zha_data) as controller,
-        ):
-            await controller.clients.listen()
-            yield controller, gateway
-
-
-@pytest.fixture
 async def zha_gateway(
     zha_data: ZHAData,
     zigpy_app_controller,
@@ -471,7 +441,6 @@ async def zha_gateway(
     caplog,  # pylint: disable=unused-argument
 ) -> AsyncGenerator[Gateway | CombinedWebsocketGateways, None]:
     """Set up ZHA component."""
-
     with (
         patch(
             "bellows.zigbee.application.ControllerApplication.new",
@@ -537,8 +506,11 @@ def cluster_handler() -> Callable:
     return cluster_handler_factory
 
 
+# https://github.com/nolar/looptime arg docs are here
 def pytest_collection_modifyitems(config, items):
     """Add the looptime marker to all tests except the test_async.py file."""
     for item in items:
         if "test_async_.py" not in item.nodeid:
-            item.add_marker(pytest.mark.looptime)
+            item.add_marker(
+                pytest.mark.looptime.with_args(noop_cycles=100, idle_step=0.000001)
+            )
