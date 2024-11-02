@@ -15,7 +15,7 @@ from zha.websocket.const import APICommands
 from zha.websocket.server.api import decorators, register_api_command
 
 if TYPE_CHECKING:
-    from zha.application.gateway import WebSocketServerGateway as Server
+    from zha.application.gateway import WebSocketServerGateway
     from zha.websocket.server.client import Client
 
 
@@ -31,9 +31,11 @@ class FanTurnOnCommand(PlatformEntityCommand):
 
 @decorators.websocket_command(FanTurnOnCommand)
 @decorators.async_response
-async def turn_on(server: Server, client: Client, command: FanTurnOnCommand) -> None:
+async def turn_on(
+    gateway: WebSocketServerGateway, client: Client, command: FanTurnOnCommand
+) -> None:
     """Turn fan on."""
-    await execute_platform_entity_command(server, client, command, "async_turn_on")
+    await execute_platform_entity_command(gateway, client, command, "async_turn_on")
 
 
 class FanTurnOffCommand(PlatformEntityCommand):
@@ -45,9 +47,11 @@ class FanTurnOffCommand(PlatformEntityCommand):
 
 @decorators.websocket_command(FanTurnOffCommand)
 @decorators.async_response
-async def turn_off(server: Server, client: Client, command: FanTurnOffCommand) -> None:
+async def turn_off(
+    gateway: WebSocketServerGateway, client: Client, command: FanTurnOffCommand
+) -> None:
     """Turn fan off."""
-    await execute_platform_entity_command(server, client, command, "async_turn_off")
+    await execute_platform_entity_command(gateway, client, command, "async_turn_off")
 
 
 class FanSetPercentageCommand(PlatformEntityCommand):
@@ -61,11 +65,11 @@ class FanSetPercentageCommand(PlatformEntityCommand):
 @decorators.websocket_command(FanSetPercentageCommand)
 @decorators.async_response
 async def set_percentage(
-    server: Server, client: Client, command: FanSetPercentageCommand
+    gateway: WebSocketServerGateway, client: Client, command: FanSetPercentageCommand
 ) -> None:
     """Set the fan speed percentage."""
     await execute_platform_entity_command(
-        server, client, command, "async_set_percentage"
+        gateway, client, command, "async_set_percentage"
     )
 
 
@@ -80,17 +84,17 @@ class FanSetPresetModeCommand(PlatformEntityCommand):
 @decorators.websocket_command(FanSetPresetModeCommand)
 @decorators.async_response
 async def set_preset_mode(
-    server: Server, client: Client, command: FanSetPresetModeCommand
+    gateway: WebSocketServerGateway, client: Client, command: FanSetPresetModeCommand
 ) -> None:
     """Set the fan preset mode."""
     await execute_platform_entity_command(
-        server, client, command, "async_set_preset_mode"
+        gateway, client, command, "async_set_preset_mode"
     )
 
 
-def load_api(server: Server) -> None:
+def load_api(gateway: WebSocketServerGateway) -> None:
     """Load the api command handlers."""
-    register_api_command(server, turn_on)
-    register_api_command(server, turn_off)
-    register_api_command(server, set_percentage)
-    register_api_command(server, set_preset_mode)
+    register_api_command(gateway, turn_on)
+    register_api_command(gateway, turn_off)
+    register_api_command(gateway, set_percentage)
+    register_api_command(gateway, set_preset_mode)

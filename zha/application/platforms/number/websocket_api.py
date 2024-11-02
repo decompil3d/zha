@@ -13,7 +13,7 @@ from zha.websocket.const import APICommands
 from zha.websocket.server.api import decorators, register_api_command
 
 if TYPE_CHECKING:
-    from zha.application.gateway import WebSocketServerGateway as Server
+    from zha.application.gateway import WebSocketServerGateway
     from zha.websocket.server.client import Client
 
 ATTR_VALUE = "value"
@@ -31,14 +31,14 @@ class NumberSetValueCommand(PlatformEntityCommand):
 @decorators.websocket_command(NumberSetValueCommand)
 @decorators.async_response
 async def set_value(
-    server: Server, client: Client, command: NumberSetValueCommand
+    gateway: WebSocketServerGateway, client: Client, command: NumberSetValueCommand
 ) -> None:
     """Select an option."""
     await execute_platform_entity_command(
-        server, client, command, "async_set_native_value"
+        gateway, client, command, "async_set_native_value"
     )
 
 
-def load_api(server: Server) -> None:
+def load_api(gateway: WebSocketServerGateway) -> None:
     """Load the api command handlers."""
-    register_api_command(server, set_value)
+    register_api_command(gateway, set_value)

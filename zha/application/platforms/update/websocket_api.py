@@ -13,7 +13,7 @@ from zha.websocket.const import APICommands
 from zha.websocket.server.api import decorators, register_api_command
 
 if TYPE_CHECKING:
-    from zha.application.gateway import WebSocketServerGateway as Server
+    from zha.application.gateway import WebSocketServerGateway
     from zha.websocket.server.client import Client
 
 
@@ -28,12 +28,12 @@ class InstallFirmwareCommand(PlatformEntityCommand):
 @decorators.websocket_command(InstallFirmwareCommand)
 @decorators.async_response
 async def install_firmware(
-    server: Server, client: Client, command: InstallFirmwareCommand
+    gateway: WebSocketServerGateway, client: Client, command: InstallFirmwareCommand
 ) -> None:
     """Select an option."""
-    await execute_platform_entity_command(server, client, command, "async_install")
+    await execute_platform_entity_command(gateway, client, command, "async_install")
 
 
-def load_api(server: Server) -> None:
+def load_api(gateway: WebSocketServerGateway) -> None:
     """Load the api command handlers."""
-    register_api_command(server, install_firmware)
+    register_api_command(gateway, install_firmware)

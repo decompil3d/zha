@@ -54,7 +54,7 @@ class Client:
 
     def disconnect(self) -> None:
         """Disconnect this client and close the websocket."""
-        self._client_manager.server.async_create_task(
+        self._client_manager.server_gateway.async_create_task(
             self._websocket.close(), name="disconnect", eager_start=True
         )
 
@@ -126,7 +126,7 @@ class Client:
             _LOGGER.exception("Couldn't serialize data: %s", message, exc_info=exc)
             raise exc
         else:
-            self._client_manager.server.async_create_task(
+            self._client_manager.server_gateway.async_create_task(
                 self._websocket.send(message_json), name="send_data", eager_start=True
             )
 
@@ -134,7 +134,7 @@ class Client:
         """Handle an incoming message."""
         _LOGGER.info("Message received: %s", message)
         handlers: dict[str, tuple[Callable, WebSocketCommand]] = (
-            self._client_manager.server.data[WEBSOCKET_API]
+            self._client_manager.server_gateway.data[WEBSOCKET_API]
         )
 
         try:
@@ -158,7 +158,9 @@ class Client:
 
         try:
             handler(
-                self._client_manager.server, self, model.model_validate_json(message)
+                self._client_manager.server_gateway,
+                self,
+                model.model_validate_json(message),
             )
         except Exception as err:  # pylint: disable=broad-except
             # TODO Fix this - make real error codes with error messages
@@ -168,7 +170,7 @@ class Client:
     async def listen(self) -> None:
         """Listen for incoming messages."""
         async for message in self._websocket:
-            self._client_manager.server.async_create_task(
+            self._client_manager.server_gateway.async_create_task(
                 self._handle_incoming_message(message),
                 name="handle_incoming_message",
                 eager_start=True,
@@ -216,7 +218,7 @@ class ClientDisconnectCommand(WebSocketCommand):
 @decorators.websocket_command(ClientListenRawZCLCommand)
 @decorators.async_response
 async def listen_raw_zcl(
-    server: WebSocketServerGateway, client: Client, command: WebSocketCommand
+    gateway: WebSocketServerGateway, client: Client, command: WebSocketCommand
 ) -> None:
     """Listen for raw ZCL events."""
     client.receive_raw_zcl_events = True
@@ -226,7 +228,7 @@ async def listen_raw_zcl(
 @decorators.websocket_command(ClientListenCommand)
 @decorators.async_response
 async def listen(
-    server: WebSocketServerGateway, client: Client, command: WebSocketCommand
+    gateway: WebSocketServerGateway, client: Client, command: WebSocketCommand
 ) -> None:
     """Listen for events."""
     client.receive_events = True
@@ -236,32 +238,32 @@ async def listen(
 @decorators.websocket_command(ClientDisconnectCommand)
 @decorators.async_response
 async def disconnect(
-    server: WebSocketServerGateway, client: Client, command: WebSocketCommand
+    gateway: WebSocketServerGateway, client: Client, command: WebSocketCommand
 ) -> None:
     """Disconnect the client."""
     client.disconnect()
-    server.client_manager.remove_client(client)
+    gateway.client_manager.remove_client(client)
 
 
-def load_api(server: WebSocketServerGateway) -> None:
+def load_api(gateway: WebSocketServerGateway) -> None:
     """Load the api command handlers."""
-    register_api_command(server, listen_raw_zcl)
-    register_api_command(server, listen)
-    register_api_command(server, disconnect)
+    register_api_command(gateway, listen_raw_zcl)
+    register_api_command(gateway, listen)
+    register_api_command(gateway, disconnect)
 
 
 class ClientManager:
     """ZHA websocket server  client manager implementation."""
 
-    def __init__(self, server: WebSocketServerGateway):
+    def __init__(self, gateway: WebSocketServerGateway):
         """Initialize the client."""
-        self._server: WebSocketServerGateway = server
+        self._gateway: WebSocketServerGateway = gateway
         self._clients: list[Client] = []
 
     @property
-    def server(self) -> WebSocketServerGateway:
+    def server_gateway(self) -> WebSocketServerGateway:
         """Return the server this ClientManager belongs to."""
-        return self._server
+        return self._gateway
 
     async def add_client(self, websocket: WebSocketServerProtocol) -> None:
         """Add a new client to the client manager."""

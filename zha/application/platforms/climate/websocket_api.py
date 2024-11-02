@@ -13,7 +13,7 @@ from zha.websocket.const import APICommands
 from zha.websocket.server.api import decorators, register_api_command
 
 if TYPE_CHECKING:
-    from zha.application.gateway import WebSocketServerGateway as Server
+    from zha.application.gateway import WebSocketServerGateway
     from zha.websocket.server.client import Client
 
 
@@ -30,10 +30,12 @@ class ClimateSetFanModeCommand(PlatformEntityCommand):
 @decorators.websocket_command(ClimateSetFanModeCommand)
 @decorators.async_response
 async def set_fan_mode(
-    server: Server, client: Client, command: ClimateSetFanModeCommand
+    gateway: WebSocketServerGateway, client: Client, command: ClimateSetFanModeCommand
 ) -> None:
     """Set the fan mode for the climate platform entity."""
-    await execute_platform_entity_command(server, client, command, "async_set_fan_mode")
+    await execute_platform_entity_command(
+        gateway, client, command, "async_set_fan_mode"
+    )
 
 
 class ClimateSetHVACModeCommand(PlatformEntityCommand):
@@ -57,11 +59,11 @@ class ClimateSetHVACModeCommand(PlatformEntityCommand):
 @decorators.websocket_command(ClimateSetHVACModeCommand)
 @decorators.async_response
 async def set_hvac_mode(
-    server: Server, client: Client, command: ClimateSetHVACModeCommand
+    gateway: WebSocketServerGateway, client: Client, command: ClimateSetHVACModeCommand
 ) -> None:
     """Set the hvac mode for the climate platform entity."""
     await execute_platform_entity_command(
-        server, client, command, "async_set_hvac_mode"
+        gateway, client, command, "async_set_hvac_mode"
     )
 
 
@@ -78,11 +80,13 @@ class ClimateSetPresetModeCommand(PlatformEntityCommand):
 @decorators.websocket_command(ClimateSetPresetModeCommand)
 @decorators.async_response
 async def set_preset_mode(
-    server: Server, client: Client, command: ClimateSetPresetModeCommand
+    gateway: WebSocketServerGateway,
+    client: Client,
+    command: ClimateSetPresetModeCommand,
 ) -> None:
     """Set the preset mode for the climate platform entity."""
     await execute_platform_entity_command(
-        server, client, command, "async_set_preset_mode"
+        gateway, client, command, "async_set_preset_mode"
     )
 
 
@@ -115,17 +119,19 @@ class ClimateSetTemperatureCommand(PlatformEntityCommand):
 @decorators.websocket_command(ClimateSetTemperatureCommand)
 @decorators.async_response
 async def set_temperature(
-    server: Server, client: Client, command: ClimateSetTemperatureCommand
+    gateway: WebSocketServerGateway,
+    client: Client,
+    command: ClimateSetTemperatureCommand,
 ) -> None:
     """Set the temperature and hvac mode for the climate platform entity."""
     await execute_platform_entity_command(
-        server, client, command, "async_set_temperature"
+        gateway, client, command, "async_set_temperature"
     )
 
 
-def load_api(server: Server) -> None:
+def load_api(gateway: WebSocketServerGateway) -> None:
     """Load the api command handlers."""
-    register_api_command(server, set_fan_mode)
-    register_api_command(server, set_hvac_mode)
-    register_api_command(server, set_preset_mode)
-    register_api_command(server, set_temperature)
+    register_api_command(gateway, set_fan_mode)
+    register_api_command(gateway, set_hvac_mode)
+    register_api_command(gateway, set_preset_mode)
+    register_api_command(gateway, set_temperature)

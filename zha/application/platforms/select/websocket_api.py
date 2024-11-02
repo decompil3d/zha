@@ -13,7 +13,7 @@ from zha.websocket.const import APICommands
 from zha.websocket.server.api import decorators, register_api_command
 
 if TYPE_CHECKING:
-    from zha.application.gateway import WebSocketServerGateway as Server
+    from zha.application.gateway import WebSocketServerGateway
     from zha.websocket.server.client import Client
 
 
@@ -30,11 +30,11 @@ class SelectSelectOptionCommand(PlatformEntityCommand):
 @decorators.websocket_command(SelectSelectOptionCommand)
 @decorators.async_response
 async def select_option(
-    server: Server, client: Client, command: SelectSelectOptionCommand
+    gateway: WebSocketServerGateway, client: Client, command: SelectSelectOptionCommand
 ) -> None:
     """Select an option."""
     await execute_platform_entity_command(
-        server, client, command, "async_select_option"
+        gateway, client, command, "async_select_option"
     )
 
 
@@ -51,15 +51,17 @@ class SelectRestoreExternalStateAttributesCommand(PlatformEntityCommand):
 @decorators.websocket_command(SelectRestoreExternalStateAttributesCommand)
 @decorators.async_response
 async def restore_lock_external_state_attributes(
-    server: Server, client: Client, command: SelectRestoreExternalStateAttributesCommand
+    gateway: WebSocketServerGateway,
+    client: Client,
+    command: SelectRestoreExternalStateAttributesCommand,
 ) -> None:
     """Restore externally preserved state for selects."""
     await execute_platform_entity_command(
-        server, client, command, "restore_external_state_attributes"
+        gateway, client, command, "restore_external_state_attributes"
     )
 
 
-def load_api(server: Server) -> None:
+def load_api(gateway: WebSocketServerGateway) -> None:
     """Load the api command handlers."""
-    register_api_command(server, select_option)
-    register_api_command(server, restore_lock_external_state_attributes)
+    register_api_command(gateway, select_option)
+    register_api_command(gateway, restore_lock_external_state_attributes)

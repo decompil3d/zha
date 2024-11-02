@@ -23,13 +23,13 @@ _LOGGER = logging.getLogger(__name__)
 
 async def _handle_async_response(
     func: AsyncWebSocketCommandHandler,
-    server: WebSocketServerGateway,
+    gateway: WebSocketServerGateway,
     client: Client,
     msg: T_WebSocketCommand,
 ) -> None:
     """Create a response and handle exception."""
     try:
-        await func(server, client, msg)
+        await func(gateway, client, msg)
     except Exception as err:  # pylint: disable=broad-except
         # TODO fix this to send a real error code and message
         _LOGGER.exception("Error handling message", exc_info=err)
@@ -43,13 +43,13 @@ def async_response(
 
     @wraps(func)
     def schedule_handler(
-        server: WebSocketServerGateway, client: Client, msg: T_WebSocketCommand
+        gateway: WebSocketServerGateway, client: Client, msg: T_WebSocketCommand
     ) -> None:
         """Schedule the handler."""
         # As the webserver is now started before the start
         # event we do not want to block for websocket responders
-        server.async_create_task(
-            _handle_async_response(func, server, client, msg),
+        gateway.async_create_task(
+            _handle_async_response(func, gateway, client, msg),
             "_handle_async_response",
             eager_start=True,
         )

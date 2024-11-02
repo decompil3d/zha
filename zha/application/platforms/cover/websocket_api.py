@@ -13,7 +13,7 @@ from zha.websocket.const import APICommands
 from zha.websocket.server.api import decorators, register_api_command
 
 if TYPE_CHECKING:
-    from zha.application.gateway import WebSocketServerGateway as Server
+    from zha.application.gateway import WebSocketServerGateway
     from zha.websocket.server.client import Client
 
 
@@ -26,9 +26,11 @@ class CoverOpenCommand(PlatformEntityCommand):
 
 @decorators.websocket_command(CoverOpenCommand)
 @decorators.async_response
-async def open_cover(server: Server, client: Client, command: CoverOpenCommand) -> None:
+async def open_cover(
+    gateway: WebSocketServerGateway, client: Client, command: CoverOpenCommand
+) -> None:
     """Open the cover."""
-    await execute_platform_entity_command(server, client, command, "async_open_cover")
+    await execute_platform_entity_command(gateway, client, command, "async_open_cover")
 
 
 class CoverOpenTiltCommand(PlatformEntityCommand):
@@ -41,11 +43,11 @@ class CoverOpenTiltCommand(PlatformEntityCommand):
 @decorators.websocket_command(CoverOpenTiltCommand)
 @decorators.async_response
 async def open_cover_tilt(
-    server: Server, client: Client, command: CoverOpenTiltCommand
+    gateway: WebSocketServerGateway, client: Client, command: CoverOpenTiltCommand
 ) -> None:
     """Open the cover tilt."""
     await execute_platform_entity_command(
-        server, client, command, "async_open_cover_tilt"
+        gateway, client, command, "async_open_cover_tilt"
     )
 
 
@@ -59,10 +61,10 @@ class CoverCloseCommand(PlatformEntityCommand):
 @decorators.websocket_command(CoverCloseCommand)
 @decorators.async_response
 async def close_cover(
-    server: Server, client: Client, command: CoverCloseCommand
+    gateway: WebSocketServerGateway, client: Client, command: CoverCloseCommand
 ) -> None:
     """Close the cover."""
-    await execute_platform_entity_command(server, client, command, "async_close_cover")
+    await execute_platform_entity_command(gateway, client, command, "async_close_cover")
 
 
 class CoverCloseTiltCommand(PlatformEntityCommand):
@@ -75,11 +77,11 @@ class CoverCloseTiltCommand(PlatformEntityCommand):
 @decorators.websocket_command(CoverCloseTiltCommand)
 @decorators.async_response
 async def close_cover_tilt(
-    server: Server, client: Client, command: CoverCloseTiltCommand
+    gateway: WebSocketServerGateway, client: Client, command: CoverCloseTiltCommand
 ) -> None:
     """Close the cover tilt."""
     await execute_platform_entity_command(
-        server, client, command, "async_close_cover_tilt"
+        gateway, client, command, "async_close_cover_tilt"
     )
 
 
@@ -94,11 +96,11 @@ class CoverSetPositionCommand(PlatformEntityCommand):
 @decorators.websocket_command(CoverSetPositionCommand)
 @decorators.async_response
 async def set_position(
-    server: Server, client: Client, command: CoverSetPositionCommand
+    gateway: WebSocketServerGateway, client: Client, command: CoverSetPositionCommand
 ) -> None:
     """Set the cover position."""
     await execute_platform_entity_command(
-        server, client, command, "async_set_cover_position"
+        gateway, client, command, "async_set_cover_position"
     )
 
 
@@ -115,11 +117,13 @@ class CoverSetTiltPositionCommand(PlatformEntityCommand):
 @decorators.websocket_command(CoverSetTiltPositionCommand)
 @decorators.async_response
 async def set_tilt_position(
-    server: Server, client: Client, command: CoverSetTiltPositionCommand
+    gateway: WebSocketServerGateway,
+    client: Client,
+    command: CoverSetTiltPositionCommand,
 ) -> None:
     """Set the cover tilt position."""
     await execute_platform_entity_command(
-        server, client, command, "async_set_cover_tilt_position"
+        gateway, client, command, "async_set_cover_tilt_position"
     )
 
 
@@ -132,9 +136,11 @@ class CoverStopCommand(PlatformEntityCommand):
 
 @decorators.websocket_command(CoverStopCommand)
 @decorators.async_response
-async def stop_cover(server: Server, client: Client, command: CoverStopCommand) -> None:
+async def stop_cover(
+    gateway: WebSocketServerGateway, client: Client, command: CoverStopCommand
+) -> None:
     """Stop the cover."""
-    await execute_platform_entity_command(server, client, command, "async_stop_cover")
+    await execute_platform_entity_command(gateway, client, command, "async_stop_cover")
 
 
 class CoverStopTiltCommand(PlatformEntityCommand):
@@ -147,11 +153,11 @@ class CoverStopTiltCommand(PlatformEntityCommand):
 @decorators.websocket_command(CoverStopTiltCommand)
 @decorators.async_response
 async def stop_cover_tilt(
-    server: Server, client: Client, command: CoverStopTiltCommand
+    gateway: WebSocketServerGateway, client: Client, command: CoverStopTiltCommand
 ) -> None:
     """Stop the cover tilt."""
     await execute_platform_entity_command(
-        server, client, command, "async_stop_cover_tilt"
+        gateway, client, command, "async_stop_cover_tilt"
     )
 
 
@@ -170,22 +176,24 @@ class CoverRestoreExternalStateAttributesCommand(PlatformEntityCommand):
 @decorators.websocket_command(CoverRestoreExternalStateAttributesCommand)
 @decorators.async_response
 async def restore_cover_external_state_attributes(
-    server: Server, client: Client, command: CoverRestoreExternalStateAttributesCommand
+    gateway: WebSocketServerGateway,
+    client: Client,
+    command: CoverRestoreExternalStateAttributesCommand,
 ) -> None:
     """Stop the cover tilt."""
     await execute_platform_entity_command(
-        server, client, command, "restore_external_state_attributes"
+        gateway, client, command, "restore_external_state_attributes"
     )
 
 
-def load_api(server: Server) -> None:
+def load_api(gateway: WebSocketServerGateway) -> None:
     """Load the api command handlers."""
-    register_api_command(server, open_cover)
-    register_api_command(server, close_cover)
-    register_api_command(server, set_position)
-    register_api_command(server, stop_cover)
-    register_api_command(server, open_cover_tilt)
-    register_api_command(server, close_cover_tilt)
-    register_api_command(server, set_tilt_position)
-    register_api_command(server, stop_cover_tilt)
-    register_api_command(server, restore_cover_external_state_attributes)
+    register_api_command(gateway, open_cover)
+    register_api_command(gateway, close_cover)
+    register_api_command(gateway, set_position)
+    register_api_command(gateway, stop_cover)
+    register_api_command(gateway, open_cover_tilt)
+    register_api_command(gateway, close_cover_tilt)
+    register_api_command(gateway, set_tilt_position)
+    register_api_command(gateway, stop_cover_tilt)
+    register_api_command(gateway, restore_cover_external_state_attributes)

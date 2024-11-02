@@ -14,7 +14,7 @@ from zha.websocket.server.api import decorators, register_api_command
 from zha.websocket.server.api.model import WebSocketCommand
 
 if TYPE_CHECKING:
-    from zha.application.gateway import WebSocketServerGateway as Server
+    from zha.application.gateway import WebSocketServerGateway
     from zha.websocket.server.client import Client
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class PlatformEntityCommand(WebSocketCommand):
 
 
 async def execute_platform_entity_command(
-    server: Server,
+    gateway: WebSocketServerGateway,
     client: Client,
     command: PlatformEntityCommand,
     method_name: str,
@@ -39,10 +39,10 @@ async def execute_platform_entity_command(
     try:
         _LOGGER.debug("command: %s", command)
         if command.group_id:
-            group = server.get_group(command.group_id)
+            group = gateway.get_group(command.group_id)
             platform_entity = group.group_entities[command.unique_id]
         else:
-            device = server.get_device(command.ieee)
+            device = gateway.get_device(command.ieee)
             platform_entity = device.get_platform_entity(
                 command.platform, command.unique_id
             )
@@ -94,10 +94,10 @@ class PlatformEntityRefreshStateCommand(PlatformEntityCommand):
 @decorators.websocket_command(PlatformEntityRefreshStateCommand)
 @decorators.async_response
 async def refresh_state(
-    server: Server, client: Client, command: PlatformEntityCommand
+    gateway: WebSocketServerGateway, client: Client, command: PlatformEntityCommand
 ) -> None:
     """Refresh the state of the platform entity."""
-    await execute_platform_entity_command(server, client, command, "async_update")
+    await execute_platform_entity_command(gateway, client, command, "async_update")
 
 
 class PlatformEntityEnableCommand(PlatformEntityCommand):
@@ -111,10 +111,12 @@ class PlatformEntityEnableCommand(PlatformEntityCommand):
 @decorators.websocket_command(PlatformEntityEnableCommand)
 @decorators.async_response
 async def enable(
-    server: Server, client: Client, command: PlatformEntityEnableCommand
+    gateway: WebSocketServerGateway,
+    client: Client,
+    command: PlatformEntityEnableCommand,
 ) -> None:
     """Enable the platform entity."""
-    await execute_platform_entity_command(server, client, command, "enable")
+    await execute_platform_entity_command(gateway, client, command, "enable")
 
 
 class PlatformEntityDisableCommand(PlatformEntityCommand):
@@ -128,14 +130,16 @@ class PlatformEntityDisableCommand(PlatformEntityCommand):
 @decorators.websocket_command(PlatformEntityDisableCommand)
 @decorators.async_response
 async def disable(
-    server: Server, client: Client, command: PlatformEntityDisableCommand
+    gateway: WebSocketServerGateway,
+    client: Client,
+    command: PlatformEntityDisableCommand,
 ) -> None:
     """Disable the platform entity."""
-    await execute_platform_entity_command(server, client, command, "disable")
+    await execute_platform_entity_command(gateway, client, command, "disable")
 
 
 # pylint: disable=import-outside-toplevel
-def load_platform_entity_apis(server: Server) -> None:
+def load_platform_entity_apis(gateway: WebSocketServerGateway) -> None:
     """Load the ws apis for all platform entities types."""
     from zha.application.platforms.alarm_control_panel.websocket_api import (
         load_api as load_alarm_control_panel_api,
@@ -164,18 +168,18 @@ def load_platform_entity_apis(server: Server) -> None:
         load_api as load_update_api,
     )
 
-    register_api_command(server, refresh_state)
-    register_api_command(server, enable)
-    register_api_command(server, disable)
-    load_alarm_control_panel_api(server)
-    load_button_api(server)
-    load_climate_api(server)
-    load_cover_api(server)
-    load_fan_api(server)
-    load_light_api(server)
-    load_lock_api(server)
-    load_number_api(server)
-    load_select_api(server)
-    load_siren_api(server)
-    load_switch_api(server)
-    load_update_api(server)
+    register_api_command(gateway, refresh_state)
+    register_api_command(gateway, enable)
+    register_api_command(gateway, disable)
+    load_alarm_control_panel_api(gateway)
+    load_button_api(gateway)
+    load_climate_api(gateway)
+    load_cover_api(gateway)
+    load_fan_api(gateway)
+    load_light_api(gateway)
+    load_lock_api(gateway)
+    load_number_api(gateway)
+    load_select_api(gateway)
+    load_siren_api(gateway)
+    load_switch_api(gateway)
+    load_update_api(gateway)

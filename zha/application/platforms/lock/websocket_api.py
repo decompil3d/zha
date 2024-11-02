@@ -13,7 +13,7 @@ from zha.websocket.const import APICommands
 from zha.websocket.server.api import decorators, register_api_command
 
 if TYPE_CHECKING:
-    from zha.application.gateway import WebSocketServerGateway as Server
+    from zha.application.gateway import WebSocketServerGateway
     from zha.websocket.server.client import Client
 
 
@@ -26,9 +26,11 @@ class LockLockCommand(PlatformEntityCommand):
 
 @decorators.websocket_command(LockLockCommand)
 @decorators.async_response
-async def lock(server: Server, client: Client, command: LockLockCommand) -> None:
+async def lock(
+    gateway: WebSocketServerGateway, client: Client, command: LockLockCommand
+) -> None:
     """Lock the lock."""
-    await execute_platform_entity_command(server, client, command, "async_lock")
+    await execute_platform_entity_command(gateway, client, command, "async_lock")
 
 
 class LockUnlockCommand(PlatformEntityCommand):
@@ -40,9 +42,11 @@ class LockUnlockCommand(PlatformEntityCommand):
 
 @decorators.websocket_command(LockUnlockCommand)
 @decorators.async_response
-async def unlock(server: Server, client: Client, command: LockUnlockCommand) -> None:
+async def unlock(
+    gateway: WebSocketServerGateway, client: Client, command: LockUnlockCommand
+) -> None:
     """Unlock the lock."""
-    await execute_platform_entity_command(server, client, command, "async_unlock")
+    await execute_platform_entity_command(gateway, client, command, "async_unlock")
 
 
 class LockSetUserLockCodeCommand(PlatformEntityCommand):
@@ -57,11 +61,11 @@ class LockSetUserLockCodeCommand(PlatformEntityCommand):
 @decorators.websocket_command(LockSetUserLockCodeCommand)
 @decorators.async_response
 async def set_user_lock_code(
-    server: Server, client: Client, command: LockSetUserLockCodeCommand
+    gateway: WebSocketServerGateway, client: Client, command: LockSetUserLockCodeCommand
 ) -> None:
     """Set a user lock code in the specified slot for the lock."""
     await execute_platform_entity_command(
-        server, client, command, "async_set_lock_user_code"
+        gateway, client, command, "async_set_lock_user_code"
     )
 
 
@@ -78,11 +82,13 @@ class LockEnableUserLockCodeCommand(PlatformEntityCommand):
 @decorators.websocket_command(LockEnableUserLockCodeCommand)
 @decorators.async_response
 async def enable_user_lock_code(
-    server: Server, client: Client, command: LockEnableUserLockCodeCommand
+    gateway: WebSocketServerGateway,
+    client: Client,
+    command: LockEnableUserLockCodeCommand,
 ) -> None:
     """Enable a user lock code for the lock."""
     await execute_platform_entity_command(
-        server, client, command, "async_enable_lock_user_code"
+        gateway, client, command, "async_enable_lock_user_code"
     )
 
 
@@ -99,11 +105,13 @@ class LockDisableUserLockCodeCommand(PlatformEntityCommand):
 @decorators.websocket_command(LockDisableUserLockCodeCommand)
 @decorators.async_response
 async def disable_user_lock_code(
-    server: Server, client: Client, command: LockDisableUserLockCodeCommand
+    gateway: WebSocketServerGateway,
+    client: Client,
+    command: LockDisableUserLockCodeCommand,
 ) -> None:
     """Disable a user lock code for the lock."""
     await execute_platform_entity_command(
-        server, client, command, "async_disable_lock_user_code"
+        gateway, client, command, "async_disable_lock_user_code"
     )
 
 
@@ -120,11 +128,13 @@ class LockClearUserLockCodeCommand(PlatformEntityCommand):
 @decorators.websocket_command(LockClearUserLockCodeCommand)
 @decorators.async_response
 async def clear_user_lock_code(
-    server: Server, client: Client, command: LockClearUserLockCodeCommand
+    gateway: WebSocketServerGateway,
+    client: Client,
+    command: LockClearUserLockCodeCommand,
 ) -> None:
     """Clear a user lock code for the lock."""
     await execute_platform_entity_command(
-        server, client, command, "async_clear_lock_user_code"
+        gateway, client, command, "async_clear_lock_user_code"
     )
 
 
@@ -141,20 +151,22 @@ class LockRestoreExternalStateAttributesCommand(PlatformEntityCommand):
 @decorators.websocket_command(LockRestoreExternalStateAttributesCommand)
 @decorators.async_response
 async def restore_lock_external_state_attributes(
-    server: Server, client: Client, command: LockRestoreExternalStateAttributesCommand
+    gateway: WebSocketServerGateway,
+    client: Client,
+    command: LockRestoreExternalStateAttributesCommand,
 ) -> None:
     """Restore externally preserved state for locks."""
     await execute_platform_entity_command(
-        server, client, command, "restore_external_state_attributes"
+        gateway, client, command, "restore_external_state_attributes"
     )
 
 
-def load_api(server: Server) -> None:
+def load_api(gateway: WebSocketServerGateway) -> None:
     """Load the api command handlers."""
-    register_api_command(server, lock)
-    register_api_command(server, unlock)
-    register_api_command(server, set_user_lock_code)
-    register_api_command(server, enable_user_lock_code)
-    register_api_command(server, disable_user_lock_code)
-    register_api_command(server, clear_user_lock_code)
-    register_api_command(server, restore_lock_external_state_attributes)
+    register_api_command(gateway, lock)
+    register_api_command(gateway, unlock)
+    register_api_command(gateway, set_user_lock_code)
+    register_api_command(gateway, enable_user_lock_code)
+    register_api_command(gateway, disable_user_lock_code)
+    register_api_command(gateway, clear_user_lock_code)
+    register_api_command(gateway, restore_lock_external_state_attributes)

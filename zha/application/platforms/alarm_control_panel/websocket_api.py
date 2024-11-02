@@ -13,7 +13,7 @@ from zha.websocket.const import APICommands
 from zha.websocket.server.api import decorators, register_api_command
 
 if TYPE_CHECKING:
-    from zha.application.gateway import WebSocketServerGateway as Server
+    from zha.application.gateway import WebSocketServerGateway
     from zha.websocket.server.client import Client
 
 
@@ -29,9 +29,13 @@ class DisarmCommand(PlatformEntityCommand):
 
 @decorators.websocket_command(DisarmCommand)
 @decorators.async_response
-async def disarm(server: Server, client: Client, command: DisarmCommand) -> None:
+async def disarm(
+    gateway: WebSocketServerGateway, client: Client, command: DisarmCommand
+) -> None:
     """Disarm the alarm control panel."""
-    await execute_platform_entity_command(server, client, command, "async_alarm_disarm")
+    await execute_platform_entity_command(
+        gateway, client, command, "async_alarm_disarm"
+    )
 
 
 class ArmHomeCommand(PlatformEntityCommand):
@@ -46,10 +50,12 @@ class ArmHomeCommand(PlatformEntityCommand):
 
 @decorators.websocket_command(ArmHomeCommand)
 @decorators.async_response
-async def arm_home(server: Server, client: Client, command: ArmHomeCommand) -> None:
+async def arm_home(
+    gateway: WebSocketServerGateway, client: Client, command: ArmHomeCommand
+) -> None:
     """Arm the alarm control panel in home mode."""
     await execute_platform_entity_command(
-        server, client, command, "async_alarm_arm_home"
+        gateway, client, command, "async_alarm_arm_home"
     )
 
 
@@ -65,10 +71,12 @@ class ArmAwayCommand(PlatformEntityCommand):
 
 @decorators.websocket_command(ArmAwayCommand)
 @decorators.async_response
-async def arm_away(server: Server, client: Client, command: ArmAwayCommand) -> None:
+async def arm_away(
+    gateway: WebSocketServerGateway, client: Client, command: ArmAwayCommand
+) -> None:
     """Arm the alarm control panel in away mode."""
     await execute_platform_entity_command(
-        server, client, command, "async_alarm_arm_away"
+        gateway, client, command, "async_alarm_arm_away"
     )
 
 
@@ -84,10 +92,12 @@ class ArmNightCommand(PlatformEntityCommand):
 
 @decorators.websocket_command(ArmNightCommand)
 @decorators.async_response
-async def arm_night(server: Server, client: Client, command: ArmNightCommand) -> None:
+async def arm_night(
+    gateway: WebSocketServerGateway, client: Client, command: ArmNightCommand
+) -> None:
     """Arm the alarm control panel in night mode."""
     await execute_platform_entity_command(
-        server, client, command, "async_alarm_arm_night"
+        gateway, client, command, "async_alarm_arm_night"
     )
 
 
@@ -103,17 +113,19 @@ class TriggerAlarmCommand(PlatformEntityCommand):
 
 @decorators.websocket_command(TriggerAlarmCommand)
 @decorators.async_response
-async def trigger(server: Server, client: Client, command: TriggerAlarmCommand) -> None:
+async def trigger(
+    gateway: WebSocketServerGateway, client: Client, command: TriggerAlarmCommand
+) -> None:
     """Trigger the alarm control panel."""
     await execute_platform_entity_command(
-        server, client, command, "async_alarm_trigger"
+        gateway, client, command, "async_alarm_trigger"
     )
 
 
-def load_api(server: Server) -> None:
+def load_api(gateway: WebSocketServerGateway) -> None:
     """Load the api command handlers."""
-    register_api_command(server, disarm)
-    register_api_command(server, arm_home)
-    register_api_command(server, arm_away)
-    register_api_command(server, arm_night)
-    register_api_command(server, trigger)
+    register_api_command(gateway, disarm)
+    register_api_command(gateway, arm_home)
+    register_api_command(gateway, arm_away)
+    register_api_command(gateway, arm_night)
+    register_api_command(gateway, trigger)
