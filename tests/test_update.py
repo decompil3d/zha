@@ -151,11 +151,24 @@ async def setup_test_data(
     )
 
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
-    zha_device.async_update_sw_build_id(installed_fw_version)
+    if hasattr(zha_gateway, "ws_gateway"):
+        zha_gateway.ws_gateway.devices[zha_device.ieee].async_update_sw_build_id(
+            installed_fw_version
+        )
+    else:
+        zha_device.async_update_sw_build_id(installed_fw_version)
 
     return zha_device, ota_cluster, fw_image, installed_fw_version
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_firmware_update_notification_from_zigpy(zha_gateway: Gateway) -> None:
     """Test ZHA update platform - firmware update notification."""
     zigpy_device = zigpy_device_mock(zha_gateway)
@@ -371,6 +384,14 @@ async def test_firmware_update_success(zha_gateway: Gateway) -> None:
     assert not entity.state[ATTR_IN_PROGRESS]
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_firmware_update_raises(zha_gateway: Gateway) -> None:
     """Test ZHA update platform - firmware update raises."""
     zigpy_device = zigpy_device_mock(zha_gateway)
@@ -448,6 +469,14 @@ async def test_firmware_update_raises(zha_gateway: Gateway) -> None:
         await zha_gateway.async_block_till_done()
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_firmware_update_downgrade(zha_gateway: Gateway) -> None:
     """Test ZHA update platform - force a firmware downgrade."""
     zigpy_device = zigpy_device_mock(zha_gateway)
@@ -523,6 +552,14 @@ async def test_firmware_update_downgrade(zha_gateway: Gateway) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_firmware_update_no_image(zha_gateway: Gateway) -> None:
     """Test ZHA update platform - no images exist."""
     zigpy_device = zigpy_device_mock(zha_gateway)
@@ -566,6 +603,14 @@ async def test_firmware_update_no_image(zha_gateway: Gateway) -> None:
     assert entity.state[ATTR_LATEST_VERSION] is None
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_firmware_update_latest_version_even_if_downgrade(
     zha_gateway: Gateway,
 ) -> None:
