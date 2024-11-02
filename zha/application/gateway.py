@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 import asyncio
-from collections.abc import Collection, Coroutine
+from collections.abc import Coroutine
 import contextlib
 from contextlib import suppress
 from datetime import timedelta
@@ -657,12 +657,12 @@ class Gateway(AsyncUtilMixin, BaseGateway):
         zha_device._available = True
         zha_device._on_network = True
         await zha_device.async_configure()
+        await zha_device.async_initialize(from_cache=False)
+        self.create_platform_entities()
         device_info = ExtendedDeviceInfoWithPairingStatus(
             pairing_status=DevicePairingStatus.CONFIGURED,
             **zha_device.extended_device_info.__dict__,
         )
-        await zha_device.async_initialize(from_cache=False)
-        self.create_platform_entities()
         self.emit(
             ZHA_GW_MSG_DEVICE_FULL_INIT,
             DeviceFullyInitializedEvent(device_info=device_info, new_join=True),
@@ -884,36 +884,6 @@ class WebSocketServerGateway(Gateway):
         self._tracked_ws_tasks.add(task)
         task.add_done_callback(self._tracked_ws_tasks.remove)
 
-    async def async_block_till_done(self, wait_background_tasks=False):
-        """Block until all pending work is done."""
-        # To flush out any call_soon_threadsafe
-        await asyncio.sleep(0.001)
-        start_time: float | None = None
-
-        while self._tracked_ws_tasks:
-            pending = [task for task in self._tracked_ws_tasks if not task.done()]
-            self._tracked_ws_tasks.clear()
-            if pending:
-                await self._await_and_log_pending(pending)
-
-                if start_time is None:
-                    # Avoid calling monotonic() until we know
-                    # we may need to start logging blocked tasks.
-                    start_time = 0
-                elif start_time == 0:
-                    # If we have waited twice then we set the start
-                    # time
-                    start_time = time.monotonic()
-                elif time.monotonic() - start_time > BLOCK_LOG_TIMEOUT:
-                    # We have waited at least three loops and new tasks
-                    # continue to block. At this point we start
-                    # logging all waiting tasks.
-                    for task in pending:
-                        _LOGGER.debug("Waiting for task: %s", task)
-            else:
-                await asyncio.sleep(0.001)
-        await super().async_block_till_done(wait_background_tasks=wait_background_tasks)
-
     async def __aenter__(self) -> WebSocketServerGateway:
         """Enter the context manager."""
         await self.start_server()
@@ -1022,48 +992,6 @@ class WebSocketClientGateway(BaseGateway):
         self._tasks.append(task)
         task.add_done_callback(self._tasks.remove)
         return task
-
-    async def _await_and_log_pending(
-        self, pending: Collection[asyncio.Future[Any]]
-    ) -> None:
-        """Await and log tasks that take a long time."""
-        wait_time = 0
-        while pending:
-            _, pending = await asyncio.wait(pending, timeout=BLOCK_LOG_TIMEOUT)
-            if not pending:
-                return
-            wait_time += BLOCK_LOG_TIMEOUT
-            for task in pending:
-                _LOGGER.debug("Waited %s seconds for task: %s", wait_time, task)
-
-    async def async_block_till_done(self):
-        """Block until all pending work is done."""
-        # To flush out any call_soon_threadsafe
-        await asyncio.sleep(0.001)
-        start_time: float | None = None
-
-        while self._tasks:
-            pending = [task for task in self._tasks if not task.done()]
-            self._tasks.clear()
-            if pending:
-                await self._await_and_log_pending(pending)
-
-                if start_time is None:
-                    # Avoid calling monotonic() until we know
-                    # we may need to start logging blocked tasks.
-                    start_time = 0
-                elif start_time == 0:
-                    # If we have waited twice then we set the start
-                    # time
-                    start_time = time.monotonic()
-                elif time.monotonic() - start_time > BLOCK_LOG_TIMEOUT:
-                    # We have waited at least three loops and new tasks
-                    # continue to block. At this point we start
-                    # logging all waiting tasks.
-                    for task in pending:
-                        _LOGGER.debug("Waiting for task: %s", task)
-            else:
-                await asyncio.sleep(0.001)
 
     async def send_command(self, command: WebSocketCommand) -> WebSocketCommandResponse:
         """Send a command and get a response."""
