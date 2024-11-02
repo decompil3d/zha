@@ -38,7 +38,7 @@ from zha.application.helpers import (
     ZHAConfiguration,
     ZHAData,
 )
-from zha.async_ import ZHAJob
+from zha.async_ import ZHAJob, cancelling
 from zha.zigbee.group import WebSocketClientGroup
 from zha.zigbee.model import GroupMemberReference
 
@@ -356,6 +356,14 @@ class CombinedWebsocketGateways:
         await asyncio.sleep(0.005)
         await self.ws_gateway.async_block_till_done()
         await asyncio.sleep(0.001)
+        if self.client_gateway._tasks:
+            current_task = asyncio.current_task()
+            while tasks := [
+                task
+                for task in self.client_gateway._tasks
+                if task is not current_task and not cancelling(task)
+            ]:
+                await self.ws_gateway._await_and_log_pending_tasks(tasks)
 
     async def async_device_initialized(self, device: zigpy.device.Device) -> None:
         """Handle device joined and basic information discovered (async)."""
