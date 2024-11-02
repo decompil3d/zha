@@ -33,10 +33,13 @@ from zha.application import Platform
 from zha.application.gateway import Gateway
 from zha.application.platforms import GroupEntity, PlatformEntity, WebSocketClientEntity
 from zha.application.platforms.light.const import (
+    EFFECT_COLORLOOP,
+    EFFECT_OFF,
     FLASH_EFFECTS,
     FLASH_LONG,
     FLASH_SHORT,
     ColorMode,
+    LightEntityFeature,
 )
 from zha.zigbee.device import Device
 from zha.zigbee.group import GroupMemberReference
@@ -303,6 +306,7 @@ async def test_light_refresh(
     assert on_off_cluster.read_attributes.call_count == 0
     assert on_off_cluster.read_attributes.await_count == 0
     assert bool(entity.state["on"]) is False
+    assert entity.is_on is False
 
     # 1 interval - at least 1 call
     on_off_cluster.PLUGGED_ATTR_READS = {"on_off": 1}
@@ -575,6 +579,7 @@ async def async_test_on_off_from_client(
     await entity.async_turn_on()
     await zha_gateway.async_block_till_done()
     assert bool(entity.state["on"]) is True
+    assert entity.is_on
     assert cluster.request.call_count == 1
     assert cluster.request.await_count == 1
     assert cluster.request.call_args == call(
@@ -720,6 +725,7 @@ async def async_test_dimmer_from_light(
     # hass uses None for brightness of 0 in state attributes
     if level == 0:
         assert entity.state["brightness"] is None
+        assert entity.brightness is None
     else:
         # group member updates are debounced
         if isinstance(entity, GroupEntity) or (
@@ -729,6 +735,7 @@ async def async_test_dimmer_from_light(
             await asyncio.sleep(1)
             await zha_gateway.async_block_till_done()
         assert entity.state["brightness"] == level
+        assert entity.brightness == level
 
 
 async def async_test_flash_from_client(
@@ -2261,8 +2268,21 @@ async def test_light_state_restoration(
     await zha_gateway.async_block_till_done()
 
     assert entity.state["on"] is True
+    assert entity.is_on
     assert entity.state["brightness"] == 34
+    assert entity.brightness == 34
     assert entity.state["color_temp"] == 500
+    assert entity.color_temp == 500
     assert entity.state["xy_color"] == (1, 2)
+    assert entity.xy_color == (1, 2)
     assert entity.state["color_mode"] == ColorMode.XY
+    assert entity.color_mode == ColorMode.XY
     assert entity.state["effect"] == "colorloop"
+    assert entity.effect == "colorloop"
+    assert entity.effect_list == [EFFECT_OFF, EFFECT_COLORLOOP]
+    assert (
+        entity.supported_features
+        == LightEntityFeature.EFFECT
+        | LightEntityFeature.FLASH
+        | LightEntityFeature.TRANSITION
+    )
