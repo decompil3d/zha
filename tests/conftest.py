@@ -8,7 +8,6 @@ import os
 import reprlib
 import threading
 from types import TracebackType
-from typing import Self
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp.test_utils
@@ -336,37 +335,16 @@ class CombinedWebsocketGateways:
     def __init__(
         self,
         zha_data: ZHAData,
+        ws_gateway: WebSocketServerGateway,
+        client_gateway: WebSocketClientGateway,
     ):
         """Initialize the CombinedWebsocketGateways class."""
         self.zha_data = zha_data
-        self.ws_gateway: WebSocketServerGateway
-        self.client_gateway: WebSocketClientGateway
-        self.application_controller: ControllerApplication
-
-    async def __aenter__(self) -> Self:
-        """Start the ZHA gateway."""
-        self.ws_gateway = await WebSocketServerGateway.async_from_config(self.zha_data)
-        await self.ws_gateway.start_server()
-        await self.ws_gateway.async_initialize()
-        await self.ws_gateway.async_block_till_done()
-        await self.ws_gateway.async_initialize_devices_and_entities()
-        self.application_controller = self.ws_gateway.application_controller
-        INSTANCES.append(self.ws_gateway)
-
-        self.client_gateway = WebSocketClientGateway(self.zha_data)
-        await self.client_gateway.connect()
-        await self.client_gateway.clients.listen()
-        return self
-
-    async def __aexit__(
-        self, exc_type: Exception, exc_value: str, traceback: TracebackType
-    ) -> None:
-        """Shutdown the ZHA gateway."""
-
-        await self.client_gateway.disconnect()
-        await self.ws_gateway.shutdown()
-        await asyncio.sleep(0)
-        INSTANCES.remove(self.ws_gateway)
+        self.ws_gateway: WebSocketServerGateway = ws_gateway
+        self.client_gateway: WebSocketClientGateway = client_gateway
+        self.application_controller: ControllerApplication = (
+            self.ws_gateway.application_controller
+        )
 
     @property
     def config(self) -> ZHAData:
@@ -375,8 +353,9 @@ class CombinedWebsocketGateways:
 
     async def async_block_till_done(self) -> None:
         """Block until all gateways are done."""
-        await self.client_gateway.async_block_till_done()
+        await asyncio.sleep(0.001)
         await self.ws_gateway.async_block_till_done()
+        await asyncio.sleep(0.001)
 
     async def async_device_initialized(self, device: zigpy.device.Device) -> None:
         """Handle device joined and basic information discovered (async)."""
@@ -397,16 +376,53 @@ class CombinedWebsocketGateways:
         group_id: int | None = None,
     ) -> WebSocketClientGroup | None:
         """Create a new Zigpy Zigbee group."""
-        group = await self.client_gateway.async_create_zigpy_group(
+        return await self.client_gateway.async_create_zigpy_group(
             name, members, group_id
         )
-        await self.async_block_till_done()
-        return self.client_gateway.groups.get(group.group_id)
 
-    async def shutdown(self) -> None:
-        """Stop ZHA Controller Application."""
-        await self.ws_gateway.stop_server()
-        await self.ws_gateway.wait_closed()
+
+class CombinedWebsocketGatewaysContextManager:
+    """Combine multiple gateways into a single one."""
+
+    def __init__(
+        self,
+        zha_data: ZHAData,
+    ):
+        """Initialize the CombinedWebsocketGateways class."""
+        self.zha_data = zha_data
+        self.combined_gateways: CombinedWebsocketGateways
+
+    async def __aenter__(self) -> CombinedWebsocketGateways:
+        """Start the ZHA gateway."""
+        ws_gateway = await WebSocketServerGateway.async_from_config(self.zha_data)
+        await ws_gateway.start_server()
+        await ws_gateway.async_initialize()
+        await ws_gateway.async_block_till_done()
+        await ws_gateway.async_initialize_devices_and_entities()
+        await ws_gateway.async_block_till_done(wait_background_tasks=True)
+
+        client_gateway = WebSocketClientGateway(self.zha_data)
+        await client_gateway.connect()
+        await client_gateway.clients.listen()
+        await ws_gateway.async_block_till_done()
+
+        self.combined_gateways = CombinedWebsocketGateways(
+            self.zha_data, ws_gateway, client_gateway
+        )
+        INSTANCES.append(self.combined_gateways)
+
+        return self.combined_gateways
+
+    async def __aexit__(
+        self, exc_type: Exception, exc_value: str, traceback: TracebackType
+    ) -> None:
+        """Shutdown the ZHA gateway."""
+
+        await self.combined_gateways.client_gateway.disconnect()
+        await self.combined_gateways.ws_gateway.async_block_till_done()
+        await self.combined_gateways.ws_gateway.shutdown()
+        await asyncio.sleep(0)
+        INSTANCES.remove(self.combined_gateways)
 
 
 @pytest.fixture
@@ -459,7 +475,7 @@ async def zha_gateway(
         ),
     ):
         if hasattr(request, "param") and request.param == "ws_gateways":
-            async with CombinedWebsocketGateways(zha_data) as gateway:
+            async with CombinedWebsocketGatewaysContextManager(zha_data) as gateway:
                 yield gateway
         else:
             async with TestGateway(zha_data) as gateway:
