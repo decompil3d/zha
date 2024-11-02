@@ -31,6 +31,12 @@ from zha.application.platforms.update import (
     ATTR_LATEST_VERSION,
     ATTR_UPDATE_PERCENTAGE,
 )
+from zha.application.platforms.update.const import (
+    ATTR_RELEASE_NOTES,
+    ATTR_RELEASE_SUMMARY,
+    ATTR_RELEASE_URL,
+    UpdateEntityFeature,
+)
 from zha.exceptions import ZHAException
 
 
@@ -204,6 +210,30 @@ async def test_firmware_update_notification_from_zigpy(zha_gateway: Gateway) -> 
         entity.state[ATTR_LATEST_VERSION]
         == f"0x{fw_image.firmware.header.file_version:08x}"
     )
+
+    # property coverage
+    assert entity.installed_version == f"0x{installed_fw_version:08x}"
+    assert entity.latest_version == f"0x{fw_image.firmware.header.file_version:08x}"
+    assert entity.in_progress is False
+    assert entity.progress == 0
+    assert entity.release_notes is None
+    assert entity.release_url is None
+    assert (
+        entity.supported_features
+        == UpdateEntityFeature.INSTALL
+        | UpdateEntityFeature.SPECIFIC_VERSION
+        | UpdateEntityFeature.PROGRESS
+    )
+    assert entity.release_summary == "This is a test firmware image!"
+    assert entity.state_attributes == {
+        ATTR_INSTALLED_VERSION: f"0x{installed_fw_version:08x}",
+        ATTR_IN_PROGRESS: False,
+        ATTR_PROGRESS: 0,
+        ATTR_LATEST_VERSION: f"0x{fw_image.firmware.header.file_version:08x}",
+        ATTR_RELEASE_SUMMARY: "This is a test firmware image!",
+        ATTR_RELEASE_NOTES: None,
+        ATTR_RELEASE_URL: None,
+    }
 
 
 @patch("zigpy.device.AFTER_OTA_ATTR_READ_DELAY", 0.01)
