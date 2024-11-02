@@ -10,13 +10,13 @@ from zigpy.profiles import zha
 from zigpy.types.named import EUI64
 from zigpy.zcl.clusters import general
 
+from tests.conftest import CombinedWebsocketGateways
 from zha.application.discovery import Platform
 from zha.application.gateway import (
     DeviceJoinedDeviceInfo,
     DevicePairingStatus,
     RawDeviceInitializedDeviceInfo,
     RawDeviceInitializedEvent,
-    WebSocketClientGateway,
     WebSocketServerGateway,
 )
 from zha.application.model import DeviceJoinedEvent, DeviceLeftEvent
@@ -50,12 +50,10 @@ IEEE_GROUPABLE_DEVICE2 = "02:2d:6f:00:0a:90:69:e8"
 _LOGGER = logging.getLogger(__name__)
 
 
-@pytest.fixture
-def zigpy_device(
-    connected_client_and_server: tuple[WebSocketClientGateway, WebSocketServerGateway],
+def zigpy_device_mock(
+    zha_gateway: WebSocketServerGateway,
 ) -> ZigpyDevice:
     """Device tracker zigpy device."""
-    _, server = connected_client_and_server
     endpoints = {
         1: {
             SIG_EP_INPUT: [general.Basic.cluster_id, general.OnOff.cluster_id],
@@ -64,19 +62,16 @@ def zigpy_device(
             SIG_EP_PROFILE: zha.PROFILE_ID,
         }
     }
-    return create_mock_zigpy_device(server, endpoints)
+    return create_mock_zigpy_device(zha_gateway, endpoints)
 
 
-@pytest.fixture
-async def device_switch_1(
-    connected_client_and_server: tuple[WebSocketClientGateway, WebSocketServerGateway],
+async def device_switch_1_mock(
+    zha_gateway: WebSocketServerGateway,
 ) -> Device:
     """Test zha switch platform."""
 
-    _, server = connected_client_and_server
-
-    zigpy_device = create_mock_zigpy_device(
-        server,
+    zigpy_dev = create_mock_zigpy_device(
+        zha_gateway,
         {
             1: {
                 SIG_EP_INPUT: [general.OnOff.cluster_id, general.Groups.cluster_id],
@@ -87,8 +82,9 @@ async def device_switch_1(
         },
         ieee=IEEE_GROUPABLE_DEVICE,
     )
-    zha_device = await join_zigpy_device(server, zigpy_device)
-    zha_device.update_available(available=True, on_network=zha_device.on_network)
+    zha_device = await join_zigpy_device(zha_gateway, zigpy_dev)
+    ws_server_device = zha_gateway.ws_gateway.devices[zha_device.ieee]
+    ws_server_device.update_available(available=True, on_network=zha_device.on_network)
     return zha_device
 
 
@@ -100,15 +96,13 @@ def get_group_entity(
     return group_proxy.group_entities.get(entity_id)
 
 
-@pytest.fixture
-async def device_switch_2(
-    connected_client_and_server: tuple[WebSocketClientGateway, WebSocketServerGateway],
+async def device_switch_2_mock(
+    zha_gateway: WebSocketServerGateway,
 ) -> Device:
     """Test zha switch platform."""
 
-    _, server = connected_client_and_server
-    zigpy_device = create_mock_zigpy_device(
-        server,
+    zigpy_dev = create_mock_zigpy_device(
+        zha_gateway,
         {
             1: {
                 SIG_EP_INPUT: [general.OnOff.cluster_id, general.Groups.cluster_id],
@@ -119,20 +113,28 @@ async def device_switch_2(
         },
         ieee=IEEE_GROUPABLE_DEVICE2,
     )
-    zha_device = await join_zigpy_device(server, zigpy_device)
-    zha_device.update_available(available=True, on_network=zha_device.on_network)
+    zha_device = await join_zigpy_device(zha_gateway, zigpy_dev)
+    ws_server_device = zha_gateway.ws_gateway.devices[zha_device.ieee]
+    ws_server_device.update_available(available=True, on_network=zha_device.on_network)
     return zha_device
 
 
-async def test_controller_devices(
-    zigpy_device: ZigpyDevice,
-    connected_client_and_server: tuple[WebSocketClientGateway, WebSocketServerGateway],
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+async def test_ws_client_gateway_devices(
+    zha_gateway: CombinedWebsocketGateways,
 ) -> None:
-    """Test client controller device related functionality."""
-    controller, server = connected_client_and_server
-    zha_device = await join_zigpy_device(server, zigpy_device)
+    """Test client ws_client_gateway device related functionality."""
+    ws_client_gateway = zha_gateway.client_gateway
+    zigpy_device = zigpy_device_mock(zha_gateway)
+    zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
 
-    client_device: Optional[WebSocketClientDevice] = controller.devices.get(
+    client_device: Optional[WebSocketClientDevice] = ws_client_gateway.devices.get(
         zha_device.ieee
     )
     assert client_device is not None
@@ -144,60 +146,67 @@ async def test_controller_devices(
 
     assert entity.state["state"] is False
 
-    await controller.load_devices()
-    devices: dict[EUI64, WebSocketClientDevice] = controller.devices
+    await ws_client_gateway.load_devices()
+    devices: dict[EUI64, WebSocketClientDevice] = ws_client_gateway.devices
     assert len(devices) == 2
     assert zha_device.ieee in devices
 
-    # test client -> server
-    server.application_controller.remove = AsyncMock(
-        wraps=server.application_controller.remove
+    # test client -> ws_server_gateway
+    zha_gateway.application_controller.remove = AsyncMock(
+        wraps=zha_gateway.application_controller.remove
     )
-    await controller.devices_helper.remove_device(client_device._extended_device_info)
-    assert server.application_controller.remove.await_count == 1
-    assert server.application_controller.remove.await_args == call(client_device.ieee)
+    await ws_client_gateway.devices_helper.remove_device(
+        client_device._extended_device_info
+    )
+    assert zha_gateway.application_controller.remove.await_count == 1
+    assert zha_gateway.application_controller.remove.await_args == call(
+        client_device.ieee
+    )
 
-    # test server -> client
-    server.device_removed(zigpy_device)
-    await server.async_block_till_done()
-    assert len(controller.devices) == 1
+    # test zha_gateway -> client
+    zha_gateway.ws_gateway.device_removed(zigpy_device)
+    await zha_gateway.async_block_till_done()
+    assert len(ws_client_gateway.devices) == 1
 
     # rejoin the device
-    zha_device = await join_zigpy_device(server, zigpy_device)
-    await server.async_block_till_done()
-    assert len(controller.devices) == 2
+    zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
+    await zha_gateway.async_block_till_done()
+    assert len(ws_client_gateway.devices) == 2
 
     # test rejoining the same device
-    zha_device = await join_zigpy_device(server, zigpy_device)
-    await server.async_block_till_done()
-    assert len(controller.devices) == 2
+    zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
+    await zha_gateway.async_block_till_done()
+    assert len(ws_client_gateway.devices) == 2
 
     # we removed and joined the device again so lets get the entity again
-    client_device = controller.devices.get(zha_device.ieee)
+    client_device = ws_client_gateway.devices.get(zha_device.ieee)
     assert client_device is not None
 
     entity = find_entity(client_device, Platform.SWITCH)
     assert entity is not None
 
     # test device reconfigure
-    zha_device.async_configure = AsyncMock(wraps=zha_device.async_configure)
-    await controller.devices_helper.reconfigure_device(
+    ws_server_device = zha_gateway.ws_gateway.devices[zha_device.ieee]
+    async_configure_mock = AsyncMock(wraps=ws_server_device.async_configure)
+    ws_server_device.async_configure = async_configure_mock
+
+    await ws_client_gateway.devices_helper.reconfigure_device(
         client_device._extended_device_info
     )
-    await server.async_block_till_done()
-    assert zha_device.async_configure.call_count == 1
-    assert zha_device.async_configure.await_count == 1
-    assert zha_device.async_configure.call_args == call()
+    await zha_gateway.async_block_till_done()
+    assert async_configure_mock.call_count == 1
+    assert async_configure_mock.await_count == 1
+    assert async_configure_mock.call_args == call()
 
     # test read cluster attribute
     cluster = zigpy_device.endpoints.get(1).on_off
     assert cluster is not None
     cluster.PLUGGED_ATTR_READS = {general.OnOff.AttributeDefs.on_off.name: 1}
     update_attribute_cache(cluster)
-    await controller.entities.refresh_state(entity.info_object)
-    await server.async_block_till_done()
+    await ws_client_gateway.entities.refresh_state(entity.info_object)
+    await zha_gateway.async_block_till_done()
     read_response: ReadClusterAttributesResponse = (
-        await controller.devices_helper.read_cluster_attributes(
+        await ws_client_gateway.devices_helper.read_cluster_attributes(
             client_device._extended_device_info,
             general.OnOff.cluster_id,
             "in",
@@ -205,7 +214,7 @@ async def test_controller_devices(
             [general.OnOff.AttributeDefs.on_off.name],
         )
     )
-    await server.async_block_till_done()
+    await zha_gateway.async_block_till_done()
     assert read_response is not None
     assert read_response.success is True
     assert len(read_response.succeeded) == 1
@@ -222,7 +231,7 @@ async def test_controller_devices(
 
     # test write cluster attribute
     write_response: WriteClusterAttributeResponse = (
-        await controller.devices_helper.write_cluster_attribute(
+        await ws_client_gateway.devices_helper.write_cluster_attribute(
             client_device._extended_device_info,
             general.OnOff.cluster_id,
             "in",
@@ -241,15 +250,15 @@ async def test_controller_devices(
     )
     assert write_response.cluster.name == general.OnOff.name
 
-    await controller.entities.refresh_state(entity.info_object)
-    await server.async_block_till_done()
+    await ws_client_gateway.entities.refresh_state(entity.info_object)
+    await zha_gateway.async_block_till_done()
     assert entity.state["state"] is False
 
-    # test controller events
+    # test ws_client_gateway events
     listener = MagicMock()
 
     # test device joined
-    controller.on_event(ControllerEvents.DEVICE_JOINED, listener)
+    ws_client_gateway.on_event(ControllerEvents.DEVICE_JOINED, listener)
     device_joined_event = DeviceJoinedEvent(
         device_info=DeviceJoinedDeviceInfo(
             pairing_status=DevicePairingStatus.PAIRED,
@@ -257,16 +266,16 @@ async def test_controller_devices(
             nwk=zigpy_device.nwk,
         )
     )
-    server.device_joined(zigpy_device)
-    await server.async_block_till_done()
+    zha_gateway.ws_gateway.device_joined(zigpy_device)
+    await zha_gateway.async_block_till_done()
     assert listener.call_count == 1
     assert listener.call_args == call(device_joined_event)
 
     # test device left
     listener.reset_mock()
-    controller.on_event(ControllerEvents.DEVICE_LEFT, listener)
-    server.device_left(zigpy_device)
-    await server.async_block_till_done()
+    ws_client_gateway.on_event(ControllerEvents.DEVICE_LEFT, listener)
+    zha_gateway.ws_gateway.device_left(zigpy_device)
+    await zha_gateway.async_block_till_done()
     assert listener.call_count == 1
     assert listener.call_args == call(
         DeviceLeftEvent(
@@ -277,9 +286,9 @@ async def test_controller_devices(
 
     # test raw  device initialized
     listener.reset_mock()
-    controller.on_event(ControllerEvents.RAW_DEVICE_INITIALIZED, listener)
-    server.raw_device_initialized(zigpy_device)
-    await server.async_block_till_done()
+    ws_client_gateway.on_event(ControllerEvents.RAW_DEVICE_INITIALIZED, listener)
+    zha_gateway.ws_gateway.raw_device_initialized(zigpy_device)
+    await zha_gateway.async_block_till_done()
     assert listener.call_count == 1
     assert listener.call_args == call(
         RawDeviceInitializedEvent(
@@ -295,13 +304,20 @@ async def test_controller_devices(
     )
 
 
-async def test_controller_groups(
-    device_switch_1: Device,
-    device_switch_2: Device,
-    connected_client_and_server: tuple[WebSocketClientGateway, WebSocketServerGateway],
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+async def test_ws_client_gateway_groups(
+    zha_gateway: CombinedWebsocketGateways,
 ) -> None:
-    """Test client controller group related functionality."""
-    controller, server = connected_client_and_server
+    """Test client ws_client_gateway group related functionality."""
+    ws_client_gateway = zha_gateway.client_gateway
+    device_switch_1: Device = await device_switch_1_mock(zha_gateway)
+    device_switch_2: Device = await device_switch_2_mock(zha_gateway)
     member_ieee_addresses = [device_switch_1.ieee, device_switch_2.ieee]
     members = [
         GroupMemberReference(ieee=device_switch_1.ieee, endpoint_id=1),
@@ -309,20 +325,20 @@ async def test_controller_groups(
     ]
 
     # test creating a group with 2 members
-    zha_group: Group = await server.async_create_zigpy_group("Test Group", members)
-    await server.async_block_till_done()
+    zha_group: Group = await zha_gateway.async_create_zigpy_group("Test Group", members)
+    await zha_gateway.async_block_till_done()
 
     assert zha_group is not None
     assert len(zha_group.members) == 2
     for member in zha_group.members:
         assert member.device.ieee in member_ieee_addresses
         assert member.group == zha_group
-        assert member.endpoint is not None
+        assert member.endpoint_id == 1
 
     entity_id = async_find_group_entity_id(Platform.SWITCH, zha_group)
     assert entity_id is not None
 
-    group_proxy: Optional[WebSocketClientGroup] = controller.groups.get(
+    group_proxy: Optional[WebSocketClientGroup] = ws_client_gateway.groups.get(
         zha_group.group_id
     )
     assert group_proxy is not None
@@ -334,19 +350,19 @@ async def test_controller_groups(
 
     assert entity is not None
 
-    await controller.load_groups()
-    groups: dict[int, WebSocketClientGroup] = controller.groups
-    # the application controller mock starts with a group already created
+    await ws_client_gateway.load_groups()
+    groups: dict[int, WebSocketClientGroup] = ws_client_gateway.groups
+    # the application ws_client_gateway mock starts with a group already created
     assert len(groups) == 2
     assert zha_group.group_id in groups
 
-    # test client -> server
-    await controller.groups_helper.remove_groups([group_proxy._group_info])
-    await server.async_block_till_done()
-    assert len(controller.groups) == 1
+    # test client -> zha_gateway
+    await ws_client_gateway.groups_helper.remove_groups([group_proxy._group_info])
+    await zha_gateway.async_block_till_done()
+    assert len(ws_client_gateway.groups) == 1
 
     # test client create group
-    client_device1: Optional[WebSocketClientDevice] = controller.devices.get(
+    client_device1: Optional[WebSocketClientDevice] = ws_client_gateway.devices.get(
         device_switch_1.ieee
     )
     assert client_device1 is not None
@@ -354,7 +370,7 @@ async def test_controller_groups(
     entity1: WebSocketClientSwitchEntity = find_entity(client_device1, Platform.SWITCH)
     assert entity1 is not None
 
-    client_device2: Optional[WebSocketClientDevice] = controller.devices.get(
+    client_device2: Optional[WebSocketClientDevice] = ws_client_gateway.devices.get(
         device_switch_2.ieee
     )
     assert client_device2 is not None
@@ -362,7 +378,7 @@ async def test_controller_groups(
     entity2: WebSocketClientSwitchEntity = find_entity(client_device2, Platform.SWITCH)
     assert entity2 is not None
 
-    response: GroupInfo = await controller.groups_helper.create_group(
+    response: GroupInfo = await ws_client_gateway.groups_helper.create_group(
         members=[
             GroupMemberReference(
                 ieee=entity1.info_object.device_ieee,
@@ -375,15 +391,15 @@ async def test_controller_groups(
         ],
         name="Test Group Controller",
     )
-    await server.async_block_till_done()
-    assert len(controller.groups) == 2
-    assert response.group_id in controller.groups
+    await zha_gateway.async_block_till_done()
+    assert len(ws_client_gateway.groups) == 2
+    assert response.group_id in ws_client_gateway.groups
     assert response.name == "Test Group Controller"
     assert client_device1.ieee in response.members_by_ieee
     assert client_device2.ieee in response.members_by_ieee
 
-    # test remove member from group from controller
-    response = await controller.groups_helper.remove_group_members(
+    # test remove member from group from ws_client_gateway
+    response = await ws_client_gateway.groups_helper.remove_group_members(
         response,
         [
             GroupMemberReference(
@@ -392,15 +408,15 @@ async def test_controller_groups(
             )
         ],
     )
-    await server.async_block_till_done()
-    assert len(controller.groups) == 2
-    assert response.group_id in controller.groups
+    await zha_gateway.async_block_till_done()
+    assert len(ws_client_gateway.groups) == 2
+    assert response.group_id in ws_client_gateway.groups
     assert response.name == "Test Group Controller"
     assert client_device1.ieee in response.members_by_ieee
     assert client_device2.ieee not in response.members_by_ieee
 
-    # test add member to group from controller
-    response = await controller.groups_helper.add_group_members(
+    # test add member to group from ws_client_gateway
+    response = await ws_client_gateway.groups_helper.add_group_members(
         response,
         [
             GroupMemberReference(
@@ -409,9 +425,9 @@ async def test_controller_groups(
             )
         ],
     )
-    await server.async_block_till_done()
-    assert len(controller.groups) == 2
-    assert response.group_id in controller.groups
+    await zha_gateway.async_block_till_done()
+    assert len(ws_client_gateway.groups) == 2
+    assert response.group_id in ws_client_gateway.groups
     assert response.name == "Test Group Controller"
     assert client_device1.ieee in response.members_by_ieee
     assert client_device2.ieee in response.members_by_ieee
