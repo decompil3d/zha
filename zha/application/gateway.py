@@ -95,6 +95,7 @@ from zha.websocket.client.helpers import (
     ServerHelper,
     SirenHelper,
     SwitchHelper,
+    UpdateHelper,
 )
 from zha.websocket.const import ControllerEvents
 from zha.websocket.server.client import ClientManager, load_api as load_client_api
@@ -929,6 +930,7 @@ class WebSocketClientGateway(BaseGateway):
         self.devices_helper: DeviceHelper = DeviceHelper(self._client)
         self.network: NetworkHelper = NetworkHelper(self._client)
         self.server_helper: ServerHelper = ServerHelper(self._client)
+        self.update_helper: UpdateHelper = UpdateHelper(self._client)
         self._client.on_all_events(self._handle_event_protocol)
 
     @property

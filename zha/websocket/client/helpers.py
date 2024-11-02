@@ -77,6 +77,8 @@ from zha.application.platforms.switch.websocket_api import (
     SwitchTurnOffCommand,
     SwitchTurnOnCommand,
 )
+from zha.application.platforms.update import WebSocketClientFirmwareUpdateEntity
+from zha.application.platforms.update.websocket_api import InstallFirmwareCommand
 from zha.application.platforms.websocket_api import (
     PlatformEntityDisableCommand,
     PlatformEntityEnableCommand,
@@ -899,6 +901,30 @@ class GroupHelper:
             await self._client.async_send_command(command),
         )
         return response.group
+
+
+class UpdateHelper:
+    """Helper to send firmware update commands."""
+
+    def __init__(self, client: Client):
+        """Initialize the device helper."""
+        self._client: Client = client
+
+    async def install_firmware(
+        self,
+        firmware_update_entity: WebSocketClientFirmwareUpdateEntity,
+        version: str | None = None,
+    ) -> dict[EUI64, ExtendedDeviceInfo]:
+        """Get the groups."""
+
+        return await self._client.async_send_command(
+            InstallFirmwareCommand(
+                ieee=firmware_update_entity.info_object.device_ieee,
+                unique_id=firmware_update_entity.info_object.unique_id,
+                platform=firmware_update_entity.info_object.platform,
+                version=version,
+            )
+        )
 
 
 class DeviceHelper:

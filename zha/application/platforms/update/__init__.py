@@ -301,7 +301,7 @@ class FirmwareUpdateEntity(PlatformEntity, FirmwareUpdateEntityInterface):
         self._attr_update_percentage = progress
         self.maybe_emit_state_changed_event()
 
-    async def async_install(self, version: str | None) -> None:
+    async def async_install(self, version: str | None = None, **kwargs) -> None:
         """Install an update."""
 
         if version is None:
@@ -433,3 +433,4 @@ class WebSocketClientFirmwareUpdateEntity(
 
     async def async_install(self, version: str | None) -> None:
         """Install an update."""
+        await self._device.gateway.update_helper.install_firmware(self, version)

@@ -93,6 +93,8 @@ class APICommands(StrEnum):
     CLIENT_LISTEN_RAW_ZCL = "client_listen_raw_zcl"
     CLIENT_DISCONNECT = "client_disconnect"
 
+    FIRMWARE_INSTALL = "firmware_install"
+
 
 class MessageTypes(StrEnum):
     """WS message types."""

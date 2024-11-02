@@ -160,6 +160,9 @@ def load_platform_entity_apis(server: Server) -> None:
     from zha.application.platforms.switch.websocket_api import (
         load_api as load_switch_api,
     )
+    from zha.application.platforms.update.websocket_api import (
+        load_api as load_update_api,
+    )
 
     register_api_command(server, refresh_state)
     register_api_command(server, enable)
@@ -175,3 +178,4 @@ def load_platform_entity_apis(server: Server) -> None:
     load_select_api(server)
     load_siren_api(server)
     load_switch_api(server)
+    load_update_api(server)

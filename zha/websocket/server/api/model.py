@@ -91,6 +91,7 @@ class WebSocketCommand(BaseModel):
         APICommands.CLIMATE_SET_PRESET_MODE,
         APICommands.SWITCH_TURN_ON,
         APICommands.SWITCH_TURN_OFF,
+        APICommands.FIRMWARE_INSTALL,
     ]
 
 
@@ -162,6 +163,7 @@ class ErrorResponse(WebSocketCommandResponse):
         "error.reconfigure_device",
         "error.UpdateNetworkTopologyCommand",
         "error.create_group",
+        "error.firmware_install",
     ]
 
 
@@ -221,6 +223,7 @@ class DefaultResponse(WebSocketCommandResponse):
         "client_disconnect",
         "reconfigure_device",
         "UpdateNetworkTopologyCommand",
+        "firmware_install",
     ]
 
 
