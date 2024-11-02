@@ -21,7 +21,6 @@ from tests.common import (
     send_attributes_report,
     update_attribute_cache,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.gateway import Gateway
 from zha.application.platforms import (
@@ -85,19 +84,17 @@ async def light_mock(zha_gateway: Gateway) -> ZigpyDevice:
 
 
 @pytest.mark.parametrize(
-    (
-        "gateway_type",
-        "entity_type",
-    ),
-    [("zha_gateway", PlatformEntity), ("ws_gateway", WebSocketClientEntity)],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_number(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
-    entity_type: type,
+    zha_gateway: Gateway,
 ) -> None:
     """Test zha number platform."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_analog_output_device = create_mock_zigpy_device(
         zha_gateway, ZIGPY_ANALOG_OUTPUT_DEVICE
     )
@@ -130,6 +127,11 @@ async def test_number(
     assert "engineering_units" in attr_reads
     assert "application_type" in attr_reads
 
+    entity_type = (
+        PlatformEntity
+        if not hasattr(zha_gateway, "ws_gateway")
+        else WebSocketClientEntity
+    )
     entity: PlatformEntity = get_entity(zha_device, platform=Platform.NUMBER)
     assert isinstance(entity, entity_type)
 
@@ -196,33 +198,33 @@ async def test_number(
 
 
 @pytest.mark.parametrize(
-    ("attr", "initial_value", "new_value", "max_value", "gateway_type"),
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+@pytest.mark.parametrize(
+    ("attr", "initial_value", "new_value", "max_value"),
     (
-        ("on_off_transition_time", 20, 5, 65535, "zha_gateway"),
-        ("on_level", 255, 50, 255, "zha_gateway"),
-        ("on_transition_time", 5, 1, 65534, "zha_gateway"),
-        ("off_transition_time", 5, 1, 65534, "zha_gateway"),
-        ("default_move_rate", 1, 5, 254, "zha_gateway"),
-        ("start_up_current_level", 254, 125, 255, "zha_gateway"),
-        ("on_off_transition_time", 20, 5, 65535, "ws_gateway"),
-        ("on_level", 255, 50, 255, "ws_gateway"),
-        ("on_transition_time", 5, 1, 65534, "ws_gateway"),
-        ("off_transition_time", 5, 1, 65534, "ws_gateway"),
-        ("default_move_rate", 1, 5, 254, "ws_gateway"),
-        ("start_up_current_level", 254, 125, 255, "ws_gateway"),
+        ("on_off_transition_time", 20, 5, 65535),
+        ("on_level", 255, 50, 255),
+        ("on_transition_time", 5, 1, 65534),
+        ("off_transition_time", 5, 1, 65534),
+        ("default_move_rate", 1, 5, 254),
+        ("start_up_current_level", 254, 125, 255),
     ),
 )
 async def test_level_control_number(
-    zha_gateways: CombinedGateways,
+    zha_gateway: Gateway,
     attr: str,
     initial_value: int,
     new_value: int,
     max_value: int,
-    gateway_type: str,
 ) -> None:
     """Test ZHA level control number entities - new join."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     light = await light_mock(zha_gateway)
     level_control_cluster = light.endpoints[1].level
     level_control_cluster.PLUGGED_ATTR_READS = {
@@ -335,22 +337,25 @@ async def test_level_control_number(
 
 
 @pytest.mark.parametrize(
-    ("attr", "initial_value", "new_value", "gateway_type"),
-    (
-        ("start_up_color_temperature", 500, 350, "zha_gateway"),
-        ("start_up_color_temperature", 500, 350, "ws_gateway"),
-    ),
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+@pytest.mark.parametrize(
+    ("attr", "initial_value", "new_value"),
+    (("start_up_color_temperature", 500, 350),),
 )
 async def test_color_number(
-    zha_gateways: CombinedGateways,
+    zha_gateway: Gateway,
     attr: str,
     initial_value: int,
     new_value: int,
-    gateway_type: str,
 ) -> None:
     """Test ZHA color number entities - new join."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     light = await light_mock(zha_gateway)
     color_cluster = light.endpoints[1].light_color
     color_cluster.PLUGGED_ATTR_READS = {

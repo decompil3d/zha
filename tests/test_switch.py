@@ -34,7 +34,6 @@ from tests.common import (
     send_attributes_report,
     update_attribute_cache,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.gateway import Gateway
 from zha.application.platforms import GroupEntity, PlatformEntity
@@ -111,15 +110,18 @@ async def device_switch_2_mock(zha_gateway: Gateway) -> Device:
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_switch(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test zha switch platform."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device = create_mock_zigpy_device(zha_gateway, ZIGPY_DEVICE)
     zigpy_device.node_desc.mac_capability_flags |= (
         0b_0000_0100  # this one is mains powered
@@ -160,7 +162,7 @@ async def test_switch(
 
     exc_match = (
         "Failed to turn off"
-        if gateway_type == "zha_gateway"
+        if not hasattr(zha_gateway, "ws_gateway")
         else "'PLATFORM_ENTITY_ACTION_ERROR'"
     )
     # Fail turn off from client
@@ -204,7 +206,7 @@ async def test_switch(
 
     exc_match = (
         "Failed to turn on"
-        if gateway_type == "zha_gateway"
+        if not hasattr(zha_gateway, "ws_gateway")
         else "'PLATFORM_ENTITY_ACTION_ERROR'"
     )
     # Fail turn on from client
@@ -242,14 +244,16 @@ async def test_switch(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_zha_group_switch_entity(
-    zha_gateways: CombinedGateways, gateway_type: str
-) -> None:
+async def test_zha_group_switch_entity(zha_gateway: Gateway) -> None:
     """Test the switch entity for a ZHA group."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     device_switch_1 = await device_switch_1_mock(zha_gateway)
     device_switch_2 = await device_switch_2_mock(zha_gateway)
     member_ieee_addresses = [device_switch_1.ieee, device_switch_2.ieee]
@@ -259,11 +263,11 @@ async def test_zha_group_switch_entity(
     ]
 
     # test creating a group with 2 members
-    if gateway_type == "zha_gateway":
+    if not hasattr(zha_gateway, "ws_gateway"):
         zha_group = await zha_gateway.async_create_zigpy_group("Test Group", members)
         await zha_gateway.async_block_till_done()
     else:
-        zha_group = await zha_gateway.server_gateway.async_create_zigpy_group(
+        zha_group = await zha_gateway.ws_gateway.async_create_zigpy_group(
             "Test Group", members
         )
         await zha_gateway.async_block_till_done()
@@ -281,17 +285,17 @@ async def test_zha_group_switch_entity(
 
     group_cluster_on_off = zha_group.zigpy_group.endpoint[general.OnOff.cluster_id]
 
-    if gateway_type == "zha_gateway":
+    if not hasattr(zha_gateway, "ws_gateway"):
         dev1_cluster_on_off = device_switch_1.device.endpoints[1].on_off
         dev2_cluster_on_off = device_switch_2.device.endpoints[1].on_off
     else:
         dev1_cluster_on_off = (
-            zha_gateway.server_gateway.devices[device_switch_1.ieee]
+            zha_gateway.ws_gateway.devices[device_switch_1.ieee]
             .device.endpoints[1]
             .on_off
         )
         dev2_cluster_on_off = (
-            zha_gateway.server_gateway.devices[device_switch_2.ieee]
+            zha_gateway.ws_gateway.devices[device_switch_2.ieee]
             .device.endpoints[1]
             .on_off
         )
@@ -378,15 +382,15 @@ async def test_zha_group_switch_entity(
     # test that group light is now back on
     assert bool(entity.state["state"]) is True
 
-    if gateway_type == "zha_gateway":
+    if not hasattr(zha_gateway, "ws_gateway"):
         await group_entity_availability_test(
             zha_gateway, device_switch_1, device_switch_2, entity
         )
     else:
         await group_entity_availability_test(
             zha_gateway,
-            zha_gateway.server_gateway.devices[device_switch_1.ieee],
-            zha_gateway.server_gateway.devices[device_switch_2.ieee],
+            zha_gateway.ws_gateway.devices[device_switch_1.ieee],
+            zha_gateway.ws_gateway.devices[device_switch_2.ieee],
             entity,
         )
 
@@ -425,16 +429,18 @@ class WindowDetectionFunctionQuirk(CustomDevice):
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_switch_configurable(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA configurable switch platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_dev = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -544,15 +550,16 @@ async def test_switch_configurable(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_switch_configurable_custom_on_off_values(
-    zha_gateways: CombinedGateways, gateway_type: str
-) -> None:
+async def test_switch_configurable_custom_on_off_values(zha_gateway: Gateway) -> None:
     """Test ZHA configurable switch platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_dev = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -628,15 +635,18 @@ async def test_switch_configurable_custom_on_off_values(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_switch_configurable_custom_on_off_values_force_inverted(
-    zha_gateways: CombinedGateways, gateway_type: str
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA configurable switch platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_dev = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -713,15 +723,18 @@ async def test_switch_configurable_custom_on_off_values_force_inverted(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_switch_configurable_custom_on_off_values_inverter_attribute(
-    zha_gateways: CombinedGateways, gateway_type: str
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA configurable switch platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_dev = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -807,16 +820,18 @@ WCM = closures.WindowCovering.WindowCoveringMode
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_cover_inversion_switch(
-    zha_gateways: CombinedGateways, gateway_type: str
-) -> None:
+async def test_cover_inversion_switch(zha_gateway: Gateway) -> None:
     """Test ZHA cover platform."""
 
     # load up cover domain
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     cluster = zigpy_cover_device.endpoints[1].window_covering
     cluster.PLUGGED_ATTR_READS = {
@@ -829,9 +844,9 @@ async def test_cover_inversion_switch(
     update_attribute_cache(cluster)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_cover_device)
 
-    if gateway_type == "ws_gateway":
+    if hasattr(zha_gateway, "ws_gateway"):
         ch = (
-            zha_gateway.server_gateway.devices[zha_device.ieee]
+            zha_gateway.ws_gateway.devices[zha_device.ieee]
             .endpoints[1]
             .all_cluster_handlers[f"1:0x{cluster.cluster_id:04x}"]
         )
@@ -914,16 +929,18 @@ async def test_cover_inversion_switch(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_cover_inversion_switch_not_created(
-    zha_gateways: CombinedGateways, gateway_type: str
-) -> None:
+async def test_cover_inversion_switch_not_created(zha_gateway: Gateway) -> None:
     """Test ZHA cover platform."""
 
     # load up cover domain
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     cluster = zigpy_cover_device.endpoints[1].window_covering
     cluster.PLUGGED_ATTR_READS = {

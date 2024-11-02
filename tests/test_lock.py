@@ -18,7 +18,6 @@ from tests.common import (
     send_attributes_report,
     update_attribute_cache,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.gateway import Gateway
 from zha.application.platforms import PlatformEntity
@@ -42,13 +41,16 @@ ZIGPY_LOCK = {
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_lock(zha_gateways: CombinedGateways, gateway_type: str) -> None:
+async def test_lock(zha_gateway: Gateway) -> None:
     """Test zha lock platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(zha_gateway, ZIGPY_LOCK)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
     cluster = zigpy_device.endpoints[1].door_lock
@@ -213,14 +215,16 @@ async def async_disable_user_code(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_lock_state_restoration(
-    zha_gateways: CombinedGateways, gateway_type: str
-) -> None:
+async def test_lock_state_restoration(zha_gateway: Gateway) -> None:
     """Test the lock state restoration."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device = create_mock_zigpy_device(zha_gateway, ZIGPY_LOCK)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
 

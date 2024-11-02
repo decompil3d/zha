@@ -23,7 +23,6 @@ from tests.common import (
     send_attributes_report,
     update_attribute_cache,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.const import ATTR_COMMAND
 from zha.application.gateway import Gateway
@@ -94,20 +93,18 @@ WCCS = closures.WindowCovering.ConfigStatus
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
+    "zha_gateway",
     [
         "zha_gateway",
-        "ws_gateway",
+        "ws_gateways",
     ],
+    indirect=True,
 )
-@pytest.mark.looptime
 async def test_cover_non_tilt_initial_state(  # pylint: disable=unused-argument
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA cover platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     # load up cover domain
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
@@ -122,7 +119,7 @@ async def test_cover_non_tilt_initial_state(  # pylint: disable=unused-argument
 
     if isinstance(zha_device, WebSocketClientDevice):
         ch = (
-            zha_gateway.server_gateway.devices[zha_device.ieee]
+            zha_gateway.ws_gateway.devices[zha_device.ieee]
             .endpoints[1]
             .all_cluster_handlers[f"1:0x{cluster.cluster_id:04x}"]
         )
@@ -163,20 +160,18 @@ async def test_cover_non_tilt_initial_state(  # pylint: disable=unused-argument
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
+    "zha_gateway",
     [
         "zha_gateway",
-        "ws_gateway",
+        "ws_gateways",
     ],
+    indirect=True,
 )
-@pytest.mark.looptime
 async def test_cover(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test zha cover platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     cluster = zigpy_cover_device.endpoints.get(1).window_covering
     cluster.PLUGGED_ATTR_READS = {
@@ -190,7 +185,7 @@ async def test_cover(
 
     if isinstance(zha_device, WebSocketClientDevice):
         ch = (
-            zha_gateway.server_gateway.devices[zha_device.ieee]
+            zha_gateway.ws_gateway.devices[zha_device.ieee]
             .endpoints[1]
             .all_cluster_handlers[f"1:0x{cluster.cluster_id:04x}"]
         )
@@ -413,20 +408,18 @@ async def test_cover(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
+    "zha_gateway",
     [
         "zha_gateway",
-        "ws_gateway",
+        "ws_gateways",
     ],
+    indirect=True,
 )
-@pytest.mark.looptime
 async def test_cover_failures(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA cover platform failure cases."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     # load up cover domain
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
@@ -624,20 +617,18 @@ async def test_cover_failures(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
+    "zha_gateway",
     [
         "zha_gateway",
-        "ws_gateway",
+        "ws_gateways",
     ],
+    indirect=True,
 )
-@pytest.mark.looptime
 async def test_shade(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test zha cover platform for shade device type."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_shade_device = create_mock_zigpy_device(zha_gateway, ZIGPY_SHADE_DEVICE)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_shade_device)
     cluster_on_off = zigpy_shade_device.endpoints.get(1).on_off
@@ -815,20 +806,18 @@ async def test_shade(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
+    "zha_gateway",
     [
         "zha_gateway",
-        "ws_gateway",
+        "ws_gateways",
     ],
+    indirect=True,
 )
-@pytest.mark.looptime
 async def test_keen_vent(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test keen vent."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_keen_vent = create_mock_zigpy_device(
         zha_gateway,
         ZIGPY_KEEN_VENT,
@@ -894,20 +883,18 @@ async def test_keen_vent(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
+    "zha_gateway",
     [
         "zha_gateway",
-        "ws_gateway",
+        "ws_gateways",
     ],
+    indirect=True,
 )
-@pytest.mark.looptime
 async def test_cover_remote(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA cover remote."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_cover_remote = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_REMOTE)
     # load up cover domain
     zigpy_cover_remote = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_REMOTE)
@@ -917,7 +904,7 @@ async def test_cover_remote(
         zha_device.emit_zha_event = MagicMock(wraps=zha_device.emit_zha_event)
         device = zha_device
     else:
-        device = zha_gateway.server_gateway.devices[zha_device.ieee]
+        device = zha_gateway.ws_gateway.devices[zha_device.ieee]
         device.emit_zha_event = MagicMock(wraps=device.emit_zha_event)
 
     cluster = zigpy_cover_remote.endpoints[1].out_clusters[
@@ -948,20 +935,18 @@ async def test_cover_remote(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
+    "zha_gateway",
     [
         "zha_gateway",
-        "ws_gateway",
+        "ws_gateways",
     ],
+    indirect=True,
 )
-@pytest.mark.looptime
 async def test_cover_state_restoration(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test the cover state restoration."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_cover_device = create_mock_zigpy_device(zha_gateway, ZIGPY_COVER_DEVICE)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_cover_device)
     entity = get_entity(zha_device, platform=Platform.COVER)

@@ -24,7 +24,6 @@ from tests.common import (
     join_zigpy_device,
     zigpy_device_from_json,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.const import (
     CLUSTER_COMMAND_SERVER,
@@ -713,15 +712,15 @@ async def test_device_automation_triggers(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_device_properties(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
-) -> None:
+async def test_device_properties(zha_gateway: Gateway) -> None:
     """Test device properties."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_dev = zigpy_device(zha_gateway, with_basic_cluster_handler=True)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_dev)
 
@@ -775,7 +774,7 @@ async def test_device_properties(
     assert zha_device.extended_device_info.rssi is None
 
     # TODO this needs to be fixed
-    if gateway_type == "zha_gateway":
+    if not hasattr(zha_gateway, "ws_gateway"):
         assert zha_device.zigbee_signature == {
             "endpoints": {
                 3: {
@@ -838,7 +837,7 @@ async def test_device_properties(
             },
         }
 
-    if gateway_type == "zha_gateway":
+    if not hasattr(zha_gateway, "ws_gateway"):
         assert zha_device.power_configuration_ch is None
         assert zha_device.basic_ch is not None
         assert zha_device.sw_version is None
@@ -857,7 +856,7 @@ async def test_device_properties(
         "00:0d:6f:00:0a:90:69:e7-3-6",
     ) in zha_device.platform_entities
 
-    if gateway_type == "zha_gateway":
+    if not hasattr(zha_gateway, "ws_gateway"):
         assert isinstance(
             zha_device.platform_entities[
                 (Platform.SENSOR, "00:0d:6f:00:0a:90:69:e7-3-0-lqi")
@@ -893,7 +892,7 @@ async def test_device_properties(
     with pytest.raises(KeyError, match="Entity foo not found"):
         zha_device.get_platform_entity("bar", "foo")
 
-    if gateway_type == "zha_gateway":
+    if not hasattr(zha_gateway, "ws_gateway"):
         # test things are none when they aren't returned by Zigpy
         zigpy_dev.node_desc = None
         delattr(zha_device, "manufacturer_code")

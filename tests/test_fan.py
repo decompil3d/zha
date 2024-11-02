@@ -28,7 +28,6 @@ from tests.common import (
     join_zigpy_device,
     send_attributes_report,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.gateway import Gateway
 from zha.application.platforms import GroupEntity, PlatformEntity, WebSocketClientEntity
@@ -137,16 +136,18 @@ async def device_fan_2_mock(zha_gateway: Gateway) -> Device:
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_fan(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test zha fan platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = zigpy_device_mock(zha_gateway)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
     cluster = zigpy_device.endpoints.get(1).fan
@@ -294,15 +295,18 @@ async def async_set_preset_mode(
     new=AsyncMock(return_value=zcl_f.WriteAttributesResponse.deserialize(b"\x00")[0]),
 )
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_zha_group_fan_entity(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test the fan entity for a ZHAWS group."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     device_fan_1 = await device_fan_1_mock(zha_gateway)
     device_fan_2 = await device_fan_2_mock(zha_gateway)
     member_ieee_addresses = [device_fan_1.ieee, device_fan_2.ieee]
@@ -319,7 +323,9 @@ async def test_zha_group_fan_entity(
     for member in zha_group.members:
         assert member.device.ieee in member_ieee_addresses
         assert member.group == zha_group
-        if gateway_type == "zha_gateway":  # we only have / need this on the server side
+        if not hasattr(
+            zha_gateway, "ws_gateway"
+        ):  # we only have / need this on the server side
             assert member.endpoint is not None
         assert member.endpoint_id == 1
 
@@ -327,27 +333,26 @@ async def test_zha_group_fan_entity(
 
     assert entity.group_id == zha_group.group_id
     assert isinstance(
-        entity, GroupEntity if gateway_type == "zha_gateway" else WebSocketClientEntity
+        entity,
+        GroupEntity
+        if not hasattr(zha_gateway, "ws_gateway")
+        else WebSocketClientEntity,
     )
     assert entity.info_object.fallback_name == zha_group.name
 
-    if gateway_type == "zha_gateway":
+    if not hasattr(zha_gateway, "ws_gateway"):
         group_fan_cluster = zha_group.zigpy_group.endpoint[hvac.Fan.cluster_id]
         dev1_fan_cluster = device_fan_1.device.endpoints[1].fan
         dev2_fan_cluster = device_fan_2.device.endpoints[1].fan
     else:
-        group_fan_cluster = zha_gateway.server_gateway.groups[
+        group_fan_cluster = zha_gateway.ws_gateway.groups[
             zha_group.group_id
         ].zigpy_group.endpoint[hvac.Fan.cluster_id]
         dev1_fan_cluster = (
-            zha_gateway.server_gateway.devices[device_fan_1.ieee]
-            .device.endpoints[1]
-            .fan
+            zha_gateway.ws_gateway.devices[device_fan_1.ieee].device.endpoints[1].fan
         )
         dev2_fan_cluster = (
-            zha_gateway.server_gateway.devices[device_fan_2.ieee]
-            .device.endpoints[1]
-            .fan
+            zha_gateway.ws_gateway.devices[device_fan_2.ieee].device.endpoints[1].fan
         )
 
     # test that the fan group entity was created and is off
@@ -422,19 +427,27 @@ async def test_zha_group_fan_entity(
     # test that group fan is now off
     assert entity.state["is_on"] is False
 
-    if gateway_type == "zha_gateway":
+    if not hasattr(zha_gateway, "ws_gateway"):
         await group_entity_availability_test(
             zha_gateway, device_fan_1, device_fan_2, entity
         )
     else:
         await group_entity_availability_test(
             zha_gateway,
-            zha_gateway.server_gateway.devices[device_fan_1.ieee],
-            zha_gateway.server_gateway.devices[device_fan_2.ieee],
+            zha_gateway.ws_gateway.devices[device_fan_1.ieee],
+            zha_gateway.ws_gateway.devices[device_fan_2.ieee],
             entity,
         )
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 @patch(
     "zigpy.zcl.clusters.hvac.Fan.write_attributes",
     new=AsyncMock(side_effect=ZigbeeException),
@@ -462,19 +475,32 @@ async def test_zha_group_fan_entity_failure_state(
     for member in zha_group.members:
         assert member.device.ieee in member_ieee_addresses
         assert member.group == zha_group
-        assert member.endpoint is not None
+        if not hasattr(
+            zha_gateway, "ws_gateway"
+        ):  # we only have / need this on the server side
+            assert member.endpoint is not None
 
     entity: GroupEntity = get_group_entity(zha_group, platform=Platform.FAN)
     assert entity.group_id == zha_group.group_id
 
-    group_fan_cluster = zha_group.zigpy_group.endpoint[hvac.Fan.cluster_id]
+    if not hasattr(zha_gateway, "ws_gateway"):
+        group_fan_cluster = zha_group.zigpy_group.endpoint[hvac.Fan.cluster_id]
+    else:
+        group_fan_cluster = zha_gateway.ws_gateway.groups[
+            zha_group.group_id
+        ].zigpy_group.endpoint[hvac.Fan.cluster_id]
 
     # test that the fan group entity was created and is off
     assert entity.state["is_on"] is False
 
     # turn on from client
     group_fan_cluster.write_attributes.reset_mock()
-    with pytest.raises(ZHAException, match="Failed to send request"):
+    with pytest.raises(
+        ZHAException,
+        match="Failed to send request"
+        if not hasattr(zha_gateway, "ws_gateway")
+        else "(3, 'PLATFORM_ENTITY_ACTION_ERROR')",
+    ):
         await async_turn_on(zha_gateway, entity)
         await zha_gateway.async_block_till_done()
         assert len(group_fan_cluster.write_attributes.mock_calls) == 1
@@ -483,31 +509,32 @@ async def test_zha_group_fan_entity_failure_state(
 
 
 @pytest.mark.parametrize(
-    "plug_read, expected_state, expected_speed, expected_percentage, gateway_type",
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+@pytest.mark.parametrize(
+    "plug_read, expected_state, expected_speed, expected_percentage",
     (
-        ({"fan_mode": None}, False, None, None, "zha_gateway"),
-        ({"fan_mode": 0}, False, SPEED_OFF, 0, "zha_gateway"),
-        ({"fan_mode": 1}, True, SPEED_LOW, 33, "zha_gateway"),
-        ({"fan_mode": 2}, True, SPEED_MEDIUM, 66, "zha_gateway"),
-        ({"fan_mode": 3}, True, SPEED_HIGH, 100, "zha_gateway"),
-        ({"fan_mode": None}, False, None, None, "ws_gateway"),
-        ({"fan_mode": 0}, False, SPEED_OFF, 0, "ws_gateway"),
-        ({"fan_mode": 1}, True, SPEED_LOW, 33, "ws_gateway"),
-        ({"fan_mode": 2}, True, SPEED_MEDIUM, 66, "ws_gateway"),
-        ({"fan_mode": 3}, True, SPEED_HIGH, 100, "ws_gateway"),
+        ({"fan_mode": None}, False, None, None),
+        ({"fan_mode": 0}, False, SPEED_OFF, 0),
+        ({"fan_mode": 1}, True, SPEED_LOW, 33),
+        ({"fan_mode": 2}, True, SPEED_MEDIUM, 66),
+        ({"fan_mode": 3}, True, SPEED_HIGH, 100),
     ),
 )
 async def test_fan_init(
-    zha_gateways: CombinedGateways,  # pylint: disable=unused-argument
+    zha_gateway: Gateway,  # pylint: disable=unused-argument
     plug_read: dict,
     expected_state: bool,
     expected_speed: Optional[str],
     expected_percentage: Optional[int],
-    gateway_type: str,
 ):
     """Test zha fan platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = zigpy_device_mock(zha_gateway)
     cluster = zigpy_device.endpoints.get(1).fan
     cluster.PLUGGED_ATTR_READS = plug_read
@@ -522,16 +549,18 @@ async def test_fan_init(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_fan_update_entity(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test zha fan refresh state."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = zigpy_device_mock(zha_gateway)
     cluster = zigpy_device.endpoints.get(1).fan
     cluster.PLUGGED_ATTR_READS = {"fan_mode": 0}
@@ -608,15 +637,18 @@ def zigpy_device_ikea_mock(zha_gateway: Gateway) -> ZigpyDevice:
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_fan_ikea(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA fan Ikea platform."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device_ikea = zigpy_device_ikea_mock(zha_gateway)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device_ikea)
     cluster = zigpy_device_ikea.endpoints.get(1).ikea_airpurifier
@@ -691,38 +723,33 @@ async def test_fan_ikea(
 
 
 @pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+@pytest.mark.parametrize(
     (
         "ikea_plug_read",
         "ikea_expected_state",
         "ikea_expected_percentage",
         "ikea_preset_mode",
-        "gateway_type",
     ),
     [
-        (None, False, None, None, "zha_gateway"),
-        (None, False, None, None, "ws_gateway"),
-        ({"fan_mode": 0, "fan_speed": 0}, False, 0, None, "zha_gateway"),
-        ({"fan_mode": 1, "fan_speed": 30}, True, 60, PRESET_MODE_AUTO, "zha_gateway"),
-        ({"fan_mode": 10, "fan_speed": 10}, True, 20, None, "zha_gateway"),
-        ({"fan_mode": 15, "fan_speed": 15}, True, 30, None, "zha_gateway"),
-        ({"fan_mode": 20, "fan_speed": 20}, True, 40, None, "zha_gateway"),
-        ({"fan_mode": 25, "fan_speed": 25}, True, 50, None, "zha_gateway"),
-        ({"fan_mode": 30, "fan_speed": 30}, True, 60, None, "zha_gateway"),
-        ({"fan_mode": 35, "fan_speed": 35}, True, 70, None, "zha_gateway"),
-        ({"fan_mode": 40, "fan_speed": 40}, True, 80, None, "zha_gateway"),
-        ({"fan_mode": 45, "fan_speed": 45}, True, 90, None, "zha_gateway"),
-        ({"fan_mode": 50, "fan_speed": 50}, True, 100, None, "zha_gateway"),
-        ({"fan_mode": 0, "fan_speed": 0}, False, 0, None, "ws_gateway"),
-        ({"fan_mode": 1, "fan_speed": 30}, True, 60, PRESET_MODE_AUTO, "ws_gateway"),
-        ({"fan_mode": 10, "fan_speed": 10}, True, 20, None, "ws_gateway"),
-        ({"fan_mode": 15, "fan_speed": 15}, True, 30, None, "ws_gateway"),
-        ({"fan_mode": 20, "fan_speed": 20}, True, 40, None, "ws_gateway"),
-        ({"fan_mode": 25, "fan_speed": 25}, True, 50, None, "ws_gateway"),
-        ({"fan_mode": 30, "fan_speed": 30}, True, 60, None, "ws_gateway"),
-        ({"fan_mode": 35, "fan_speed": 35}, True, 70, None, "ws_gateway"),
-        ({"fan_mode": 40, "fan_speed": 40}, True, 80, None, "ws_gateway"),
-        ({"fan_mode": 45, "fan_speed": 45}, True, 90, None, "ws_gateway"),
-        ({"fan_mode": 50, "fan_speed": 50}, True, 100, None, "ws_gateway"),
+        (None, False, None, None),
+        ({"fan_mode": 0, "fan_speed": 0}, False, 0, None),
+        ({"fan_mode": 1, "fan_speed": 30}, True, 60, PRESET_MODE_AUTO),
+        ({"fan_mode": 10, "fan_speed": 10}, True, 20, None),
+        ({"fan_mode": 15, "fan_speed": 15}, True, 30, None),
+        ({"fan_mode": 20, "fan_speed": 20}, True, 40, None),
+        ({"fan_mode": 25, "fan_speed": 25}, True, 50, None),
+        ({"fan_mode": 30, "fan_speed": 30}, True, 60, None),
+        ({"fan_mode": 35, "fan_speed": 35}, True, 70, None),
+        ({"fan_mode": 40, "fan_speed": 40}, True, 80, None),
+        ({"fan_mode": 45, "fan_speed": 45}, True, 90, None),
+        ({"fan_mode": 50, "fan_speed": 50}, True, 100, None),
     ],
 )
 async def test_fan_ikea_init(
@@ -730,11 +757,10 @@ async def test_fan_ikea_init(
     ikea_expected_state: bool,
     ikea_expected_percentage: int,
     ikea_preset_mode: Optional[str],
-    gateway_type: str,
-    zha_gateways: CombinedGateways,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA fan platform."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device_ikea = zigpy_device_ikea_mock(zha_gateway)
     cluster = zigpy_device_ikea.endpoints.get(1).ikea_airpurifier
     cluster.PLUGGED_ATTR_READS = ikea_plug_read
@@ -747,15 +773,18 @@ async def test_fan_ikea_init(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_fan_ikea_update_entity(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA fan platform."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device_ikea = zigpy_device_ikea_mock(zha_gateway)
     cluster = zigpy_device_ikea.endpoints.get(1).ikea_airpurifier
     cluster.PLUGGED_ATTR_READS = {"fan_mode": 0, "fan_speed": 0}
@@ -824,15 +853,18 @@ def zigpy_device_kof_mock(zha_gateway: Gateway) -> ZigpyDevice:
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_fan_kof(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA fan platform for King of Fans."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device_kof = zigpy_device_kof_mock(zha_gateway)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device_kof)
     cluster = zigpy_device_kof.endpoints.get(1).fan
@@ -889,40 +921,39 @@ async def test_fan_kof(
 
 
 @pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+@pytest.mark.parametrize(
     (
         "plug_read",
         "expected_state",
         "expected_percentage",
         "expected_preset",
-        "gateway_type",
     ),
     [
-        (None, False, None, None, "zha_gateway"),
-        ({"fan_mode": 0}, False, 0, None, "zha_gateway"),
-        ({"fan_mode": 1}, True, 25, None, "zha_gateway"),
-        ({"fan_mode": 2}, True, 50, None, "zha_gateway"),
-        ({"fan_mode": 3}, True, 75, None, "zha_gateway"),
-        ({"fan_mode": 4}, True, 100, None, "zha_gateway"),
-        ({"fan_mode": 6}, True, None, PRESET_MODE_SMART, "zha_gateway"),
-        (None, False, None, None, "ws_gateway"),
-        ({"fan_mode": 0}, False, 0, None, "ws_gateway"),
-        ({"fan_mode": 1}, True, 25, None, "ws_gateway"),
-        ({"fan_mode": 2}, True, 50, None, "ws_gateway"),
-        ({"fan_mode": 3}, True, 75, None, "ws_gateway"),
-        ({"fan_mode": 4}, True, 100, None, "ws_gateway"),
-        ({"fan_mode": 6}, True, None, PRESET_MODE_SMART, "ws_gateway"),
+        (None, False, None, None),
+        ({"fan_mode": 0}, False, 0, None),
+        ({"fan_mode": 1}, True, 25, None),
+        ({"fan_mode": 2}, True, 50, None),
+        ({"fan_mode": 3}, True, 75, None),
+        ({"fan_mode": 4}, True, 100, None),
+        ({"fan_mode": 6}, True, None, PRESET_MODE_SMART),
     ],
 )
 async def test_fan_kof_init(
-    zha_gateways: CombinedGateways,
+    zha_gateway: Gateway,
     plug_read: dict,
     expected_state: bool,
     expected_percentage: Optional[int],
     expected_preset: Optional[str],
-    gateway_type: str,
 ) -> None:
     """Test ZHA fan platform for King of Fans."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device_kof = zigpy_device_kof_mock(zha_gateway)
     cluster = zigpy_device_kof.endpoints.get(1).fan
     cluster.PLUGGED_ATTR_READS = plug_read
@@ -936,16 +967,18 @@ async def test_fan_kof_init(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_fan_kof_update_entity(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA fan platform for King of Fans."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device_kof = zigpy_device_kof_mock(zha_gateway)
     cluster = zigpy_device_kof.endpoints.get(1).fan
     cluster.PLUGGED_ATTR_READS = {"fan_mode": 0}

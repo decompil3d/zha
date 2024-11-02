@@ -28,19 +28,23 @@ from tests.common import (
     join_zigpy_device,
     send_attributes_report,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
+from zha.application.gateway import Gateway
 from zha.application.platforms import EntityCategory, PlatformEntity
 from zha.application.platforms.select import AqaraMotionSensitivities
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_select(zha_gateways: CombinedGateways, gateway_type: str) -> None:
+async def test_select(zha_gateway: Gateway) -> None:
     """Test zha select platform."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -116,15 +120,16 @@ class MotionSensitivityQuirk(CustomDevice):
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_on_off_select_attribute_report(
-    zha_gateways: CombinedGateways, gateway_type: str
-) -> None:
+async def test_on_off_select_attribute_report(zha_gateway: Gateway) -> None:
     """Test ZHA attribute report parsing for select platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -176,15 +181,16 @@ async def test_on_off_select_attribute_report(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_on_off_select_attribute_report_v2(
-    zha_gateways: CombinedGateways, gateway_type: str
-) -> None:
+async def test_on_off_select_attribute_report_v2(zha_gateway: Gateway) -> None:
     """Test ZHA attribute report parsing for select platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -249,14 +255,16 @@ async def test_on_off_select_attribute_report_v2(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_non_zcl_select_state_restoration(
-    zha_gateways: CombinedGateways, gateway_type: str
-) -> None:
+async def test_non_zcl_select_state_restoration(zha_gateway: Gateway) -> None:
     """Test the non-ZCL select state restoration."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
         {

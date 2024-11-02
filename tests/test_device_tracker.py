@@ -18,23 +18,25 @@ from tests.common import (
     join_zigpy_device,
     send_attributes_report,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
+from zha.application.gateway import Gateway
 from zha.application.platforms import WebSocketClientEntity
 from zha.application.platforms.device_tracker import SourceType
 from zha.application.registries import SMARTTHINGS_ARRIVAL_SENSOR_DEVICE_TYPE
 
 
 @pytest.mark.parametrize(
-    ("gateway_type"),
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_device_tracker(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA device tracker platform."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device_dt = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -65,7 +67,7 @@ async def test_device_tracker(
 
     if isinstance(entity, WebSocketClientEntity):
         server_entity = get_entity(
-            zha_gateway.server_gateway.devices[zha_device.ieee],
+            zha_gateway.ws_gateway.devices[zha_device.ieee],
             platform=Platform.DEVICE_TRACKER,
         )
         original_async_update = server_entity.async_update

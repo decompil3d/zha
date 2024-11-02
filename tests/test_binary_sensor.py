@@ -19,7 +19,6 @@ from tests.common import (
     send_attributes_report,
     update_attribute_cache,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.gateway import Gateway
 from zha.application.platforms import PlatformEntity
@@ -135,7 +134,15 @@ async def async_test_iaszone_on_off(
 
 
 @pytest.mark.parametrize(
-    "device, on_off_test, cluster_name, entity_type, plugs, gateway_type",
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+@pytest.mark.parametrize(
+    "device, on_off_test, cluster_name, entity_type, plugs",
     [
         (
             DEVICE_IAS,
@@ -143,7 +150,6 @@ async def async_test_iaszone_on_off(
             "ias_zone",
             IASZone,
             {"zone_status": 1},
-            "zha_gateway",
         ),
         (
             DEVICE_OCCUPANCY,
@@ -151,43 +157,29 @@ async def async_test_iaszone_on_off(
             "occupancy",
             Occupancy,
             {"occupancy": 1},
-            "zha_gateway",
-        ),
-        (
-            DEVICE_IAS,
-            async_test_iaszone_on_off,
-            "ias_zone",
-            WebSocketClientBinarySensor,
-            {"zone_status": 1},
-            "ws_gateway",
-        ),
-        (
-            DEVICE_OCCUPANCY,
-            async_test_binary_sensor_occupancy,
-            "occupancy",
-            WebSocketClientBinarySensor,
-            {"occupancy": 1},
-            "ws_gateway",
         ),
     ],
 )
 async def test_binary_sensor(
-    zha_gateways: CombinedGateways,
+    zha_gateway: Gateway,
     device: dict,
     on_off_test: Callable[..., Awaitable[None]],
     cluster_name: str,
     entity_type: type,
     plugs: dict[str, int],
-    gateway_type: str,
 ) -> None:
     """Test ZHA binary_sensor platform."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(zha_gateway, device)
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
 
     entity: PlatformEntity = find_entity(zha_device, Platform.BINARY_SENSOR)
     assert entity is not None
-    assert isinstance(entity, entity_type)
+    assert isinstance(
+        entity,
+        entity_type
+        if not hasattr(zha_gateway, "ws_gateway")
+        else WebSocketClientBinarySensor,
+    )
     assert entity.PLATFORM == Platform.BINARY_SENSOR
     assert entity.is_on is False
 
@@ -197,24 +189,25 @@ async def test_binary_sensor(
 
 
 @pytest.mark.parametrize(
-    (
-        "gateway_type",
-        "entity_type",
-    ),
-    [("zha_gateway", Accelerometer), ("ws_gateway", WebSocketClientBinarySensor)],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_smarttthings_multi(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
-    entity_type: type,
-) -> None:
+async def test_smarttthings_multi(zha_gateway: Gateway) -> None:
     """Test smartthings multi."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(
         zha_gateway, DEVICE_SMARTTHINGS_MULTI, manufacturer="Samjin", model="multi"
     )
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
 
+    entity_type = (
+        Accelerometer
+        if not hasattr(zha_gateway, "ws_gateway")
+        else WebSocketClientBinarySensor
+    )
     entity: PlatformEntity = get_entity(
         zha_device, Platform.BINARY_SENSOR, entity_type=entity_type
     )
@@ -225,7 +218,7 @@ async def test_smarttthings_multi(
 
     if isinstance(entity, WebSocketClientBinarySensor):
         st_ch = (
-            zha_gateway.server_gateway.devices[zha_device.ieee]
+            zha_gateway.ws_gateway.devices[zha_device.ieee]
             .endpoints[1]
             .all_cluster_handlers["1:0xfc02"]
         )

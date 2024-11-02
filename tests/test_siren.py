@@ -18,7 +18,6 @@ from tests.common import (
     join_zigpy_device,
     mock_coro,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.gateway import Gateway
 from zha.application.platforms.siren import SirenEntityFeature
@@ -47,13 +46,16 @@ async def siren_mock(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_siren(zha_gateways: CombinedGateways, gateway_type: str) -> None:
+async def test_siren(zha_gateway: Gateway) -> None:
     """Test zha siren platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zha_device, cluster = await siren_mock(zha_gateway)
     assert cluster is not None
 
@@ -118,7 +120,7 @@ async def test_siren(zha_gateways: CombinedGateways, gateway_type: str) -> None:
         assert cluster.request.call_args[0][1] == 0
         assert (
             cluster.request.call_args[0][3] == 51
-            if gateway_type == "zha_gateway"
+            if not hasattr(zha_gateway, "ws_gateway")
             else 50  # WHYYYYYY TODO figure this issue out
         )  # bitmask for specified args
         assert cluster.request.call_args[0][4] == 100  # duration in seconds
@@ -131,15 +133,16 @@ async def test_siren(zha_gateways: CombinedGateways, gateway_type: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
-async def test_siren_timed_off(
-    zha_gateways: CombinedGateways, gateway_type: str
-) -> None:
+async def test_siren_timed_off(zha_gateway: Gateway) -> None:
     """Test zha siren platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zha_device, cluster = await siren_mock(zha_gateway)
     assert cluster is not None
 

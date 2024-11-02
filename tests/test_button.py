@@ -32,8 +32,8 @@ from tests.common import (
     mock_coro,
     update_attribute_cache,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
+from zha.application.gateway import Gateway
 from zha.application.platforms import EntityCategory, PlatformEntity
 from zha.application.platforms.button import (
     Button,
@@ -69,19 +69,17 @@ class FrostLockQuirk(CustomDevice):
 
 
 @pytest.mark.parametrize(
-    ("gateway_type", "entity_type"),
+    "zha_gateway",
     [
-        ("zha_gateway", Button),
-        ("ws_gateway", WebSocketClientButtonEntity),
+        "zha_gateway",
+        "ws_gateways",
     ],
+    indirect=True,
 )
 async def test_button(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
-    entity_type: type,
+    zha_gateway: Gateway,
 ) -> None:
     """Test zha button platform."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
 
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
@@ -103,7 +101,12 @@ async def test_button(
     cluster = zigpy_device.endpoints[1].identify
     assert cluster is not None
     entity: PlatformEntity = get_entity(zha_device, Platform.BUTTON)
-    assert isinstance(entity, entity_type)
+    assert isinstance(
+        entity,
+        Button
+        if not hasattr(zha_gateway, "ws_gateway")
+        else WebSocketClientButtonEntity,
+    )
     assert entity.PLATFORM == Platform.BUTTON
 
     with patch(
@@ -119,20 +122,18 @@ async def test_button(
 
 
 @pytest.mark.parametrize(
-    ("gateway_type", "entity_type"),
+    "zha_gateway",
     [
-        ("zha_gateway", WriteAttributeButton),
-        ("ws_gateway", WebSocketClientButtonEntity),
+        "zha_gateway",
+        "ws_gateways",
     ],
+    indirect=True,
 )
 async def test_frost_unlock(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
-    entity_type: type,
+    zha_gateway: Gateway,
 ) -> None:
     """Test custom frost unlock ZHA button."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -157,6 +158,11 @@ async def test_frost_unlock(
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
     cluster = zigpy_device.endpoints[1].tuya_manufacturer
     assert cluster is not None
+    entity_type = (
+        WriteAttributeButton
+        if not hasattr(zha_gateway, "ws_gateway")
+        else WebSocketClientButtonEntity
+    )
     entity: PlatformEntity = get_entity(
         zha_device,
         platform=Platform.BUTTON,
@@ -231,15 +237,17 @@ class FakeManufacturerCluster(CustomCluster, ManufacturerSpecificCluster):
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_quirks_command_button(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA button platform."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
         {
@@ -279,20 +287,23 @@ async def test_quirks_command_button(
 
 
 @pytest.mark.parametrize(
-    ("gateway_type", "entity_type"),
+    "zha_gateway",
     [
-        ("zha_gateway", WriteAttributeButton),
-        ("ws_gateway", WebSocketClientButtonEntity),
+        "zha_gateway",
+        "ws_gateways",
     ],
+    indirect=True,
 )
 async def test_quirks_write_attr_button(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
-    entity_type: type,
+    zha_gateway: Gateway,
 ) -> None:
     """Test ZHA button platform."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
+    entity_type = (
+        WriteAttributeButton
+        if not hasattr(zha_gateway, "ws_gateway")
+        else WebSocketClientButtonEntity
+    )
     zigpy_device = create_mock_zigpy_device(
         zha_gateway,
         {

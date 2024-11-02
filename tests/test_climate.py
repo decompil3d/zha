@@ -31,7 +31,6 @@ from tests.common import (
     join_zigpy_device,
     send_attributes_report,
 )
-from tests.conftest import CombinedGateways
 from zha.application import Platform
 from zha.application.const import (
     PRESET_AWAY,
@@ -248,15 +247,17 @@ def test_sequence_mappings():
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_climate_local_temperature(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test local temperature."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device, device_climate = await device_climate_mock(zha_gateway, CLIMATE)
     thrm_cluster = zigpy_device.endpoints[1].thermostat
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
@@ -269,15 +270,17 @@ async def test_climate_local_temperature(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_climate_outdoor_temperature(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test outdoor temperature."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device, device_climate = await device_climate_mock(zha_gateway, CLIMATE)
     thrm_cluster = zigpy_device.endpoints[1].thermostat
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
@@ -294,15 +297,18 @@ async def test_climate_outdoor_temperature(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_climate_hvac_action_running_state(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test hvac action via running state."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, dev_climate_sinope = await device_climate_sinope(zha_gateway)
     thrm_cluster = zigpy_device.endpoints[1].thermostat
 
@@ -366,16 +372,18 @@ async def test_climate_hvac_action_running_state(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_sinope_time(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test hvac action via running state."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device, dev_climate_sinope = await device_climate_sinope(zha_gateway)
     mfg_cluster = zigpy_device.endpoints[1].sinope_manufacturer_specific
     assert mfg_cluster is not None
@@ -384,7 +392,7 @@ async def test_sinope_time(
 
     if isinstance(entity, WebSocketClientEntity):
         server_entity = get_entity(
-            zha_gateway.server_gateway.devices[dev_climate_sinope.ieee],
+            zha_gateway.ws_gateway.devices[dev_climate_sinope.ieee],
             platform=Platform.CLIMATE,
         )
         original_async_update_time: Awaitable = server_entity._async_update_time
@@ -450,7 +458,7 @@ async def test_sinope_time(
 
     if isinstance(entity, WebSocketClientEntity):
         server_entity = get_entity(
-            zha_gateway.server_gateway.devices[dev_climate_sinope.ieee],
+            zha_gateway.ws_gateway.devices[dev_climate_sinope.ieee],
             platform=Platform.CLIMATE,
         )
         server_entity._async_update_time = original_async_update_time
@@ -459,15 +467,18 @@ async def test_sinope_time(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_climate_hvac_action_running_state_zen(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test Zen hvac action via running state."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, device_climate_zen = await device_climate_mock(
         zha_gateway, CLIMATE_ZEN, manuf=MANUF_ZEN
     )
@@ -482,7 +493,7 @@ async def test_climate_hvac_action_running_state_zen(
     assert isinstance(
         sensor_entity,
         ThermostatHVACAction
-        if gateway_type == "zha_gateway"
+        if not hasattr(zha_gateway, "ws_gateway")
         else WebSocketClientSensorEntity,
     )
 
@@ -555,15 +566,18 @@ async def test_climate_hvac_action_running_state_zen(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_climate_hvac_action_pi_demand(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test hvac action based on pi_heating/cooling_demand attrs."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, device_climate = await device_climate_mock(zha_gateway, CLIMATE)
     thrm_cluster = zigpy_device.endpoints[1].thermostat
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
@@ -598,6 +612,14 @@ async def test_climate_hvac_action_pi_demand(
     assert entity.hvac_action == "idle"
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 @pytest.mark.parametrize(
     "sys_mode, hvac_mode",
     (
@@ -638,6 +660,14 @@ async def test_hvac_mode(
 
 
 @pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+@pytest.mark.parametrize(
     "seq_of_op, modes",
     (
         (0xFF, {"off"}),
@@ -663,6 +693,14 @@ async def test_hvac_modes(  # pylint: disable=unused-argument
     assert set(entity.hvac_modes) == modes
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 @pytest.mark.parametrize(
     "sys_mode, preset, target_temp",
     (
@@ -702,6 +740,14 @@ async def test_target_temperature(
 
 
 @pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+@pytest.mark.parametrize(
     "preset, unoccupied, target_temp",
     (
         (None, 1800, 17),
@@ -738,6 +784,14 @@ async def test_target_temperature_high(
 
 
 @pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+@pytest.mark.parametrize(
     "preset, unoccupied, target_temp",
     (
         (None, 1600, 21),
@@ -773,6 +827,14 @@ async def test_target_temperature_low(
     assert entity.target_temperature_low == target_temp
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 @pytest.mark.parametrize(
     "hvac_mode, sys_mode",
     (
@@ -827,15 +889,18 @@ async def test_set_hvac_mode(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_preset_setting(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test preset setting."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, dev_climate_sinope = await device_climate_sinope(zha_gateway)
     thrm_cluster = zigpy_device.endpoints[1].thermostat
     entity: ThermostatEntity = get_entity(dev_climate_sinope, platform=Platform.CLIMATE)
@@ -916,15 +981,18 @@ async def test_preset_setting(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_preset_setting_invalid(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test invalid preset setting."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, dev_climate_sinope = await device_climate_sinope(zha_gateway)
     thrm_cluster = zigpy_device.endpoints[1].thermostat
     entity: ThermostatEntity = get_entity(dev_climate_sinope, platform=Platform.CLIMATE)
@@ -940,16 +1008,18 @@ async def test_preset_setting_invalid(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_set_temperature_hvac_mode(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test setting HVAC mode in temperature service call."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device, device_climate = await device_climate_mock(zha_gateway, CLIMATE)
     thrm_cluster = zigpy_device.endpoints[1].thermostat
     entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
@@ -968,16 +1038,18 @@ async def test_set_temperature_hvac_mode(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_set_temperature_heat_cool(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test setting temperature service call in heating/cooling HVAC mode."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device, device_climate = await device_climate_mock(
         zha_gateway,
         CLIMATE_SINOPE,
@@ -1042,16 +1114,18 @@ async def test_set_temperature_heat_cool(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_set_temperature_heat(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test setting temperature service call in heating HVAC mode."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device, device_climate = await device_climate_mock(
         zha_gateway,
         CLIMATE_SINOPE,
@@ -1116,16 +1190,18 @@ async def test_set_temperature_heat(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_set_temperature_cool(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test setting temperature service call in cooling HVAC mode."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device, device_climate = await device_climate_mock(
         zha_gateway,
         CLIMATE_SINOPE,
@@ -1190,16 +1266,18 @@ async def test_set_temperature_cool(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_set_temperature_wrong_mode(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test setting temperature service call for wrong HVAC mode."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     with patch.object(
         zigpy.zcl.clusters.manufacturer_specific.ManufacturerSpecificCluster,
         "ep_attribute",
@@ -1236,15 +1314,18 @@ async def test_set_temperature_wrong_mode(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_occupancy_reset(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test away preset reset."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, dev_climate_sinope = await device_climate_sinope(zha_gateway)
     thrm_cluster = zigpy_device.endpoints[1].thermostat
     entity: ThermostatEntity = get_entity(dev_climate_sinope, platform=Platform.CLIMATE)
@@ -1269,15 +1350,18 @@ async def test_occupancy_reset(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_fan_mode(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test fan mode."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, device_climate_fan = await device_climate_mock(
         zha_gateway, CLIMATE_FAN
     )
@@ -1312,15 +1396,18 @@ async def test_fan_mode(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_set_fan_mode_not_supported(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test fan setting unsupported mode."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, device_climate_fan = await device_climate_mock(
         zha_gateway, CLIMATE_FAN
     )
@@ -1333,15 +1420,18 @@ async def test_set_fan_mode_not_supported(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_set_fan_mode(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test fan mode setting."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, device_climate_fan = await device_climate_mock(
         zha_gateway, CLIMATE_FAN
     )
@@ -1365,16 +1455,18 @@ async def test_set_fan_mode(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_set_moes_preset(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test setting preset for moes trv."""
 
-    zha_gateway = getattr(zha_gateways, gateway_type)
     zigpy_device, device_climate_moes = await device_climate_mock(
         zha_gateway,
         CLIMATE_MOES,
@@ -1468,15 +1560,18 @@ async def test_set_moes_preset(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_set_moes_operation_mode(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ):
     """Test setting preset for moes trv."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, device_climate_moes = await device_climate_mock(
         zha_gateway,
         CLIMATE_MOES,
@@ -1529,6 +1624,14 @@ PRESET_ECO = "eco"
 
 
 @pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+@pytest.mark.parametrize(
     ("preset_attr", "preset_mode"),
     [
         (0, PRESET_AWAY),
@@ -1576,15 +1679,18 @@ async def test_beca_operation_mode_update(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_set_zonnsmart_preset(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test setting preset from homeassistant for zonnsmart trv."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, device_climate_zonnsmart = await device_climate_mock(
         zha_gateway,
         CLIMATE_ZONNSMART,
@@ -1644,15 +1750,18 @@ async def test_set_zonnsmart_preset(
 
 
 @pytest.mark.parametrize(
-    "gateway_type",
-    ["zha_gateway", "ws_gateway"],
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_set_zonnsmart_operation_mode(
-    zha_gateways: CombinedGateways,
-    gateway_type: str,
+    zha_gateway: Gateway,
 ) -> None:
     """Test setting preset from trv for zonnsmart trv."""
-    zha_gateway = getattr(zha_gateways, gateway_type)
+
     zigpy_device, device_climate_zonnsmart = await device_climate_mock(
         zha_gateway,
         CLIMATE_ZONNSMART,
