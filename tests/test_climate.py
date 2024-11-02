@@ -46,7 +46,11 @@ from zha.application.platforms.climate import (
     SEQ_OF_OPERATION,
     Thermostat as ThermostatEntity,
 )
-from zha.application.platforms.climate.const import FanState
+from zha.application.platforms.climate.const import (
+    ClimateEntityFeature,
+    FanState,
+    HVACMode,
+)
 from zha.application.platforms.sensor import (
     Sensor,
     SinopeHVACAction,
@@ -244,6 +248,51 @@ def test_sequence_mappings():
         for hvac_mode in hvac_modes:
             assert hvac_mode in HVAC_MODE_2_SYSTEM
             assert Thermostat.SystemMode(HVAC_MODE_2_SYSTEM[hvac_mode]) is not None
+
+
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
+async def test_climate_entity_properties(
+    zha_gateway: Gateway,
+) -> None:
+    """Test climate entity properties."""
+    zigpy_device, device_climate = await device_climate_mock(zha_gateway, CLIMATE)
+    thrm_cluster = zigpy_device.endpoints[1].thermostat
+    entity: ThermostatEntity = get_entity(device_climate, platform=Platform.CLIMATE)
+    await send_attributes_report(zha_gateway, thrm_cluster, {0: 2100})
+
+    assert entity.current_temperature == 21.0
+    assert entity.target_temperature is None
+    assert entity.target_temperature_low is None
+    assert entity.target_temperature_high is None
+    assert entity.outdoor_temperature is None
+    assert entity.min_temp == 7
+    assert entity.max_temp == 39
+    assert entity.hvac_mode == "off"
+    assert entity.hvac_action is None
+    assert entity.fan_mode == "auto"
+    assert entity.preset_mode == PRESET_NONE
+    assert (
+        entity.supported_features
+        == ClimateEntityFeature.TARGET_TEMPERATURE
+        | ClimateEntityFeature.TARGET_TEMPERATURE_RANGE
+        | ClimateEntityFeature.TURN_OFF
+        | ClimateEntityFeature.TURN_ON
+    )
+    assert entity.hvac_modes == [
+        HVACMode.OFF,
+        HVACMode.HEAT_COOL,
+        HVACMode.COOL,
+        HVACMode.HEAT,
+    ]
+    assert entity.fan_modes is None
+    assert entity.preset_modes == []
 
 
 @pytest.mark.parametrize(

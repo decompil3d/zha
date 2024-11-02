@@ -41,6 +41,7 @@ from zha.application.platforms.fan.const import (
     SPEED_LOW,
     SPEED_MEDIUM,
     SPEED_OFF,
+    FanEntityFeature,
 )
 from zha.application.platforms.fan.helpers import NotValidPresetModeError
 from zha.exceptions import ZHAException
@@ -155,6 +156,25 @@ async def test_fan(
     entity = get_entity(zha_device, platform=Platform.FAN)
     assert entity.state["is_on"] is False
     assert entity.is_on is False
+
+    assert entity.preset_modes == [PRESET_MODE_ON, PRESET_MODE_AUTO, PRESET_MODE_SMART]
+    assert entity.speed_list == [
+        SPEED_OFF,
+        SPEED_LOW,
+        SPEED_MEDIUM,
+        SPEED_HIGH,
+        PRESET_MODE_ON,
+        PRESET_MODE_AUTO,
+        PRESET_MODE_SMART,
+    ]
+    assert entity.speed_count == 3
+    assert entity.default_on_percentage == 50
+    assert (
+        entity.supported_features
+        == FanEntityFeature.SET_SPEED
+        | FanEntityFeature.TURN_OFF
+        | FanEntityFeature.TURN_ON
+    )
 
     # turn on at fan
     await send_attributes_report(zha_gateway, cluster, {1: 2, 0: 1, 2: 3})
