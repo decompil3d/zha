@@ -799,7 +799,7 @@ class Gateway(AsyncUtilMixin, BaseGateway):
 
 
 class WebSocketServerGateway(Gateway):
-    """ZHAWSS server implementation."""
+    """ZHA websocket server implementation."""
 
     def __init__(self, config: ZHAData) -> None:
         """Initialize the websocket server gateway."""

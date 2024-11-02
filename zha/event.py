@@ -1,4 +1,4 @@
-"""Provide Event base classes for zhaws."""
+"""Provide Event base classes for zha."""
 
 from __future__ import annotations
 

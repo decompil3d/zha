@@ -1,4 +1,4 @@
-"""Entity helpers for the zhaws server."""
+"""Entity helpers for the zha server."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Models that represent messages in zhawss."""
+"""Models that represent messages in zha."""
 
 from typing import Annotated
 

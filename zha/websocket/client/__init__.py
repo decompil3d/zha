@@ -1,1 +1,1 @@
-"""Client for the ZHAWSS server."""
+"""Client for the ZHA websocket server."""

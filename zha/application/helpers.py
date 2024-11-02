@@ -318,7 +318,7 @@ class DeviceOverridesConfiguration(BaseModel):
 
 
 class WebsocketServerConfiguration(BaseModel):
-    """Websocket Server configuration for zhaws."""
+    """Websocket Server configuration for zha."""
 
     host: str = "0.0.0.0"
     port: int = 8001
@@ -326,7 +326,7 @@ class WebsocketServerConfiguration(BaseModel):
 
 
 class WebsocketClientConfiguration(BaseModel):
-    """Websocket client configuration for zhaws."""
+    """Websocket client configuration for zha."""
 
     host: str = "0.0.0.0"
     port: int = 8001

@@ -70,7 +70,7 @@ class SwitchEntityInterface(ABC):
 
 
 class BaseSwitch(BaseEntity, SwitchEntityInterface):
-    """Common base class for zhawss switches."""
+    """Common base class for zha switches."""
 
     PLATFORM = Platform.SWITCH
 

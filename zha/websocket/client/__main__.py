@@ -1,4 +1,4 @@
-"""Main module for zhawss."""
+"""Main module for zha."""
 
 from websockets.__main__ import main as websockets_cli
 

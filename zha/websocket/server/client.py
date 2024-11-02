@@ -1,4 +1,4 @@
-"""Client classes for zhawss."""
+"""Client classes for zha."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Client:
-    """ZHAWSS client implementation."""
+    """ZHA websocket server  client implementation."""
 
     def __init__(
         self,
@@ -202,7 +202,7 @@ class ClientListenRawZCLCommand(WebSocketCommand):
 
 
 class ClientListenCommand(WebSocketCommand):
-    """Listen for zhawss messages."""
+    """Listen for zha messages."""
 
     command: Literal[APICommands.CLIENT_LISTEN] = APICommands.CLIENT_LISTEN
 
@@ -251,7 +251,7 @@ def load_api(server: WebSocketServerGateway) -> None:
 
 
 class ClientManager:
-    """ZHAWSS client manager implementation."""
+    """ZHA websocket server  client manager implementation."""
 
     def __init__(self, server: WebSocketServerGateway):
         """Initialize the client."""

@@ -1,4 +1,4 @@
-"""Helper classes for zhaws.client."""
+"""Helper classes for zha.client."""
 
 from __future__ import annotations
 

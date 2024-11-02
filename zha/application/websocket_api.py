@@ -1,4 +1,4 @@
-"""Websocket API for zhawss."""
+"""Websocket API for zha."""
 
 from __future__ import annotations
 
