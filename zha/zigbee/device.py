@@ -216,12 +216,9 @@ class BaseDevice(LogMixin, EventBase, ABC, Generic[T]):
         """Return the gateway for this device."""
         return self._gateway
 
-    def get_platform_entity(self, platform: Platform, unique_id: str) -> Any:
+    def get_platform_entity(self, platform: Platform, unique_id: str) -> T:
         """Get a platform entity by unique id."""
-        entity = self.platform_entities.get((platform, unique_id))
-        if entity is None:
-            raise KeyError(f"Entity {unique_id} not found")
-        return entity
+        return self.platform_entities[(platform, unique_id)]
 
     @cached_property
     def device_automation_commands(self) -> dict[str, list[tuple[str, str]]]:
@@ -567,10 +564,7 @@ class Device(BaseDevice[PlatformEntity]):
 
     def get_platform_entity(self, platform: Platform, unique_id: str) -> PlatformEntity:
         """Get a platform entity by unique id."""
-        entity = self._platform_entities.get((platform, unique_id))
-        if entity is None:
-            raise KeyError(f"Entity {unique_id} not found")
-        return entity
+        return self._platform_entities[(platform, unique_id)]
 
     @classmethod
     def new(

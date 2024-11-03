@@ -889,7 +889,7 @@ async def test_device_properties(zha_gateway: Gateway) -> None:
             LQISensor,
         )
 
-    with pytest.raises(KeyError, match="Entity foo not found"):
+    with pytest.raises(KeyError, match="('bar', 'foo')"):
         zha_device.get_platform_entity("bar", "foo")
 
     if not hasattr(zha_gateway, "ws_gateway"):
