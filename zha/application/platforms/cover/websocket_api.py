@@ -168,9 +168,9 @@ class CoverRestoreExternalStateAttributesCommand(PlatformEntityCommand):
         APICommands.COVER_RESTORE_EXTERNAL_STATE_ATTRIBUTES
     )
     platform: str = Platform.COVER
-    state: Literal["open", "opening", "closed", "closing"]
-    target_lift_position: int
-    target_tilt_position: int
+    state: Literal["open", "opening", "closed", "closing", "unavailable"]
+    target_lift_position: int | None = None
+    target_tilt_position: int | None = None
 
 
 @decorators.websocket_command(CoverRestoreExternalStateAttributesCommand)

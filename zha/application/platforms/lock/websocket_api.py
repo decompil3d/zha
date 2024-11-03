@@ -145,7 +145,7 @@ class LockRestoreExternalStateAttributesCommand(PlatformEntityCommand):
         APICommands.LOCK_RESTORE_EXTERNAL_STATE_ATTRIBUTES
     )
     platform: str = Platform.LOCK
-    state: Literal["locked", "unlocked"] | None
+    state: Literal["locked", "unlocked", "unavailable"] | None
 
 
 @decorators.websocket_command(LockRestoreExternalStateAttributesCommand)
