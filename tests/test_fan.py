@@ -519,7 +519,7 @@ async def test_zha_group_fan_entity_failure_state(
         ZHAException,
         match="Failed to send request"
         if not hasattr(zha_gateway, "ws_gateway")
-        else "(3, 'PLATFORM_ENTITY_ACTION_ERROR')",
+        else "(6, 'PLATFORM_ENTITY_ACTION_ERROR')",
     ):
         await async_turn_on(zha_gateway, entity)
         await zha_gateway.async_block_till_done()

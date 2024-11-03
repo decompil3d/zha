@@ -443,7 +443,7 @@ async def test_cover_failures(
     exception_string = (
         r"Failed to close cover"
         if isinstance(zha_gateway, Gateway)
-        else "(2, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(5, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     # close from UI
     with patch(
@@ -466,7 +466,7 @@ async def test_cover_failures(
     exception_string = (
         r"Failed to close cover tilt"
         if isinstance(zha_gateway, Gateway)
-        else "(3, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(6, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     with patch(
         "zigpy.zcl.Cluster.request",
@@ -487,7 +487,7 @@ async def test_cover_failures(
     exception_string = (
         r"Failed to open cover"
         if isinstance(zha_gateway, Gateway)
-        else "(4, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(7, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     # open from UI
     with patch(
@@ -509,7 +509,7 @@ async def test_cover_failures(
     exception_string = (
         r"Failed to open cover tilt"
         if isinstance(zha_gateway, Gateway)
-        else "(5, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(8, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     with patch(
         "zigpy.zcl.Cluster.request",
@@ -530,7 +530,7 @@ async def test_cover_failures(
     exception_string = (
         r"Failed to set cover position"
         if isinstance(zha_gateway, Gateway)
-        else "(6, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(9, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     # set position UI
     with patch(
@@ -553,7 +553,7 @@ async def test_cover_failures(
     exception_string = (
         r"Failed to set cover tilt position"
         if isinstance(zha_gateway, Gateway)
-        else "(7, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(10, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     with patch(
         "zigpy.zcl.Cluster.request",
@@ -574,7 +574,7 @@ async def test_cover_failures(
     exception_string = (
         r"Failed to stop cover"
         if isinstance(zha_gateway, Gateway)
-        else "(8, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(11, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     # stop from UI
     with patch(
@@ -596,7 +596,7 @@ async def test_cover_failures(
     exception_string = (
         r"Failed to stop cover"
         if isinstance(zha_gateway, Gateway)
-        else "(9, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(12, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     # stop tilt from UI
     with patch(
@@ -665,7 +665,7 @@ async def test_shade(
     exception_string = (
         r"Failed to close cover"
         if isinstance(zha_gateway, Gateway)
-        else "(3, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(6, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     # close from client command fails
     with (
@@ -702,7 +702,7 @@ async def test_shade(
     exception_string = (
         r"Failed to open cover"
         if isinstance(zha_gateway, Gateway)
-        else "(5, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(8, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     with (
         patch(
@@ -735,7 +735,7 @@ async def test_shade(
     exception_string = (
         r"Failed to set cover position"
         if isinstance(zha_gateway, Gateway)
-        else "(7, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(10, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     # set position UI command fails
     with (
@@ -775,7 +775,7 @@ async def test_shade(
     exception_string = (
         r"Failed to stop cover"
         if isinstance(zha_gateway, Gateway)
-        else "(9, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(12, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     # stop command fails
     with (
@@ -851,7 +851,7 @@ async def test_keen_vent(
     exception_string = (
         r"Failed to send request: device did not respond"
         if isinstance(zha_gateway, Gateway)
-        else "(3, 'PLATFORM_ENTITY_ACTION_ERROR')"
+        else "(6, 'PLATFORM_ENTITY_ACTION_ERROR')"
     )
     # open from client command fails
     p1 = patch.object(cluster_on_off, "request", side_effect=asyncio.TimeoutError)
