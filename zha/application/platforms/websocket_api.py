@@ -61,9 +61,9 @@ async def execute_platform_entity_command(
         arg_spec = inspect.getfullargspec(action)
         if arg_spec.varkw:
             if inspect.iscoroutinefunction(action):
-                await action(**command.model_dump(exclude_none=True))
+                await action(**command.model_dump())
             else:
-                action(**command.model_dump(exclude_none=True))
+                action(**command.model_dump())
         elif inspect.iscoroutinefunction(action):
             await action()
         else:
