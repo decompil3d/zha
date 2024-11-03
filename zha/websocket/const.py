@@ -29,6 +29,7 @@ class APICommands(StrEnum):
 
     # Server API commands
     STOP_SERVER = "stop_server"
+    GET_APPLICATION_STATE = "get_application_state"
 
     # Light API commands
     LIGHT_TURN_ON = "light_turn_on"

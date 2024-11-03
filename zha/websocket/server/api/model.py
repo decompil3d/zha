@@ -3,6 +3,7 @@
 from typing import Annotated, Any, Literal, Optional, Union
 
 from pydantic import Field, field_serializer, field_validator
+from zigpy.state import CounterGroups, NetworkInfo, NodeInfo, State
 from zigpy.types.named import EUI64
 
 from zha.application.model import (
@@ -92,6 +93,7 @@ class WebSocketCommand(BaseModel):
         APICommands.SWITCH_TURN_ON,
         APICommands.SWITCH_TURN_OFF,
         APICommands.FIRMWARE_INSTALL,
+        APICommands.GET_APPLICATION_STATE,
     ]
 
 
@@ -164,6 +166,7 @@ class ErrorResponse(WebSocketCommandResponse):
         "error.UpdateNetworkTopologyCommand",
         "error.create_group",
         "error.firmware_install",
+        "error.get_application_state",
     ]
 
 
@@ -298,6 +301,43 @@ class UpdateGroupResponse(WebSocketCommandResponse):
     group: GroupInfo
 
 
+class GetApplicationStateResponse(WebSocketCommandResponse):
+    """Get devices response."""
+
+    command: Literal[APICommands.GET_APPLICATION_STATE] = (
+        APICommands.GET_APPLICATION_STATE
+    )
+    state: dict[str, Any]
+
+    @field_validator("state", mode="before", check_fields=False)
+    @classmethod
+    def validate_state(cls, value: State | dict[str, Any]) -> dict[str, Any]:
+        """Validate the state."""
+        if isinstance(value, State):
+            return {
+                "node_info": value.node_info.as_dict(),
+                "network_info": value.network_info.as_dict(),
+                "counters": value.counters,
+                "broadcast_counters": value.broadcast_counters,
+                "device_counters": value.device_counters,
+                "group_counters": value.group_counters,
+            }
+        return value
+
+    def get_converted_state(self) -> State:
+        """Convert state."""
+        state: State = State()
+        state.network_info = NetworkInfo.from_dict(self.state["network_info"])
+        state.node_info = NodeInfo.from_dict(self.state["node_info"])
+        state.broadcast_counters = CounterGroups().update(
+            **self.state["broadcast_counters"]
+        )
+        state.counters = CounterGroups().update(**self.state["counters"])
+        state.device_counters = CounterGroups().update(**self.state["device_counters"])
+        state.group_counters = CounterGroups().update(**self.state["group_counters"])
+        return state
+
+
 CommandResponses = Annotated[
     Union[
         DefaultResponse,
@@ -308,6 +348,7 @@ CommandResponses = Annotated[
         UpdateGroupResponse,
         ReadClusterAttributesResponse,
         WriteClusterAttributeResponse,
+        GetApplicationStateResponse,
     ],
     Field(discriminator="command"),
 ]

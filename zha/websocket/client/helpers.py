@@ -87,6 +87,8 @@ from zha.application.platforms.websocket_api import (
 from zha.application.websocket_api import (
     AddGroupMembersCommand,
     CreateGroupCommand,
+    GetApplicationStateCommand,
+    GetApplicationStateResponse,
     GetDevicesCommand,
     GetGroupsCommand,
     PermitJoiningCommand,
@@ -1045,6 +1047,10 @@ class NetworkHelper:
         """Stop the Zigbee network."""
         response = await self._client.async_send_command(StopNetworkCommand())
         return response.success
+
+    async def get_application_state(self) -> GetApplicationStateResponse:
+        """Get the application state."""
+        return await self._client.async_send_command(GetApplicationStateCommand())
 
 
 class ServerHelper:

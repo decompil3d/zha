@@ -12,6 +12,7 @@ from zigpy.types.named import EUI64
 from zha.websocket.const import DURATION, GROUPS, APICommands
 from zha.websocket.server.api import decorators, register_api_command
 from zha.websocket.server.api.model import (
+    GetApplicationStateResponse,
     GetDevicesResponse,
     ReadClusterAttributesResponse,
     WebSocketCommand,
@@ -468,6 +469,27 @@ async def stop_server(
     await gateway.stop_server()
 
 
+class GetApplicationStateCommand(WebSocketCommand):
+    """Get the application state."""
+
+    command: Literal[APICommands.GET_APPLICATION_STATE] = (
+        APICommands.GET_APPLICATION_STATE
+    )
+
+
+@decorators.websocket_command(GetApplicationStateCommand)
+@decorators.async_response
+async def get_application_state(
+    gateway: WebSocketServerGateway, client: Client, command: GetApplicationStateCommand
+) -> None:
+    """Get the application state."""
+    state = gateway.application_controller.state
+    response = GetApplicationStateResponse(
+        success=True, message_id=command.message_id, state=state
+    )
+    client.send_result_success(command, data=response)
+
+
 def load_api(gateway: WebSocketServerGateway) -> None:
     """Load the api command handlers."""
     register_api_command(gateway, start_network)
@@ -485,3 +507,4 @@ def load_api(gateway: WebSocketServerGateway) -> None:
     register_api_command(gateway, read_cluster_attributes)
     register_api_command(gateway, write_cluster_attribute)
     register_api_command(gateway, stop_server)
+    register_api_command(gateway, get_application_state)

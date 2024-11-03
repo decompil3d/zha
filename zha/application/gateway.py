@@ -142,6 +142,11 @@ class BaseGateway(EventBase, ABC):
     async def async_initialize_devices_and_entities(self) -> None:
         """Initialize devices and load entities."""
 
+    @property
+    @abstractmethod
+    def state(self) -> State:
+        """Return the active coordinator's network state."""
+
     @abstractmethod
     def get_or_create_device(
         self, zigpy_device: zigpy.device.Device | ExtendedDeviceInfo
@@ -911,6 +916,7 @@ class WebSocketClientGateway(BaseGateway):
         self._devices: dict[EUI64, WebSocketClientDevice] = {}
         self._groups: dict[int, WebSocketClientGroup] = {}
         self.coordinator_zha_device: WebSocketClientDevice = None  # type: ignore[assignment]
+        self._state: State
         self.lights: LightHelper = LightHelper(self._client)
         self.switches: SwitchHelper = SwitchHelper(self._client)
         self.sirens: SirenHelper = SirenHelper(self._client)
@@ -947,6 +953,11 @@ class WebSocketClientGateway(BaseGateway):
     def groups(self) -> dict[int, WebSocketClientGroup]:
         """Return groups."""
         return self._groups
+
+    @property
+    def state(self) -> State:
+        """Return the active coordinator's network state."""
+        return self._state
 
     async def connect(self) -> None:
         """Connect to the websocket server."""
@@ -998,22 +1009,33 @@ class WebSocketClientGateway(BaseGateway):
         for group_id, group in response_groups.items():
             self._groups[group_id] = WebSocketClientGroup(group, self)
 
+    async def load_application_state(self) -> None:
+        """Load the application state."""
+        response = await self.network.get_application_state()
+        self._state = response.get_converted_state()
+
+    async def async_initialize(self) -> None:
+        """Initialize controller and connect radio."""
+        try:
+            await self._async_initialize()
+        except Exception:
+            await self.shutdown()
+            raise
+
     async def _async_initialize(self) -> None:
         """Initialize controller and connect radio."""
 
+        await self.load_application_state()
         await self.load_devices()
-
-        self.coordinator_zha_device = self.get_or_create_device(
-            self._find_coordinator_device()
-        )
-
+        self.coordinator_zha_device = self._find_coordinator_device()
         await self.load_groups()
 
-    def _find_coordinator_device(self) -> zigpy.device.Device:
+    def _find_coordinator_device(self) -> WebSocketClientDevice | None:
         """Find the coordinator device."""
         for device in self._devices.values():
             if device.is_active_coordinator:
                 return device
+        return None
 
     async def async_initialize_devices_and_entities(self) -> None:
         """Initialize devices and load entities."""
