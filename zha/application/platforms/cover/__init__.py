@@ -589,6 +589,19 @@ class Shade(PlatformEntity):
         if res[1] != Status.SUCCESS:
             raise ZHAException(f"Failed to stop cover: {res[1]}")
 
+    def restore_external_state_attributes(
+        self,
+        *,
+        state: Literal[
+            "open", "opening", "closed", "closing"
+        ],  # FIXME: why must these be expanded?
+        target_lift_position: int | None,
+        target_tilt_position: int | None,
+        **kwargs: Any,
+    ):
+        """Restore external state attributes."""
+        # Shades don't restore state attributes
+
 
 @MULTI_MATCH(
     cluster_handler_names={CLUSTER_HANDLER_LEVEL, CLUSTER_HANDLER_ON_OFF},
@@ -696,7 +709,7 @@ class WebSocketClientCoverEntity(
         self,
         *,
         state: Literal[
-            "open", "opening", "closed", "closing"
+            "open", "opening", "closed", "closing", "unavailable"
         ],  # FIXME: why must these be expanded?
         target_lift_position: int | None,
         target_tilt_position: int | None,
