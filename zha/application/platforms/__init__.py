@@ -496,20 +496,19 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
         self.PLATFORM = entity_info.platform
         self._device: WebSocketClientDevice = device
         self._entity_info: BaseEntityInfoType = entity_info
-        self._attr_enabled = self._entity_info.enabled
-        self._attr_fallback_name = self._entity_info.fallback_name
-        self._attr_translation_key = self._entity_info.translation_key
-        self._attr_entity_category = self._entity_info.entity_category
-        self._attr_entity_registry_enabled_default = (
-            self._entity_info.entity_registry_enabled_default
-        )
-        self._attr_device_class = self._entity_info.device_class
-        self._attr_state_class = self._entity_info.state_class
+        self._update_attrs_from_entity_info()
 
     @property
     def info_object(self) -> BaseEntityInfoType:
         """Return a representation of the alarm control panel."""
         return self._entity_info
+
+    @info_object.setter
+    def info_object(self, entity_info: BaseEntityInfoType) -> None:
+        """Set the entity info object."""
+        self._entity_info = entity_info
+        self._update_attrs_from_entity_info()
+        self.maybe_emit_state_changed_event()
 
     @property
     def state(self) -> dict[str, Any]:
@@ -521,6 +520,7 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
         """Set the state of the entity."""
         self._entity_info.state = value
         self._attr_enabled = self._entity_info.enabled
+        self.maybe_emit_state_changed_event()
 
     @property
     def group_id(self) -> int | None:
@@ -561,6 +561,18 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
             self._entity_info.enabled = False
             self._attr_enabled = False
             self.maybe_emit_state_changed_event()
+
+    def _update_attrs_from_entity_info(self) -> None:
+        """Update the entity attributes."""
+        self._attr_enabled = self._entity_info.enabled
+        self._attr_fallback_name = self._entity_info.fallback_name
+        self._attr_translation_key = self._entity_info.translation_key
+        self._attr_entity_category = self._entity_info.entity_category
+        self._attr_entity_registry_enabled_default = (
+            self._entity_info.entity_registry_enabled_default
+        )
+        self._attr_device_class = self._entity_info.device_class
+        self._attr_state_class = self._entity_info.state_class
 
     async def async_update(self) -> None:
         """Retrieve latest state."""
