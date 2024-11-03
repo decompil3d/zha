@@ -527,6 +527,11 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
         """Return the group id."""
         return self._entity_info.group_id
 
+    @property
+    def available(self) -> bool:
+        """Return true if the device this entity belongs to is available."""
+        return bool(self._entity_info.available)
+
     def enable(self) -> None:
         """Enable the entity."""
         task = self._device.gateway.create_and_track_task(
