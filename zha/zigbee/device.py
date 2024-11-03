@@ -618,7 +618,7 @@ class Device(BaseDevice[PlatformEntity]):
                     ),
                     difference,
                 )
-                self.update_available(available=False, on_network=self.on_network)
+                self.update_available(available=False, on_network=False)
                 return
 
             self._checkins_missed_count += 1
@@ -628,7 +628,7 @@ class Device(BaseDevice[PlatformEntity]):
             )
             if not self._basic_ch:
                 self.debug("does not have a mandatory basic cluster")
-                self.update_available(available=False, on_network=self.on_network)
+                self.update_available(available=False, on_network=False)
                 return
             res = await self._basic_ch.get_attribute_value(
                 ATTR_MANUFACTURER, from_cache=False

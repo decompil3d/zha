@@ -619,9 +619,7 @@ class Gateway(AsyncUtilMixin, BaseGateway):
             device = self.devices[sender.ieee]
             # avoid a race condition during new joins
             if device.status is DeviceStatus.INITIALIZED:
-                device.update_available(
-                    available=available, on_network=device.on_network
-                )
+                device.update_available(available=available, on_network=available)
 
     async def async_device_initialized(self, device: zigpy.device.Device) -> None:
         """Handle device joined and basic information discovered (async)."""
