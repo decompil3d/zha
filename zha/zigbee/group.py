@@ -433,6 +433,8 @@ class WebSocketClientGroup(BaseGroup):
         super().__init__(gateway)
         self._group_info = group_info
         self._entities: dict[str, WebSocketClientEntity] = {}
+        if self._group_info.entities:
+            self._build_or_update_entities()
 
     @property
     def name(self) -> str:
@@ -478,20 +480,29 @@ class WebSocketClientGroup(BaseGroup):
     def info_object(self, group_info: GroupInfo) -> None:
         """Set ZHA group info."""
         self._group_info = group_info
-        self._entities = {
-            entity_info.unique_id: discovery.ENTITY_INFO_CLASS_TO_WEBSOCKET_CLIENT_ENTITY_CLASS[
-                entity_info.__class__
-            ](entity_info, self)
-            for entity_info in self.info_object.entities.values()
-        }
+        self._build_or_update_entities()
+
+    def _build_or_update_entities(self):
+        """Build the entities for this device or rebuild them from extended device info."""
+        current_entity_ids = set(self._entities.keys())
+        for unique_id, entity_info in self._group_info.entities.items():
+            if unique_id in self._entities:
+                self._entities[unique_id].entity_info = entity_info
+                current_entity_ids.remove(unique_id)
+            else:
+                self._entities[unique_id] = (
+                    discovery.ENTITY_INFO_CLASS_TO_WEBSOCKET_CLIENT_ENTITY_CLASS[
+                        entity_info.__class__
+                    ](entity_info, self)
+                )
+        for entity_id in current_entity_ids:
+            self._entities.pop(entity_id, None)
 
     def emit_platform_entity_event(self, event: EntityStateChangedEvent) -> None:
         """Proxy the firing of an entity event."""
         entity = self.group_entities.get(event.unique_id)
         if entity is not None:
             entity.state = event.state
-            entity.maybe_emit_state_changed_event()
-            self.emit(f"{event.unique_id}_{event.event}", event)
 
     async def async_add_members(self, members: list[GroupMemberReference]) -> None:
         """Add members to this group."""
