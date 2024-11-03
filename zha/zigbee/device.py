@@ -1316,9 +1316,5 @@ class WebSocketClientDevice(BaseDevice[WebSocketClientEntity]):
     def emit_platform_entity_event(self, event: EntityStateChangedEvent) -> None:
         """Proxy the firing of an entity event."""
         entity = self.get_platform_entity(event.platform, event.unique_id)
-        if entity is None:
-            raise ValueError(
-                f"Entity not found: {event.platform}.{event.unique_id}",
-            )
-        entity.state = event.state
-        self.emit(f"{event.unique_id}_{event.event}", event)
+        if entity is not None:
+            entity.state = event.state
