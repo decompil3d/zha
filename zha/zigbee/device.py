@@ -1142,8 +1142,11 @@ class WebSocketClientDevice(BaseDevice[WebSocketClientEntity]):
     ) -> None:
         """Initialize the device."""
         super().__init__(gateway)
-        self._extended_device_info = extended_device_info
-        self.unique_id = str(extended_device_info.ieee)
+        self._extended_device_info: ExtendedDeviceInfo = extended_device_info
+        self.unique_id: str = str(extended_device_info.ieee)
+        self._entities: dict[tuple[Platform, str], WebSocketClientEntity] = {}
+        if self._extended_device_info.entities:
+            self._build_entities()
 
     @property
     def extended_device_info(self) -> ExtendedDeviceInfo:
@@ -1154,15 +1157,7 @@ class WebSocketClientDevice(BaseDevice[WebSocketClientEntity]):
     def extended_device_info(self, extended_device_info: ExtendedDeviceInfo) -> None:
         """Set extended device information."""
         self._extended_device_info = extended_device_info
-        self._entities: dict[tuple[Platform, str], WebSocketClientEntity] = {
-            (
-                entity_info.platform,
-                entity_info.unique_id,
-            ): discovery.ENTITY_INFO_CLASS_TO_WEBSOCKET_CLIENT_ENTITY_CLASS[
-                entity_info.__class__
-            ](entity_info, self)
-            for entity_info in self._extended_device_info.entities.values()
-        }
+        self._build_entities()
 
     @property
     def gateway(self) -> WebSocketClientGateway:
@@ -1289,6 +1284,20 @@ class WebSocketClientDevice(BaseDevice[WebSocketClientEntity]):
     def platform_entities(self) -> dict[tuple[Platform, str], WebSocketClientEntity]:
         """Return the platform entities for this device."""
         return self._entities
+
+    def _build_entities(self):
+        """Build the entities for this device or rebuild them from extended device info."""
+        self._entities.update(
+            {
+                (
+                    entity_info.platform,
+                    entity_info.unique_id,
+                ): discovery.ENTITY_INFO_CLASS_TO_WEBSOCKET_CLIENT_ENTITY_CLASS[
+                    entity_info.__class__
+                ](entity_info, self)
+                for entity_info in self._extended_device_info.entities.values()
+            }
+        )
 
     def emit_platform_entity_event(self, event: EntityStateChangedEvent) -> None:
         """Proxy the firing of an entity event."""
