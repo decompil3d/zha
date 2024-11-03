@@ -1149,6 +1149,21 @@ class WebSocketClientDevice(BaseDevice[WebSocketClientEntity]):
             self._build_entities()
 
     @property
+    def quirk_id(self) -> str | None:
+        """Return the quirk id for this device."""
+        return self._extended_device_info.quirk_id
+
+    @property
+    def quirk_class(self) -> str:
+        """Return the quirk class for this device."""
+        return self._extended_device_info.quirk_class
+
+    @property
+    def quirk_applied(self) -> bool:
+        """Return the quirk applied status for this device."""
+        return self._extended_device_info.quirk_applied
+
+    @property
     def extended_device_info(self) -> ExtendedDeviceInfo:
         """Get extended device information."""
         return self._extended_device_info
