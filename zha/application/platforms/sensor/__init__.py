@@ -37,11 +37,13 @@ from zha.application.platforms.sensor.model import (
     DeviceCounterSensorIdentifiers,
     ElectricalMeasurementEntityInfo,
     SensorEntityInfo,
+    SetpointChangeSourceTimestampSensorEntityInfo,
+    SmartEnergyMeteringEntityDescription,
     SmartEnergyMeteringEntityInfo,
+    SmartEnergySummationEntityDescription,
 )
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.decorators import periodic
-from zha.model import BaseModel
 from zha.units import (
     CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     CONCENTRATION_PARTS_PER_BILLION,
@@ -216,6 +218,10 @@ class Sensor(PlatformEntity):
                 if getattr(self, "entity_description", None) is not None
                 else self._attr_native_unit_of_measurement
             ),
+            extra_state_attribute_names=getattr(
+                self, "_attr_extra_state_attribute_names", None
+            ),
+            entity_desctiption=getattr(self, "entity_description", None),
         )
 
     @property
@@ -565,7 +571,7 @@ class Battery(Sensor):
     def info_object(self) -> BatteryEntityInfo:
         """Return a representation of the sensor."""
         return BatteryEntityInfo(
-            **super(PlatformEntity, self).info_object.__dict__,
+            **super(Sensor, self).info_object.__dict__,
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -574,6 +580,9 @@ class Battery(Sensor):
                 getattr(self, "entity_description").native_unit_of_measurement
                 if getattr(self, "entity_description", None) is not None
                 else self._attr_native_unit_of_measurement
+            ),
+            extra_state_attribute_names=getattr(
+                self, "_attr_extra_state_attribute_names", None
             ),
         )
 
@@ -627,7 +636,7 @@ class ElectricalMeasurement(PollableSensor):
     def info_object(self) -> ElectricalMeasurementEntityInfo:
         """Return a representation of the sensor."""
         return ElectricalMeasurementEntityInfo(
-            **super(PlatformEntity, self).info_object.__dict__,
+            **super(Sensor, self).info_object.__dict__,
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -638,6 +647,10 @@ class ElectricalMeasurement(PollableSensor):
                 else self._attr_native_unit_of_measurement
             ),
             measurement_type=self._cluster_handler.measurement_type,
+            extra_state_attribute_names=getattr(
+                self, "_attr_extra_state_attribute_names", None
+            ),
+            entity_desctiption=getattr(self, "entity_description", None),
         )
 
     @property
@@ -803,16 +816,6 @@ class Illuminance(Sensor):
         return round(pow(10, ((value - 1) / 10000)))
 
 
-class SmartEnergyMeteringEntityDescription(BaseModel):
-    """Model that describes a Zigbee smart energy metering entity."""
-
-    key: str = "instantaneous_demand"
-    state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT
-    scale: int = 1
-    native_unit_of_measurement: str | None = None
-    device_class: SensorDeviceClass | None = None
-
-
 @MULTI_MATCH(
     cluster_handler_names=CLUSTER_HANDLER_SMARTENERGY_METERING,
     stop_on_match_group=CLUSTER_HANDLER_SMARTENERGY_METERING,
@@ -910,7 +913,7 @@ class SmartEnergyMetering(PollableSensor):
     def info_object(self) -> SmartEnergyMeteringEntityInfo:
         """Return a representation of the sensor."""
         return SmartEnergyMeteringEntityInfo(
-            **super(PlatformEntity, self).info_object.__dict__,
+            **super(Sensor, self).info_object.__dict__,
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -920,6 +923,10 @@ class SmartEnergyMetering(PollableSensor):
                 if getattr(self, "entity_description", None) is not None
                 else self._attr_native_unit_of_measurement
             ),
+            extra_state_attribute_names=getattr(
+                self, "_attr_extra_state_attribute_names", None
+            ),
+            entity_desctiption=getattr(self, "entity_description", None),
         )
 
     @property
@@ -938,16 +945,27 @@ class SmartEnergyMetering(PollableSensor):
         response["zcl_unit_of_measurement"] = self._cluster_handler.unit_of_measurement
         return response
 
+    @property
+    def device_class(self) -> str | None:
+        """Return the device class."""
+        return (
+            getattr(self, "entity_description").device_class
+            if getattr(self, "entity_description", None) is not None
+            else self._attr_device_class
+        )
+
+    @property
+    def state_class(self) -> str | None:
+        """Return the state class."""
+        return (
+            getattr(self, "entity_description").state_class
+            if getattr(self, "entity_description", None) is not None
+            else self._attr_state_class
+        )
+
     def formatter(self, value: int) -> int | float:
         """Pass through cluster handler formatter."""
         return self._cluster_handler.demand_formatter(value)
-
-
-class SmartEnergySummationEntityDescription(SmartEnergyMeteringEntityDescription):
-    """Model that describes a Zigbee smart energy summation entity."""
-
-    key: str = "summation_delivered"
-    state_class: SensorStateClass | None = SensorStateClass.TOTAL_INCREASING
 
 
 @MULTI_MATCH(
@@ -1711,6 +1729,25 @@ class SetpointChangeSourceTimestamp(TimestampSensor):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
+    @property
+    def info_object(self) -> SetpointChangeSourceTimestampSensorEntityInfo:
+        """Return the info object for this entity."""
+        return SetpointChangeSourceTimestampSensorEntityInfo(
+            **super(Sensor, self).info_object.__dict__,
+            attribute=self._attribute_name,
+            decimals=self._decimals,
+            divisor=self._divisor,
+            multiplier=self._multiplier,
+            unit=(
+                getattr(self, "entity_description").native_unit_of_measurement
+                if getattr(self, "entity_description", None) is not None
+                else self._attr_native_unit_of_measurement
+            ),
+            extra_state_attribute_names=getattr(
+                self, "_attr_extra_state_attribute_names", None
+            ),
+        )
+
 
 @CONFIG_DIAGNOSTIC_MATCH(cluster_handler_names=CLUSTER_HANDLER_COVER)
 class WindowCoveringTypeSensor(EnumSensor):
@@ -1906,6 +1943,28 @@ class WebSocketClientSensorEntity(
     ) -> None:
         """Initialize the ZHA alarm control device."""
         super().__init__(entity_info, device)
+
+    @property
+    def device_class(self) -> str | None:
+        """Return the device class of the sensor."""
+        return self.info_object.device_class
+
+    @property
+    def state_class(self) -> str | None:
+        """Return the state class of the sensor."""
+        return self.info_object.state_class
+
+    @property
+    def entity_description(
+        self,
+    ) -> SmartEnergyMeteringEntityDescription | SmartEnergySummationEntityDescription:
+        """Return the entity description for this entity."""
+        return self.info_object.entity_description
+
+    @property
+    def extra_state_attribute_names(self) -> set[str] | None:
+        """Return the extra state attribute names."""
+        return self.info_object.extra_state_attribute_names
 
     @property
     def native_value(self) -> date | datetime | str | int | float | None:

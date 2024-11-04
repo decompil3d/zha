@@ -143,42 +143,48 @@ async def async_test_metering(
     assert entity.state["status"] == "NO_ALARMS"
     assert entity.state["device_type"] == "Electric Metering"
 
-    await send_attributes_report(zha_gateway, cluster, {1024: 12346, "status": 64 + 8})
-    assert_state(entity, 12346.0, None)
-    assert entity.state["status"] in (
-        "SERVICE_DISCONNECT|POWER_FAILURE",
-        "POWER_FAILURE|SERVICE_DISCONNECT",
-    )
+    # these tests change the device type of the device... this is not possible in the real world
+    # there is no way to currently send info_object changes to the client side so this is not
+    # possible to test for now
+    if not isinstance(entity, sensor.WebSocketClientSensorEntity):
+        await send_attributes_report(
+            zha_gateway, cluster, {1024: 12346, "status": 64 + 8}
+        )
+        assert_state(entity, 12346.0, None)
+        assert entity.state["status"] in (
+            "SERVICE_DISCONNECT|POWER_FAILURE",
+            "POWER_FAILURE|SERVICE_DISCONNECT",
+        )
 
-    await send_attributes_report(
-        zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 1}
-    )
-    assert entity.state["status"] in (
-        "SERVICE_DISCONNECT|NOT_DEFINED",
-        "NOT_DEFINED|SERVICE_DISCONNECT",
-    )
+        await send_attributes_report(
+            zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 1}
+        )
+        assert entity.state["status"] in (
+            "SERVICE_DISCONNECT|NOT_DEFINED",
+            "NOT_DEFINED|SERVICE_DISCONNECT",
+        )
 
-    await send_attributes_report(
-        zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 2}
-    )
-    assert entity.state["status"] in (
-        "SERVICE_DISCONNECT|PIPE_EMPTY",
-        "PIPE_EMPTY|SERVICE_DISCONNECT",
-    )
+        await send_attributes_report(
+            zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 2}
+        )
+        assert entity.state["status"] in (
+            "SERVICE_DISCONNECT|PIPE_EMPTY",
+            "PIPE_EMPTY|SERVICE_DISCONNECT",
+        )
 
-    await send_attributes_report(
-        zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 5}
-    )
-    assert entity.state["status"] in (
-        "SERVICE_DISCONNECT|TEMPERATURE_SENSOR",
-        "TEMPERATURE_SENSOR|SERVICE_DISCONNECT",
-    )
+        await send_attributes_report(
+            zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 5}
+        )
+        assert entity.state["status"] in (
+            "SERVICE_DISCONNECT|TEMPERATURE_SENSOR",
+            "TEMPERATURE_SENSOR|SERVICE_DISCONNECT",
+        )
 
-    # Status for other meter types
-    await send_attributes_report(
-        zha_gateway, cluster, {"status": 32, "metering_device_type": 4}
-    )
-    assert entity.state["status"] in ("<bitmap8.32: 32>", "32")
+        # Status for other meter types
+        await send_attributes_report(
+            zha_gateway, cluster, {"status": 32, "metering_device_type": 4}
+        )
+        assert entity.state["status"] in ("<bitmap8.32: 32>", "32")
 
 
 async def async_test_smart_energy_summation_delivered(
@@ -578,6 +584,14 @@ async def async_test_change_source_timestamp(
         ),
     ),
 )
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_sensor(
     zha_gateway: Gateway,
     cluster_id: int,
@@ -631,6 +645,14 @@ def assert_state(entity: PlatformEntity, state: Any, unit_of_measurement: str) -
     assert entity.info_object.unit == unit_of_measurement
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_electrical_measurement_init(
     zha_gateway: Gateway,
     caplog: pytest.LogCaptureFixture,
@@ -666,9 +688,20 @@ async def test_electrical_measurement_init(
     )
     assert entity.state["state"] == 100
 
-    cluster_handler = list(zha_device._endpoints.values())[0].all_cluster_handlers[
-        "1:0x0b04"
-    ]
+    if isinstance(entity, sensor.WebSocketClientSensorEntity):
+        server_device = zha_gateway.ws_gateway.devices[zha_device.ieee]
+        cluster_handler = list(server_device._endpoints.values())[
+            0
+        ].all_cluster_handlers["1:0x0b04"]
+        polling_interval = server_device.platform_entities[
+            (entity.PLATFORM, entity.unique_id)
+        ].__polling_interval
+    else:
+        cluster_handler = list(zha_device._endpoints.values())[0].all_cluster_handlers[
+            "1:0x0b04"
+        ]
+        polling_interval = entity.__polling_interval
+
     assert cluster_handler.ac_power_divisor == 1
     assert cluster_handler.ac_power_multiplier == 1
 
@@ -678,26 +711,34 @@ async def test_electrical_measurement_init(
         cluster,
         {EMAttrs.active_power.id: 20, EMAttrs.power_divisor.id: 5},
     )
+    await asyncio.sleep(polling_interval + 1)
     assert cluster_handler.ac_power_divisor == 5
     assert cluster_handler.ac_power_multiplier == 1
     assert entity.state["state"] == 4.0
 
-    zha_device.on_network = False
+    if isinstance(entity, sensor.WebSocketClientSensorEntity):
+        zha_gateway.ws_gateway.devices[zha_device.ieee].on_network = False
+    else:
+        zha_device.on_network = False
 
-    await asyncio.sleep(entity.__polling_interval + 1)
+    await asyncio.sleep(polling_interval + 1)
     await zha_gateway.async_block_till_done(wait_background_tasks=True)
     assert (
         "1-2820: skipping polling for updated state, available: False, allow polled requests: True"
         in caplog.text
     )
 
-    zha_device.on_network = True
+    if isinstance(entity, sensor.WebSocketClientSensorEntity):
+        zha_gateway.ws_gateway.devices[zha_device.ieee].on_network = True
+    else:
+        zha_device.on_network = True
 
     await send_attributes_report(
         zha_gateway,
         cluster,
         {EMAttrs.active_power.id: 30, EMAttrs.ac_power_divisor.id: 10},
     )
+    await asyncio.sleep(polling_interval + 1)
     assert cluster_handler.ac_power_divisor == 10
     assert cluster_handler.ac_power_multiplier == 1
     assert entity.state["state"] == 3.0
@@ -708,6 +749,7 @@ async def test_electrical_measurement_init(
         cluster,
         {EMAttrs.active_power.id: 20, EMAttrs.power_multiplier.id: 6},
     )
+    await asyncio.sleep(polling_interval + 1)
     assert cluster_handler.ac_power_divisor == 10
     assert cluster_handler.ac_power_multiplier == 6
     assert entity.state["state"] == 12.0
@@ -717,31 +759,42 @@ async def test_electrical_measurement_init(
         cluster,
         {EMAttrs.active_power.id: 30, EMAttrs.ac_power_multiplier.id: 20},
     )
+    await asyncio.sleep(polling_interval + 1)
     assert cluster_handler.ac_power_divisor == 10
     assert cluster_handler.ac_power_multiplier == 20
     assert entity.state["state"] == 60.0
 
-    entity._refresh = AsyncMock(wraps=entity._refresh)
+    if isinstance(entity, sensor.WebSocketClientSensorEntity):
+        server_entity = zha_gateway.ws_gateway.devices[
+            zha_device.ieee
+        ].platform_entities[(entity.PLATFORM, entity.unique_id)]
+        server_entity._refresh = AsyncMock(wraps=server_entity._refresh)
+        refresh_mock = server_entity._refresh
+    else:
+        entity._refresh = AsyncMock(wraps=entity._refresh)
+        refresh_mock = entity._refresh
 
-    assert entity._refresh.await_count == 0
+    assert refresh_mock.await_count == 0
 
     entity.disable()
+    await zha_gateway.async_block_till_done()
 
     assert entity.enabled is False
 
-    await asyncio.sleep(entity.__polling_interval + 1)
+    await asyncio.sleep(polling_interval + 1)
     await zha_gateway.async_block_till_done(wait_background_tasks=True)
 
-    assert entity._refresh.await_count == 0
+    assert refresh_mock.await_count == 0
 
     entity.enable()
+    await zha_gateway.async_block_till_done()
 
     assert entity.enabled is True
 
-    await asyncio.sleep(entity.__polling_interval + 1)
+    await asyncio.sleep(polling_interval + 1)
     await zha_gateway.async_block_till_done(wait_background_tasks=True)
 
-    assert entity._refresh.await_count == 1
+    assert refresh_mock.await_count == 1
 
 
 @pytest.mark.parametrize(
@@ -760,14 +813,14 @@ async def test_electrical_measurement_init(
                 "rms_current",
             },
             {
-                sensor.PolledElectricalMeasurement,
-                sensor.ElectricalMeasurementFrequency,
-                sensor.ElectricalMeasurementPowerFactor,
+                sensor.PolledElectricalMeasurement.__name__,
+                sensor.ElectricalMeasurementFrequency.__name__,
+                sensor.ElectricalMeasurementPowerFactor.__name__,
             },
             {
-                sensor.ElectricalMeasurementApparentPower,
-                sensor.ElectricalMeasurementRMSVoltage,
-                sensor.ElectricalMeasurementRMSCurrent,
+                sensor.ElectricalMeasurementApparentPower.__name__,
+                sensor.ElectricalMeasurementRMSVoltage.__name__,
+                sensor.ElectricalMeasurementRMSCurrent.__name__,
             },
         ),
         (
@@ -779,26 +832,26 @@ async def test_electrical_measurement_init(
                 "power_factor",
             },
             {
-                sensor.ElectricalMeasurementRMSVoltage,
-                sensor.PolledElectricalMeasurement,
+                sensor.ElectricalMeasurementRMSVoltage.__name__,
+                sensor.PolledElectricalMeasurement.__name__,
             },
             {
-                sensor.ElectricalMeasurementApparentPower,
-                sensor.ElectricalMeasurementRMSCurrent,
-                sensor.ElectricalMeasurementFrequency,
-                sensor.ElectricalMeasurementPowerFactor,
+                sensor.ElectricalMeasurementApparentPower.__name__,
+                sensor.ElectricalMeasurementRMSCurrent.__name__,
+                sensor.ElectricalMeasurementFrequency.__name__,
+                sensor.ElectricalMeasurementPowerFactor.__name__,
             },
         ),
         (
             homeautomation.ElectricalMeasurement.cluster_id,
             set(),
             {
-                sensor.ElectricalMeasurementRMSVoltage,
-                sensor.PolledElectricalMeasurement,
-                sensor.ElectricalMeasurementApparentPower,
-                sensor.ElectricalMeasurementRMSCurrent,
-                sensor.ElectricalMeasurementFrequency,
-                sensor.ElectricalMeasurementPowerFactor,
+                sensor.ElectricalMeasurementRMSVoltage.__name__,
+                sensor.PolledElectricalMeasurement.__name__,
+                sensor.ElectricalMeasurementApparentPower.__name__,
+                sensor.ElectricalMeasurementRMSCurrent.__name__,
+                sensor.ElectricalMeasurementFrequency.__name__,
+                sensor.ElectricalMeasurementPowerFactor.__name__,
             },
             set(),
         ),
@@ -808,10 +861,10 @@ async def test_electrical_measurement_init(
                 "instantaneous_demand",
             },
             {
-                sensor.SmartEnergySummation,
+                sensor.SmartEnergySummation.__name__,
             },
             {
-                sensor.SmartEnergyMetering,
+                sensor.SmartEnergyMetering.__name__,
             },
         ),
         (
@@ -822,20 +875,28 @@ async def test_electrical_measurement_init(
             },
             set(),
             {
-                sensor.SmartEnergyMetering,
-                sensor.SmartEnergySummation,
+                sensor.SmartEnergyMetering.__name__,
+                sensor.SmartEnergySummation.__name__,
             },
         ),
         (
             smartenergy.Metering.cluster_id,
             set(),
             {
-                sensor.SmartEnergyMetering,
-                sensor.SmartEnergySummation,
+                sensor.SmartEnergyMetering.__name__,
+                sensor.SmartEnergySummation.__name__,
             },
             set(),
         ),
     ),
+)
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
 )
 async def test_unsupported_attributes_sensor(
     zha_gateway: Gateway,
@@ -867,7 +928,7 @@ async def test_unsupported_attributes_sensor(
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
 
     present_entity_types = {
-        type(e)
+        e.info_object.class_name
         for e in zha_device.platform_entities.values()
         if e.PLATFORM == Platform.SENSOR
         and ("lqi" not in e.unique_id and "rssi" not in e.unique_id)
@@ -966,6 +1027,14 @@ async def test_unsupported_attributes_sensor(
         ),
     ),
 )
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_se_summation_uom(
     zha_gateway: Gateway,
     raw_uom: int,
@@ -1025,6 +1094,14 @@ async def test_se_summation_uom(
         ),
     ),
 )
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_elec_measurement_sensor_type(
     raw_measurement_type: int,
     expected_type: str,
@@ -1043,6 +1120,14 @@ async def test_elec_measurement_sensor_type(
     assert entity.state["measurement_type"] == expected_type
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_elec_measurement_sensor_polling(zha_gateway: Gateway) -> None:
     """Test ZHA electrical measurement sensor polling."""
 
@@ -1106,6 +1191,14 @@ async def test_elec_measurement_sensor_polling(zha_gateway: Gateway) -> None:
         },
     ),
 )
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_elec_measurement_skip_unsupported_attribute(
     zha_gateway: Gateway,
     supported_attributes: set[str],
@@ -1115,7 +1208,7 @@ async def test_elec_measurement_skip_unsupported_attribute(
     elec_measurement_zigpy_dev = elec_measurement_zigpy_device_mock(zha_gateway)
     zha_dev = await join_zigpy_device(zha_gateway, elec_measurement_zigpy_dev)
 
-    cluster = zha_dev.device.endpoints[1].electrical_measurement
+    cluster = elec_measurement_zigpy_dev.endpoints[1].electrical_measurement
 
     all_attrs = {
         "active_power",
@@ -1139,7 +1232,7 @@ async def test_elec_measurement_skip_unsupported_attribute(
         exact_entity_type=sensor.PolledElectricalMeasurement,
     )
     await entity.async_update()
-    await zha_dev.gateway.async_block_till_done()
+    await zha_gateway.async_block_till_done()
     assert cluster.read_attributes.call_count == math.ceil(
         len(supported_attributes) / ZHA_CLUSTER_HANDLER_READS_PER_REQ
     )
@@ -1206,6 +1299,7 @@ async def zigpy_device_timestamp_sensor_v2_mock(
     return zha_device, zigpy_device.endpoints[1].time_test_cluster
 
 
+# TODO figure out how to support this in the websocket gateway
 async def test_timestamp_sensor_v2(zha_gateway: Gateway) -> None:
     """Test quirks defined sensor."""
 
@@ -1276,11 +1370,24 @@ async def zigpy_device_aqara_sensor_v2_mock(
     return zha_device, zigpy_device.endpoints[1].opple_cluster
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_last_feeding_size_sensor_v2(zha_gateway: Gateway) -> None:
     """Test quirks defined sensor."""
 
     zha_device, cluster = await zigpy_device_aqara_sensor_v2_mock(zha_gateway)
-    assert isinstance(zha_device.device, CustomDeviceV2)
+    if hasattr(zha_gateway, "ws_gateway"):
+        assert isinstance(
+            zha_gateway.ws_gateway.devices[zha_device.ieee].device, CustomDeviceV2
+        )
+    else:
+        assert isinstance(zha_device.device, CustomDeviceV2)
     entity = get_entity(
         zha_device, platform=Platform.SENSOR, qualifier="last_feeding_size"
     )
@@ -1292,10 +1399,24 @@ async def test_last_feeding_size_sensor_v2(zha_gateway: Gateway) -> None:
     assert_state(entity, 5.0, "g")
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_device_counter_sensors(zha_gateway: Gateway) -> None:
     """Test coordinator counter sensor."""
 
-    coordinator = zha_gateway.coordinator_zha_device
+    if hasattr(zha_gateway, "ws_gateway"):
+        coordinator = zha_gateway.ws_gateway.coordinator_zha_device
+        server_gateway = zha_gateway.ws_gateway
+    else:
+        coordinator = zha_gateway.coordinator_zha_device
+        server_gateway = zha_gateway
+
     assert coordinator.is_coordinator
     entity = get_entity(coordinator, platform=Platform.SENSOR)
 
@@ -1306,32 +1427,40 @@ async def test_device_counter_sensors(zha_gateway: Gateway) -> None:
         "counter_1"
     ].increment()
 
-    await asyncio.sleep(zha_gateway.global_updater.__polling_interval + 2)
+    await asyncio.sleep(server_gateway.global_updater.__polling_interval + 2)
     await zha_gateway.async_block_till_done(wait_background_tasks=True)
 
     assert entity.state["state"] == 2
 
     # test disabling the entity disables it and removes it from the updater
-    assert len(zha_gateway.global_updater._update_listeners) == 3
+    assert len(server_gateway.global_updater._update_listeners) == 3
     assert entity.enabled is True
 
     entity.disable()
 
     assert entity.enabled is False
-    assert len(zha_gateway.global_updater._update_listeners) == 2
+    assert len(server_gateway.global_updater._update_listeners) == 2
 
     # test enabling the entity enables it and adds it to the updater
     entity.enable()
 
     assert entity.enabled is True
-    assert len(zha_gateway.global_updater._update_listeners) == 3
+    assert len(server_gateway.global_updater._update_listeners) == 3
 
     # make sure we don't get multiple listeners for the same entity in the updater
     entity.enable()
 
-    assert len(zha_gateway.global_updater._update_listeners) == 3
+    assert len(server_gateway.global_updater._update_listeners) == 3
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_device_unavailable_or_disabled_skips_entity_polling(
     zha_gateway: Gateway,
     caplog: pytest.LogCaptureFixture,
@@ -1344,6 +1473,13 @@ async def test_device_unavailable_or_disabled_skips_entity_polling(
     )
     assert not elec_measurement_zha_dev.is_coordinator
     assert not elec_measurement_zha_dev.is_active_coordinator
+    if hasattr(zha_gateway, "ws_gateway"):
+        server_device = zha_gateway.ws_gateway.devices[elec_measurement_zha_dev.ieee]
+        server_gateway = zha_gateway.ws_gateway
+    else:
+        server_device = elec_measurement_zha_dev
+        server_gateway = zha_gateway
+
     entity = get_entity(
         elec_measurement_zha_dev,
         platform=Platform.SENSOR,
@@ -1352,37 +1488,48 @@ async def test_device_unavailable_or_disabled_skips_entity_polling(
 
     assert entity.state["state"] is None
 
-    elec_measurement_zha_dev.device.rssi = 60
+    server_device.device.rssi = 60
 
-    await asyncio.sleep(zha_gateway.global_updater.__polling_interval + 2)
+    await asyncio.sleep(server_gateway.global_updater.__polling_interval + 2)
     await zha_gateway.async_block_till_done(wait_background_tasks=True)
 
     assert entity.state["state"] == 60
     assert entity.enabled is True
-    assert len(zha_gateway.global_updater._update_listeners) == 5
+    assert len(server_gateway.global_updater._update_listeners) == 5
 
     # let's drop the normal update method from the updater
     entity.disable()
+    await zha_gateway.async_block_till_done()
 
     assert entity.enabled is False
-    assert len(zha_gateway.global_updater._update_listeners) == 4
+    assert len(server_gateway.global_updater._update_listeners) == 4
 
     # wrap the update method so we can count how many times it was called
-    entity.update = MagicMock(wraps=entity.update)
-    await asyncio.sleep(zha_gateway.global_updater.__polling_interval + 2)
+    if hasattr(zha_gateway, "ws_gateway"):
+        server_entity = server_gateway.devices[
+            elec_measurement_zha_dev.ieee
+        ].platform_entities[(entity.PLATFORM, entity.unique_id)]
+        server_entity.update = MagicMock(wraps=server_entity.update)
+        mock_update = server_entity.update
+    else:
+        entity.update = MagicMock(wraps=entity.update)
+        mock_update = entity.update
+
+    await asyncio.sleep(server_gateway.global_updater.__polling_interval + 2)
     await zha_gateway.async_block_till_done(wait_background_tasks=True)
 
-    assert entity.update.call_count == 0
+    assert mock_update.call_count == 0
 
     # re-enable the entity and ensure it is back in the updater and that update is called
     entity.enable()
-    assert len(zha_gateway.global_updater._update_listeners) == 5
+    await zha_gateway.async_block_till_done()
+    assert len(server_gateway.global_updater._update_listeners) == 5
     assert entity.enabled is True
 
-    await asyncio.sleep(zha_gateway.global_updater.__polling_interval + 2)
+    await asyncio.sleep(server_gateway.global_updater.__polling_interval + 2)
     await zha_gateway.async_block_till_done(wait_background_tasks=True)
 
-    assert entity.update.call_count == 1
+    assert mock_update.call_count == 1
 
     # knock it off the network and ensure the polling is skipped
     assert (
@@ -1390,11 +1537,11 @@ async def test_device_unavailable_or_disabled_skips_entity_polling(
         "available: False, allow polled requests: True" not in caplog.text
     )
 
-    elec_measurement_zha_dev.on_network = False
-    await asyncio.sleep(zha_gateway.global_updater.__polling_interval + 2)
+    server_device.on_network = False
+    await asyncio.sleep(server_gateway.global_updater.__polling_interval + 2)
     await zha_gateway.async_block_till_done(wait_background_tasks=True)
 
-    assert entity.update.call_count == 2
+    assert mock_update.call_count == 2
 
     assert (
         "00:0d:6f:00:0a:90:69:e7-1-0-rssi: skipping polling for updated state, "
@@ -1434,6 +1581,14 @@ async def zigpy_device_danfoss_thermostat_mock(
     return zha_device, zigpy_device
 
 
+@pytest.mark.parametrize(
+    "zha_gateway",
+    [
+        "zha_gateway",
+        "ws_gateways",
+    ],
+    indirect=True,
+)
 async def test_danfoss_thermostat_sw_error(zha_gateway: Gateway) -> None:
     """Test quirks defined thermostat."""
 
