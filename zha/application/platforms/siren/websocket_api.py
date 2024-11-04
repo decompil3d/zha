@@ -24,7 +24,7 @@ class SirenTurnOnCommand(PlatformEntityCommand):
     platform: str = Platform.SIREN
     duration: Union[int, None] = None
     tone: Union[int, None] = None
-    level: Union[int, None] = None
+    volume_level: Union[int, None] = None
 
 
 @decorators.websocket_command(SirenTurnOnCommand)
