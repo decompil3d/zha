@@ -92,7 +92,6 @@ class GenericState(BaseModel):
         "LastSeenSensor",
         "PiHeatingDemand",
         "SetpointChangeSource",
-        "SetpointChangeSourceTimestamp",
         "TimeLeft",
         "DeviceTemperature",
         "WindowCoveringTypeSensor",

@@ -20,6 +20,7 @@ from zha.application.platforms.sensor.model import (
     DeviceCounterSensorState,
     ElectricalMeasurementState,
     SmartEnergyMeteringState,
+    TimestampState,
 )
 from zha.application.platforms.switch.model import SwitchState
 from zha.application.platforms.update.model import FirmwareUpdateState
@@ -52,6 +53,7 @@ class EntityStateChangedEvent(BaseEvent):
         | ThermostatState
         | FirmwareUpdateState
         | DeviceCounterSensorState
+        | TimestampState
         | None,
         Field(discriminator="class_name"),  # noqa: F821
     ]

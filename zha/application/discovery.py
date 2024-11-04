@@ -58,6 +58,7 @@ from zha.application.platforms.sensor.model import (
     DeviceCounterSensorEntityInfo,
     ElectricalMeasurementEntityInfo,
     SensorEntityInfo,
+    SetpointChangeSourceTimestampSensorEntityInfo,
     SmartEnergyMeteringEntityInfo,
 )
 from zha.application.platforms.siren.model import SirenEntityInfo
@@ -216,6 +217,7 @@ ENTITY_INFO_CLASS_TO_WEBSOCKET_CLIENT_ENTITY_CLASS = {
     ElectricalMeasurementEntityInfo: sensor.WebSocketClientSensorEntity,
     SmartEnergyMeteringEntityInfo: sensor.WebSocketClientSensorEntity,
     DeviceCounterSensorEntityInfo: sensor.WebSocketClientSensorEntity,
+    SetpointChangeSourceTimestampSensorEntityInfo: sensor.WebSocketClientSensorEntity,
 }
 
 

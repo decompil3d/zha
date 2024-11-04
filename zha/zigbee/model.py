@@ -27,6 +27,7 @@ from zha.application.platforms.sensor.model import (
     DeviceCounterSensorEntityInfo,
     ElectricalMeasurementEntityInfo,
     SensorEntityInfo,
+    SetpointChangeSourceTimestampSensorEntityInfo,
     SmartEnergyMeteringEntityInfo,
 )
 from zha.application.platforms.siren.model import SirenEntityInfo
@@ -236,6 +237,7 @@ class ExtendedDeviceInfo(DeviceInfo):
                 SmartEnergyMeteringEntityInfo,
                 ThermostatEntityInfo,
                 DeviceCounterSensorEntityInfo,
+                SetpointChangeSourceTimestampSensorEntityInfo,
             ],
             Field(discriminator="class_name"),
         ],

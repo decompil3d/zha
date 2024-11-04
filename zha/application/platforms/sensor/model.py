@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import ValidationInfo, field_validator
@@ -42,9 +43,9 @@ class ElectricalMeasurementState(BaseModel):
     ]
     state: str | float | int | None = None
     measurement_type: str | None = None
-    active_power_max: str | None = None
-    rms_current_max: str | None = None
-    rms_voltage_max: int | None = None
+    active_power_max: float | None = None
+    rms_current_max: float | None = None
+    rms_voltage_max: float | None = None
     available: bool
 
 
@@ -68,6 +69,23 @@ class DeviceCounterSensorState(BaseModel):
     available: bool
 
 
+class SmartEnergyMeteringEntityDescription(BaseModel):
+    """Model that describes a Zigbee smart energy metering entity."""
+
+    key: str = "instantaneous_demand"
+    state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT
+    scale: int = 1
+    native_unit_of_measurement: str | None = None
+    device_class: SensorDeviceClass | None = None
+
+
+class SmartEnergySummationEntityDescription(SmartEnergyMeteringEntityDescription):
+    """Model that describes a Zigbee smart energy summation entity."""
+
+    key: str = "summation_delivered"
+    state_class: SensorStateClass | None = SensorStateClass.TOTAL_INCREASING
+
+
 class BaseSensorEntityInfo(BasePlatformEntityInfo):
     """Sensor model."""
 
@@ -76,6 +94,9 @@ class BaseSensorEntityInfo(BasePlatformEntityInfo):
     divisor: int
     multiplier: int | float
     unit: int | str | None = None
+    device_class: SensorDeviceClass | None = None
+    state_class: SensorStateClass | None = None
+    extra_state_attribute_names: set[str] | None = None
 
 
 class SensorEntityInfo(BaseSensorEntityInfo):
@@ -101,7 +122,6 @@ class SensorEntityInfo(BaseSensorEntityInfo):
         "LastSeenSensor",
         "PiHeatingDemand",
         "SetpointChangeSource",
-        "SetpointChangeSourceTimestamp",
         "TimeLeft",
         "DeviceTemperature",
         "WindowCoveringTypeSensor",
@@ -123,8 +143,21 @@ class SensorEntityInfo(BaseSensorEntityInfo):
         "Flow",
     ]
     state: GenericState
-    device_class: SensorDeviceClass | None = None
-    state_class: SensorStateClass | None = None
+
+
+class TimestampState(BaseModel):
+    """Default state model."""
+
+    class_name: Literal["SetpointChangeSourceTimestamp",]
+    available: bool | None = None
+    state: datetime | None = None
+
+
+class SetpointChangeSourceTimestampSensorEntityInfo(BaseSensorEntityInfo):
+    """Setpoint change source timestamp sensor model."""
+
+    class_name: Literal["SetpointChangeSourceTimestamp"]
+    state: TimestampState
 
 
 class DeviceCounterSensorEntityInfo(BaseEventedModel, BaseEntityInfo):
@@ -191,6 +224,11 @@ class SmartEnergyMeteringEntityInfo(BaseSensorEntityInfo):
         "SmartEnergyMetering", "SmartEnergySummation", "SmartEnergySummationReceived"
     ]
     state: SmartEnergyMeteringState
+    entity_description: (
+        SmartEnergySummationEntityDescription
+        | SmartEnergyMeteringEntityDescription
+        | None
+    ) = None
 
 
 class DeviceCounterEntityInfo(BaseEntityInfo):
