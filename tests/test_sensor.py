@@ -143,48 +143,42 @@ async def async_test_metering(
     assert entity.state["status"] == "NO_ALARMS"
     assert entity.state["device_type"] == "Electric Metering"
 
-    # these tests change the device type of the device... this is not possible in the real world
-    # there is no way to currently send info_object changes to the client side so this is not
-    # possible to test for now
-    if not isinstance(entity, sensor.WebSocketClientSensorEntity):
-        await send_attributes_report(
-            zha_gateway, cluster, {1024: 12346, "status": 64 + 8}
-        )
-        assert_state(entity, 12346.0, None)
-        assert entity.state["status"] in (
-            "SERVICE_DISCONNECT|POWER_FAILURE",
-            "POWER_FAILURE|SERVICE_DISCONNECT",
-        )
+    await send_attributes_report(zha_gateway, cluster, {1024: 12346, "status": 64 + 8})
+    assert_state(entity, 12346.0, None)
+    assert entity.state["status"] in (
+        "SERVICE_DISCONNECT|POWER_FAILURE",
+        "POWER_FAILURE|SERVICE_DISCONNECT",
+    )
 
-        await send_attributes_report(
-            zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 1}
-        )
-        assert entity.state["status"] in (
-            "SERVICE_DISCONNECT|NOT_DEFINED",
-            "NOT_DEFINED|SERVICE_DISCONNECT",
-        )
+    await send_attributes_report(
+        zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 1}
+    )
+    assert entity.state["status"] in (
+        "SERVICE_DISCONNECT|NOT_DEFINED",
+        "NOT_DEFINED|SERVICE_DISCONNECT",
+    )
 
-        await send_attributes_report(
-            zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 2}
-        )
-        assert entity.state["status"] in (
-            "SERVICE_DISCONNECT|PIPE_EMPTY",
-            "PIPE_EMPTY|SERVICE_DISCONNECT",
-        )
+    await send_attributes_report(
+        zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 2}
+    )
+    assert entity.state["status"] in (
+        "SERVICE_DISCONNECT|PIPE_EMPTY",
+        "PIPE_EMPTY|SERVICE_DISCONNECT",
+    )
 
-        await send_attributes_report(
-            zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 5}
-        )
-        assert entity.state["status"] in (
-            "SERVICE_DISCONNECT|TEMPERATURE_SENSOR",
-            "TEMPERATURE_SENSOR|SERVICE_DISCONNECT",
-        )
+    await send_attributes_report(
+        zha_gateway, cluster, {"status": 64 + 8, "metering_device_type": 5}
+    )
+    assert entity.state["status"] in (
+        "SERVICE_DISCONNECT|TEMPERATURE_SENSOR",
+        "TEMPERATURE_SENSOR|SERVICE_DISCONNECT",
+    )
 
-        # Status for other meter types
-        await send_attributes_report(
-            zha_gateway, cluster, {"status": 32, "metering_device_type": 4}
-        )
-        assert entity.state["status"] in ("<bitmap8.32: 32>", "32")
+    # Status for other meter types
+    await send_attributes_report(
+        zha_gateway, cluster, {"status": 32, "metering_device_type": 4}
+    )
+    assert entity.state["status"] in ("<bitmap8.32: 32>", "32")
 
 
 async def async_test_smart_energy_summation_delivered(
