@@ -73,7 +73,7 @@ class BaseEntity(LogMixin, EventBase):
 
         self._unique_id: str = unique_id
 
-        self.__previous_state: Any = None
+        self._previous_state: Any = None
         self._tracked_tasks: list[asyncio.Task] = []
         self._tracked_handles: list[asyncio.Handle] = []
 
@@ -215,12 +215,12 @@ class BaseEntity(LogMixin, EventBase):
     def maybe_emit_state_changed_event(self) -> None:
         """Send the state of this platform entity."""
         state = self.state
-        if self.__previous_state != state:
+        if self._previous_state != state:
             self.emit(
                 STATE_CHANGED,
                 EntityStateChangedEvent(state=self.state, **self.identifiers.__dict__),
             )
-            self.__previous_state = state
+            self._previous_state = state
 
     def log(self, level: int, msg: str, *args: Any, **kwargs: Any) -> None:
         """Log a message."""
@@ -513,7 +513,7 @@ class WebSocketClientEntity(BaseEntity, Generic[BaseEntityInfoType]):
     @property
     def state(self) -> dict[str, Any]:
         """Return the arguments to use in the command."""
-        return self._entity_info.state.__dict__
+        return self._entity_info.state.model_dump()
 
     @state.setter
     def state(self, value: dict[str, Any]) -> None:
