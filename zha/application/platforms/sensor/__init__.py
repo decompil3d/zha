@@ -1955,7 +1955,9 @@ class WebSocketClientSensorEntity(
     @property
     def extra_state_attribute_names(self) -> set[str] | None:
         """Return the extra state attribute names."""
-        return self.info_object.extra_state_attribute_names
+        if hasattr(self.info_object, "extra_state_attribute_names"):
+            return self.info_object.extra_state_attribute_names
+        return None
 
     @property
     def native_value(self) -> date | datetime | str | int | float | None:
