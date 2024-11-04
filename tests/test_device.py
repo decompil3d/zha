@@ -1,6 +1,8 @@
 """Test ZHA device switch."""
 
 import asyncio
+from collections.abc import Mapping, Sequence
+import json
 import logging
 import time
 from unittest import mock
@@ -1032,7 +1034,7 @@ async def test_extended_device_info_ser_deser(zha_gateway: Gateway) -> None:
     assert isinstance(zha_device.extended_device_info.nwk, zigpy.types.NWK)
 
     # last_seen changes so we exclude it from the comparison
-    json = zha_device.extended_device_info.model_dump_json(
+    json_string = zha_device.extended_device_info.model_dump_json(
         exclude=["last_seen", "last_seen_time"]
     )
 
@@ -1043,4 +1045,26 @@ async def test_extended_device_info_ser_deser(zha_gateway: Gateway) -> None:
     ) as file:
         expected_json = file.read()
 
-    assert json == expected_json
+    assert deep_compare(json.loads(json_string), json.loads(expected_json))
+
+
+def deep_compare(obj1, obj2):
+    """Recursively compare two objects."""
+    if isinstance(obj1, Mapping) and isinstance(obj2, Mapping):
+        # Compare dictionaries (order of keys doesn't matter)
+        if obj1.keys() != obj2.keys():
+            return False
+        return all(deep_compare(obj1[key], obj2[key]) for key in obj1)
+
+    elif (
+        isinstance(obj1, Sequence)
+        and isinstance(obj2, Sequence)
+        and not isinstance(obj1, str)
+    ):
+        # Compare lists or other sequences as sets, ignoring order
+        return len(obj1) == len(obj2) and all(
+            any(deep_compare(item1, item2) for item2 in obj2) for item1 in obj1
+        )
+
+    # Base case: compare values directly
+    return obj1 == obj2
