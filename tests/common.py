@@ -238,7 +238,10 @@ def get_entity(
         if not isinstance(entity, entity_type):
             continue
 
-        if exact_entity_type is not None and type(entity) is not exact_entity_type:
+        if (
+            exact_entity_type is not None
+            and entity.info_object.class_name != exact_entity_type.__name__
+        ):
             continue
 
         if qualifier is not None and qualifier not in entity.info_object.unique_id:
