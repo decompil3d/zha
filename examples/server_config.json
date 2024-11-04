@@ -30,7 +30,7 @@
     },
     "device_options": {
       "enable_identify_on_join": true,
-      "consider_unavailable_mains": 5,
+      "consider_unavailable_mains": 7200,
       "consider_unavailable_battery": 21600,
       "enable_mains_startup_polling": true
     },
