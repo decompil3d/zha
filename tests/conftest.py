@@ -351,10 +351,12 @@ class CombinedWebsocketGateways:
         """Return the ZHA configuration."""
         return self.ws_gateway.config
 
-    async def async_block_till_done(self) -> None:
+    async def async_block_till_done(self, wait_background_tasks=False) -> None:
         """Block until all gateways are done."""
         await asyncio.sleep(0.005)
-        await self.ws_gateway.async_block_till_done()
+        await self.ws_gateway.async_block_till_done(
+            wait_background_tasks=wait_background_tasks
+        )
         await asyncio.sleep(0.001)
         if self.client_gateway._tasks:
             current_task = asyncio.current_task()
