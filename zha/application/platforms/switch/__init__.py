@@ -260,7 +260,7 @@ class ConfigurableAttributeSwitch(PlatformEntity):
     def info_object(self) -> ConfigurableAttributeSwitchInfo:
         """Return representation of the switch configuration entity."""
         return ConfigurableAttributeSwitchInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             attribute_name=self._attribute_name,
             invert_attribute_name=self._inverter_attribute_name,
             force_inverted=self._force_inverted,

@@ -282,7 +282,7 @@ class Fan(PlatformEntity, BaseFan):
     def info_object(self) -> FanEntityInfo:
         """Return a representation of the binary sensor."""
         return FanEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             preset_modes=self.preset_modes,
             supported_features=self.supported_features,
             speed_count=self.speed_count,
@@ -355,7 +355,7 @@ class FanGroup(GroupEntity, BaseFan):
     def info_object(self) -> FanEntityInfo:
         """Return a representation of the binary sensor."""
         return FanEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             preset_modes=self.preset_modes,
             supported_features=self.supported_features,
             speed_count=self.speed_count,

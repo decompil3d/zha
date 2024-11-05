@@ -104,7 +104,7 @@ class GroupMember(BaseGroupMember):
             endpoint_id=self.endpoint_id,
             device_info=self.device.extended_device_info,
             entities={
-                entity.unique_id: entity.info_object.__dict__
+                entity.unique_id: entity.info_object.model_dump()
                 for entity in self.associated_entities
             },
         )
@@ -286,7 +286,7 @@ class Group(BaseGroup):
             name=self.name,
             members=[member.member_info for member in self.members],
             entities={
-                unique_id: entity.info_object.__dict__
+                unique_id: entity.info_object.model_dump()
                 for unique_id, entity in self._group_entities.items()
             },
         )

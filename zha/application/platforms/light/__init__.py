@@ -795,7 +795,7 @@ class Light(PlatformEntity, BaseLight):
     def info_object(self) -> LightEntityInfo:
         """Return a representation of the select."""
         return LightEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             effect_list=self.effect_list,
             supported_features=self.supported_features,
             min_mireds=self.min_mireds,
@@ -1147,7 +1147,7 @@ class LightGroup(GroupEntity, BaseLight):
     def info_object(self) -> LightEntityInfo:
         """Return a representation of the select."""
         return LightEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             effect_list=self.effect_list,
             supported_features=self.supported_features,
             min_mireds=self.min_mireds,

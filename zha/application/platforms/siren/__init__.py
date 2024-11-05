@@ -109,7 +109,7 @@ class Siren(PlatformEntity, SirenEntityInterface):
     def info_object(self) -> SirenEntityInfo:
         """Return representation of the siren."""
         return SirenEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             available_tones=self._attr_available_tones,
             supported_features=self._attr_supported_features,
         )

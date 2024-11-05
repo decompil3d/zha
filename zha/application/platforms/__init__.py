@@ -218,7 +218,9 @@ class BaseEntity(LogMixin, EventBase):
         if self._previous_state != state:
             self.emit(
                 STATE_CHANGED,
-                EntityStateChangedEvent(state=self.state, **self.identifiers.__dict__),
+                EntityStateChangedEvent(
+                    state=self.state, **self.identifiers.model_dump()
+                ),
             )
             self._previous_state = state
 
@@ -375,7 +377,9 @@ class PlatformEntity(BaseEntity):
         if isinstance(self.device.gateway, WebSocketServerGateway):
             self.device.gateway.emit(
                 STATE_CHANGED,
-                EntityStateChangedEvent(state=self.state, **self.identifiers.__dict__),
+                EntityStateChangedEvent(
+                    state=self.state, **self.identifiers.model_dump()
+                ),
             )
 
     async def async_update(self) -> None:
@@ -461,7 +465,9 @@ class GroupEntity(BaseEntity):
         if isinstance(self.group.gateway, WebSocketServerGateway):
             self.group.gateway.emit(
                 STATE_CHANGED,
-                EntityStateChangedEvent(state=self.state, **self.identifiers.__dict__),
+                EntityStateChangedEvent(
+                    state=self.state, **self.identifiers.model_dump()
+                ),
             )
 
     def debounced_update(self, _: Any | None = None) -> None:

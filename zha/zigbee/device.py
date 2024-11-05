@@ -737,7 +737,7 @@ class Device(BaseDevice[PlatformEntity]):
                 )
 
         return ExtendedDeviceInfo(
-            **self.device_info.__dict__,
+            **self.device_info.model_dump(),
             active_coordinator=self.is_active_coordinator,
             entities={
                 platform_entity_key: platform_entity.info_object.model_dump()

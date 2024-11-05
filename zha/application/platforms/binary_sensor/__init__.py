@@ -96,7 +96,7 @@ class BinarySensor(PlatformEntity, BinarySensorEntityInterface):
     def info_object(self) -> BinarySensorEntityInfo:
         """Return a representation of the binary sensor."""
         return BinarySensorEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             attribute_name=self._attribute_name,
         )
 

@@ -163,7 +163,8 @@ class Cover(PlatformEntity, CoverEntityInterface):
     def info_object(self) -> CoverEntityInfo:
         """Return the info object for this entity."""
         return CoverEntityInfo(
-            **super().info_object.__dict__, supported_features=self.supported_features
+            **super().info_object.model_dump(),
+            supported_features=self.supported_features,
         )
 
     @property
@@ -483,7 +484,8 @@ class Shade(PlatformEntity):
     def info_object(self) -> ShadeEntityInfo:
         """Return the info object for this entity."""
         return ShadeEntityInfo(
-            **super().info_object.__dict__, supported_features=self.supported_features
+            **super().info_object.model_dump(),
+            supported_features=self.supported_features,
         )
 
     @property

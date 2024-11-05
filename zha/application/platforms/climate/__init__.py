@@ -220,7 +220,7 @@ class Thermostat(PlatformEntity, ClimateEntityInterface):
     def info_object(self) -> ThermostatEntityInfo:
         """Return a representation of the thermostat."""
         return ThermostatEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             max_temp=self.max_temp,
             min_temp=self.min_temp,
             supported_features=self.supported_features,

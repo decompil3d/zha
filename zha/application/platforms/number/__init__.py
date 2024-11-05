@@ -130,7 +130,7 @@ class Number(PlatformEntity, NumberEntityInterface):
     def info_object(self) -> NumberEntityInfo:
         """Return a representation of the number entity."""
         return NumberEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             engineering_units=self._analog_output_cluster_handler.engineering_units,
             application_type=self._analog_output_cluster_handler.application_type,
             min_value=self.native_min_value,
@@ -308,7 +308,7 @@ class NumberConfigurationEntity(PlatformEntity):
     def info_object(self) -> NumberConfigurationEntityInfo:
         """Return a representation of the number entity."""
         return NumberConfigurationEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             min_value=self._attr_native_min_value,
             max_value=self._attr_native_max_value,
             step=self._attr_native_step,

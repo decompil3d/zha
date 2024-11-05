@@ -164,7 +164,7 @@ class FirmwareUpdateEntity(PlatformEntity, FirmwareUpdateEntityInterface):
     def info_object(self) -> FirmwareUpdateEntityInfo:
         """Return a representation of the entity."""
         return FirmwareUpdateEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             supported_features=self.supported_features,
         )
 

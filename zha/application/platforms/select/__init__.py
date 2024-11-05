@@ -96,7 +96,7 @@ class EnumSelectEntity(PlatformEntity, SelectEntityInterface):
     def info_object(self) -> EnumSelectInfo:
         """Return a representation of the select."""
         return EnumSelectInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             enum=self._enum.__name__,
             options=self._attr_options,
         )
@@ -238,7 +238,7 @@ class ZCLEnumSelectEntity(PlatformEntity, SelectEntityInterface):
     def info_object(self) -> EnumSelectInfo:
         """Return a representation of the select."""
         return EnumSelectInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             enum=self._enum.__name__,
             options=self._attr_options,
         )

@@ -208,7 +208,7 @@ class Sensor(PlatformEntity):
     def info_object(self) -> SensorEntityInfo:
         """Return a representation of the sensor."""
         return SensorEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -399,13 +399,13 @@ class DeviceCounterSensor(BaseEntity):
     def identifiers(self) -> DeviceCounterSensorIdentifiers:
         """Return a dict with the information necessary to identify this entity."""
         return DeviceCounterSensorIdentifiers(
-            **super().identifiers.__dict__, device_ieee=str(self._device.ieee)
+            **super().identifiers.model_dump(), device_ieee=str(self._device.ieee)
         )
 
     @property
     def info_object(self) -> DeviceCounterEntityInfo:
         """Return a representation of the platform entity."""
-        data = super().info_object.__dict__
+        data = super().info_object.model_dump()
         data.pop("device_ieee")
         data.pop("available")
         return DeviceCounterEntityInfo(
@@ -562,7 +562,7 @@ class Battery(Sensor):
     def info_object(self) -> BatteryEntityInfo:
         """Return a representation of the sensor."""
         return BatteryEntityInfo(
-            **super(Sensor, self).info_object.__dict__,
+            **super(Sensor, self).info_object.model_dump(),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -627,7 +627,7 @@ class ElectricalMeasurement(PollableSensor):
     def info_object(self) -> ElectricalMeasurementEntityInfo:
         """Return a representation of the sensor."""
         return ElectricalMeasurementEntityInfo(
-            **super(Sensor, self).info_object.__dict__,
+            **super(Sensor, self).info_object.model_dump(),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -904,7 +904,7 @@ class SmartEnergyMetering(PollableSensor):
     def info_object(self) -> SmartEnergyMeteringEntityInfo:
         """Return a representation of the sensor."""
         return SmartEnergyMeteringEntityInfo(
-            **super(Sensor, self).info_object.__dict__,
+            **super(Sensor, self).info_object.model_dump(),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -1724,7 +1724,7 @@ class SetpointChangeSourceTimestamp(TimestampSensor):
     def info_object(self) -> SetpointChangeSourceTimestampSensorEntityInfo:
         """Return the info object for this entity."""
         return SetpointChangeSourceTimestampSensorEntityInfo(
-            **super(Sensor, self).info_object.__dict__,
+            **super(Sensor, self).info_object.model_dump(),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,

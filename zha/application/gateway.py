@@ -650,7 +650,7 @@ class Gateway(AsyncUtilMixin, BaseGateway):
 
         device_info = ExtendedDeviceInfoWithPairingStatus(
             pairing_status=DevicePairingStatus.INITIALIZED,
-            **zha_device.extended_device_info.__dict__,
+            **zha_device.extended_device_info.model_dump(),
         )
         self.emit(
             ZHA_GW_MSG_DEVICE_FULL_INIT,
@@ -665,7 +665,7 @@ class Gateway(AsyncUtilMixin, BaseGateway):
         self.create_platform_entities()
         device_info = ExtendedDeviceInfoWithPairingStatus(
             pairing_status=DevicePairingStatus.CONFIGURED,
-            **zha_device.extended_device_info.__dict__,
+            **zha_device.extended_device_info.model_dump(),
         )
         self.emit(
             ZHA_GW_MSG_DEVICE_FULL_INIT,
@@ -683,7 +683,7 @@ class Gateway(AsyncUtilMixin, BaseGateway):
         await zha_device.async_configure()
         device_info = ExtendedDeviceInfoWithPairingStatus(
             pairing_status=DevicePairingStatus.CONFIGURED,
-            **zha_device.extended_device_info.__dict__,
+            **zha_device.extended_device_info.model_dump(),
         )
         self.emit(
             ZHA_GW_MSG_DEVICE_FULL_INIT,

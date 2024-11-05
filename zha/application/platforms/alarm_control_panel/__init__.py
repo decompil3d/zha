@@ -113,7 +113,7 @@ class AlarmControlPanel(PlatformEntity, AlarmControlPanelEntityInterface):
     def info_object(self) -> AlarmControlPanelEntityInfo:
         """Return a representation of the alarm control panel."""
         return AlarmControlPanelEntityInfo(
-            **super().info_object.__dict__,
+            **super().info_object.model_dump(),
             code_arm_required=self.code_arm_required,
             code_format=self.code_format,
             supported_features=self.supported_features,
