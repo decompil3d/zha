@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeVar, Union
 
 from pydantic import Field
 from zigpy.types.named import EUI64
@@ -33,13 +33,6 @@ MFG_CLUSTER_ID_START = 0xFC00
 _LOGGER = logging.getLogger(__name__)
 
 T = TypeVar("T")
-
-
-def ensure_list(value: T | None) -> list[T] | list[Any]:
-    """Wrap value in list if it is not one."""
-    if value is None:
-        return []
-    return cast("list[T]", value) if isinstance(value, list) else [value]
 
 
 class StartNetworkCommand(WebSocketCommand):
