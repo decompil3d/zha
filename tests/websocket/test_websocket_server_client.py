@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from tests.conftest import CombinedWebsocketGateways
-from zha.application.gateway import WebSocketServerGateway
+from zha.application.gateway import WebSocketClientGateway, WebSocketServerGateway
 from zha.application.helpers import ZHAData
 from zha.websocket.client.client import Client
 
@@ -32,6 +32,13 @@ async def test_server_client_connect_disconnect(
         assert client._listen_task is None
         assert "not connected" in repr(client)
         assert not client.connected
+
+        async with WebSocketClientGateway(zha_data) as client_gateway:
+            assert client_gateway.client.connected
+            assert client_gateway.client._listen_task is not None
+
+        assert not client_gateway.client.connected
+        assert client_gateway.client._listen_task is None
 
     assert not gateway.is_serving
     assert gateway._ws_server is None
