@@ -36,7 +36,7 @@ from zha.application.const import ZHA_CLUSTER_HANDLER_READS_PER_REQ
 from zha.application.gateway import Gateway
 from zha.application.platforms import PlatformEntity, sensor
 from zha.application.platforms.sensor import DanfossSoftwareErrorCode, UnitOfMass
-from zha.application.platforms.sensor.const import SensorDeviceClass
+from zha.application.platforms.sensor.const import SensorDeviceClass, SensorStateClass
 from zha.units import PERCENTAGE, UnitOfEnergy, UnitOfPressure, UnitOfVolume
 from zha.zigbee.device import Device
 
@@ -623,8 +623,7 @@ async def test_sensor(
     entity = get_entity(
         zha_device, platform=Platform.SENSOR, exact_entity_type=entity_type
     )
-
-    await zha_gateway.async_block_till_done()
+    assert entity.available is True
     # test sensor associated logic
     await test_func(zha_gateway, cluster, entity)
 
@@ -933,91 +932,119 @@ async def test_unsupported_attributes_sensor(
 
 
 @pytest.mark.parametrize(
-    "raw_uom, raw_value, expected_state, expected_uom",
+    "raw_uom, raw_value, expected_state, expected_uom, expected_device_class, expected_state_class",
     (
         (
             1,
             12320,
             1.23,
             UnitOfVolume.CUBIC_METERS,
+            SensorDeviceClass.VOLUME,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             1,
             1232000,
             123.2,
             UnitOfVolume.CUBIC_METERS,
+            SensorDeviceClass.VOLUME,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             3,
             2340,
             0.23,
             UnitOfVolume.CUBIC_FEET,
+            SensorDeviceClass.VOLUME,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             3,
             2360,
             0.24,
             UnitOfVolume.CUBIC_FEET,
+            SensorDeviceClass.VOLUME,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             8,
             23660,
             2.37,
             UnitOfPressure.KPA,
+            SensorDeviceClass.PRESSURE,
+            SensorStateClass.MEASUREMENT,
         ),
         (
             0,
             9366,
             0.937,
             UnitOfEnergy.KILO_WATT_HOUR,
+            SensorDeviceClass.ENERGY,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             0,
             999,
             0.1,
             UnitOfEnergy.KILO_WATT_HOUR,
+            SensorDeviceClass.ENERGY,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             0,
             10091,
             1.009,
             UnitOfEnergy.KILO_WATT_HOUR,
+            SensorDeviceClass.ENERGY,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             0,
             10099,
             1.01,
             UnitOfEnergy.KILO_WATT_HOUR,
+            SensorDeviceClass.ENERGY,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             0,
             100999,
             10.1,
             UnitOfEnergy.KILO_WATT_HOUR,
+            SensorDeviceClass.ENERGY,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             0,
             100023,
             10.002,
             UnitOfEnergy.KILO_WATT_HOUR,
+            SensorDeviceClass.ENERGY,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             0,
             102456,
             10.246,
             UnitOfEnergy.KILO_WATT_HOUR,
+            SensorDeviceClass.ENERGY,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             5,
             102456,
             10.25,
             "IMP gal",
+            None,
+            SensorStateClass.TOTAL_INCREASING,
         ),
         (
             7,
             50124,
             5.01,
             UnitOfVolume.LITERS,
+            SensorDeviceClass.VOLUME,
+            SensorStateClass.TOTAL_INCREASING,
         ),
     ),
 )
@@ -1035,6 +1062,8 @@ async def test_se_summation_uom(
     raw_value: int,
     expected_state: str,
     expected_uom: str,
+    expected_device_class: SensorDeviceClass,
+    expected_state_class: SensorStateClass,
 ) -> None:
     """Test zha smart energy summation."""
 
@@ -1072,6 +1101,15 @@ async def test_se_summation_uom(
     entity = get_entity(
         zha_device, platform=Platform.SENSOR, qualifier="summation_delivered"
     )
+
+    assert entity.device_class == expected_device_class
+    assert entity.state_class == expected_state_class
+    assert entity.extra_state_attribute_names == {
+        "device_type",
+        "status",
+        "zcl_unit_of_measurement",
+    }
+    assert entity.native_value == expected_state
 
     assert_state(entity, expected_state, expected_uom)
 
