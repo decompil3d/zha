@@ -745,6 +745,9 @@ async def test_device_properties(zha_gateway: Gateway) -> None:
     assert zha_device.manufacturer == "FakeManufacturer"
     assert zha_device.model == "FakeModel"
     assert zha_device.is_groupable is False
+    assert zha_device.quirk_applied is False
+    assert zha_device.quirk_class == "zigpy.device.Device"
+    assert zha_device.quirk_id is None
 
     assert zha_device.device_automation_commands == {}
     assert zha_device.device_automation_triggers == {
