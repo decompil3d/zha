@@ -235,3 +235,6 @@ exclude_also = [
     "if TYPE_CHECKING:",
     "raise NotImplementedError",
 ]
+omit =[
+    "*/__main__.py",
+]
