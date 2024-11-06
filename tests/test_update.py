@@ -215,7 +215,7 @@ async def test_firmware_update_notification_from_zigpy(zha_gateway: Gateway) -> 
     assert entity.installed_version == f"0x{installed_fw_version:08x}"
     assert entity.latest_version == f"0x{fw_image.firmware.header.file_version:08x}"
     assert entity.in_progress is False
-    assert entity.progress == 0
+    assert entity.update_percentage is None
     assert entity.release_notes is None
     assert entity.release_url is None
     assert (
@@ -228,7 +228,7 @@ async def test_firmware_update_notification_from_zigpy(zha_gateway: Gateway) -> 
     assert entity.state_attributes == {
         ATTR_INSTALLED_VERSION: f"0x{installed_fw_version:08x}",
         ATTR_IN_PROGRESS: False,
-        ATTR_UPDATE_PERCENTAGE: 0,
+        ATTR_UPDATE_PERCENTAGE: None,
         ATTR_LATEST_VERSION: f"0x{fw_image.firmware.header.file_version:08x}",
         ATTR_RELEASE_SUMMARY: "This is a test firmware image!",
         ATTR_RELEASE_NOTES: None,

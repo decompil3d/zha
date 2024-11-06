@@ -66,7 +66,7 @@ class FirmwareUpdateEntityInterface(ABC):
 
     @property
     @abstractmethod
-    def update_percentage(self) -> int | None:
+    def update_percentage(self) -> float | None:
         """Update installation progress.
 
         Returns a number indicating the progress from 0 to 100%. If an update's progress
@@ -424,7 +424,7 @@ class WebSocketClientFirmwareUpdateEntity(
         return {
             ATTR_INSTALLED_VERSION: self.installed_version,
             ATTR_IN_PROGRESS: self.in_progress,
-            ATTR_UPDATE_PERCENTAGE: self.progress,
+            ATTR_UPDATE_PERCENTAGE: self.update_percentage,
             ATTR_LATEST_VERSION: self.latest_version,
             ATTR_RELEASE_SUMMARY: self.release_summary,
             ATTR_RELEASE_NOTES: self.release_notes,
