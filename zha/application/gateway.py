@@ -58,6 +58,8 @@ from zha.application.model import (
     DeviceJoinedDeviceInfo,
     DeviceJoinedEvent,
     DeviceLeftEvent,
+    DeviceOfflineEvent,
+    DeviceOnlineEvent,
     DevicePairingStatus,
     DeviceRemovedEvent,
     ExtendedDeviceInfoWithPairingStatus,
@@ -97,7 +99,7 @@ from zha.websocket.client.helpers import (
     SwitchHelper,
     UpdateHelper,
 )
-from zha.websocket.const import ControllerEvents
+from zha.websocket.const import ControllerEvents, DeviceEvents
 from zha.websocket.server.client import ClientManager, load_api as load_client_api
 from zha.zigbee.device import BaseDevice, Device, WebSocketClientDevice
 from zha.zigbee.endpoint import ATTR_IN_CLUSTERS, ATTR_OUT_CLUSTERS
@@ -1148,6 +1150,20 @@ class WebSocketClientGateway(BaseGateway):
         )
         self._devices.pop(device.ieee, None)
         self.emit(ZHA_GW_MSG_DEVICE_REMOVED, event)
+
+    def handle_device_online(self, event: DeviceOnlineEvent) -> None:
+        """Handle device online event."""
+        if event.device_info.ieee in self.devices:
+            device = self.devices[event.device_info.ieee]
+            device.extended_device_info = event.device_info
+            device.emit(DeviceEvents.DEVICE_ONLINE, event)
+
+    def handle_device_offline(self, event: DeviceOfflineEvent) -> None:
+        """Handle device offline event."""
+        if event.device_info.ieee in self.devices:
+            device = self.devices[event.device_info.ieee]
+            device.extended_device_info = event.device_info
+            device.emit(DeviceEvents.DEVICE_OFFLINE, event)
 
     def handle_group_member_removed(self, event: GroupMemberRemovedEvent) -> None:
         """Handle group member removed event."""

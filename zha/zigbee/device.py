@@ -57,6 +57,7 @@ from zha.application.const import (
     ZHA_EVENT,
 )
 from zha.application.helpers import convert_to_zcl_values
+from zha.application.model import DeviceOfflineEvent, DeviceOnlineEvent
 from zha.application.platforms import PlatformEntity, T, WebSocketClientEntity
 from zha.event import EventBase
 from zha.exceptions import ZHAException
@@ -637,16 +638,20 @@ class Device(BaseDevice[PlatformEntity]):
         self.debug(
             (
                 "Update device availability -  device available: %s - new availability:"
-                " %s - changed: %s"
+                " %s - changed: %s - on network: %s - new on network: %s - changed: %s"
             ),
             self.available,
             available,
             self.available ^ available,
+            self.on_network,
+            on_network,
+            self.on_network ^ on_network,
         )
         availability_changed = self.available ^ available
+        on_network_changed = self.on_network ^ on_network
         self._available = available
         self._on_network = on_network
-        if availability_changed and available:
+        if (availability_changed or on_network_changed) and (available and on_network):
             # reinit cluster handlers then signal entities
             self.debug(
                 "Device availability changed and device became available,"
@@ -658,8 +663,14 @@ class Device(BaseDevice[PlatformEntity]):
                 eager_start=True,
             )
             return
-        if availability_changed and not available:
+        if (availability_changed or on_network_changed) and not (
+            available and on_network
+        ):
             self.debug("Device availability changed and device became unavailable")
+            self.gateway.emit(
+                "device_offline",
+                DeviceOfflineEvent(device_info=self.extended_device_info),
+            )
             for entity in self.platform_entities.values():
                 entity.maybe_emit_state_changed_event()
             self.emit_zha_event(
@@ -681,6 +692,9 @@ class Device(BaseDevice[PlatformEntity]):
 
     async def _async_became_available(self) -> None:
         """Update device availability and signal entities."""
+        self.gateway.emit(
+            "device_online", DeviceOnlineEvent(device_info=self.extended_device_info)
+        )
         await self.async_initialize(False)
         for platform_entity in self._platform_entities.values():
             platform_entity.maybe_emit_state_changed_event()
@@ -1299,7 +1313,7 @@ class WebSocketClientDevice(BaseDevice[WebSocketClientEntity]):
         for entity_info in self._extended_device_info.entities.values():
             entity_key = (entity_info.platform, entity_info.unique_id)
             if entity_key in self._entities:
-                self._entities[entity_key].entity_info = entity_info
+                self._entities[entity_key].info_object = entity_info
             else:
                 self._entities[entity_key] = (
                     discovery.ENTITY_INFO_CLASS_TO_WEBSOCKET_CLIENT_ENTITY_CLASS[

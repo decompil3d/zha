@@ -133,7 +133,7 @@ class DeviceOfflineEvent(BaseEvent):
 
     event: Literal["device_offline"] = "device_offline"
     event_type: Literal["device_event"] = "device_event"
-    device: ExtendedDeviceInfo
+    device_info: ExtendedDeviceInfo
 
 
 class DeviceOnlineEvent(BaseEvent):
@@ -141,4 +141,4 @@ class DeviceOnlineEvent(BaseEvent):
 
     event: Literal["device_online"] = "device_online"
     event_type: Literal["device_event"] = "device_event"
-    device: ExtendedDeviceInfo
+    device_info: ExtendedDeviceInfo
