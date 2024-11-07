@@ -37,7 +37,7 @@ async def main(config_path: str | None = None) -> None:
             ),
             zigpy_config=raw_data["zigpy_config"],
         )
-    async with WebSocketServerGateway(zha_data) as ws_gateway:
+    async with await WebSocketServerGateway.async_from_config(zha_data) as ws_gateway:
         await ws_gateway.async_initialize()
         await ws_gateway.async_initialize_devices_and_entities()
         await ws_gateway.wait_closed()
