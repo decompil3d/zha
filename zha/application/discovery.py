@@ -43,15 +43,25 @@ from zha.application.platforms import (  # noqa: F401 pylint: disable=unused-imp
 )
 from zha.application.platforms.alarm_control_panel import AlarmControlPanelEntityInfo
 from zha.application.platforms.binary_sensor.model import BinarySensorEntityInfo
-from zha.application.platforms.button.model import ButtonEntityInfo
+from zha.application.platforms.button.model import (
+    ButtonEntityInfo,
+    CommandButtonEntityInfo,
+    WriteAttributeButtonEntityInfo,
+)
 from zha.application.platforms.climate.model import ThermostatEntityInfo
 from zha.application.platforms.cover.model import CoverEntityInfo, ShadeEntityInfo
 from zha.application.platforms.device_tracker.model import DeviceTrackerEntityInfo
 from zha.application.platforms.fan.model import FanEntityInfo
 from zha.application.platforms.light.model import LightEntityInfo
 from zha.application.platforms.lock.model import LockEntityInfo
-from zha.application.platforms.number.model import NumberEntityInfo
-from zha.application.platforms.select.model import SelectEntityInfo
+from zha.application.platforms.number.model import (
+    NumberConfigurationEntityInfo,
+    NumberEntityInfo,
+)
+from zha.application.platforms.select.model import (
+    EnumSelectEntityInfo,
+    SelectEntityInfo,
+)
 from zha.application.platforms.sensor.const import SensorDeviceClass
 from zha.application.platforms.sensor.model import (
     BatteryEntityInfo,
@@ -62,7 +72,10 @@ from zha.application.platforms.sensor.model import (
     SmartEnergyMeteringEntityInfo,
 )
 from zha.application.platforms.siren.model import SirenEntityInfo
-from zha.application.platforms.switch.model import SwitchEntityInfo
+from zha.application.platforms.switch.model import (
+    ConfigurableAttributeSwitchEntityInfo,
+    SwitchEntityInfo,
+)
 from zha.application.platforms.update.model import FirmwareUpdateEntityInfo
 from zha.application.registries import (
     DEVICE_CLASS,
@@ -200,6 +213,8 @@ ENTITY_INFO_CLASS_TO_WEBSOCKET_CLIENT_ENTITY_CLASS = {
     AlarmControlPanelEntityInfo: alarm_control_panel.WebSocketClientAlarmControlPanel,
     BinarySensorEntityInfo: binary_sensor.WebSocketClientBinarySensor,
     ButtonEntityInfo: button.WebSocketClientButtonEntity,
+    CommandButtonEntityInfo: button.WebSocketClientButtonEntity,
+    WriteAttributeButtonEntityInfo: button.WebSocketClientButtonEntity,
     ThermostatEntityInfo: climate.WebSocketClientThermostatEntity,
     CoverEntityInfo: cover.WebSocketClientCoverEntity,
     ShadeEntityInfo: cover.WebSocketClientCoverEntity,
@@ -218,6 +233,9 @@ ENTITY_INFO_CLASS_TO_WEBSOCKET_CLIENT_ENTITY_CLASS = {
     SmartEnergyMeteringEntityInfo: sensor.WebSocketClientSensorEntity,
     DeviceCounterSensorEntityInfo: sensor.WebSocketClientSensorEntity,
     SetpointChangeSourceTimestampSensorEntityInfo: sensor.WebSocketClientSensorEntity,
+    NumberConfigurationEntityInfo: number.WebSocketClientNumberEntity,
+    EnumSelectEntityInfo: select.WebSocketClientSelectEntity,
+    ConfigurableAttributeSwitchEntityInfo: switch.WebSocketClientSwitchEntity,
 }
 
 

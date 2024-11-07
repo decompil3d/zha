@@ -26,7 +26,10 @@ from zha.application.platforms.update.const import (
     UpdateDeviceClass,
     UpdateEntityFeature,
 )
-from zha.application.platforms.update.model import FirmwareUpdateEntityInfo
+from zha.application.platforms.update.model import (
+    FirmwareUpdateEntityInfo,
+    FirmwareUpdateState,
+)
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.exceptions import ZHAException
 from zha.zigbee.cluster_handlers.const import (
@@ -164,16 +167,17 @@ class FirmwareUpdateEntity(PlatformEntity, FirmwareUpdateEntityInterface):
     def info_object(self) -> FirmwareUpdateEntityInfo:
         """Return a representation of the entity."""
         return FirmwareUpdateEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             supported_features=self.supported_features,
         )
 
     @property
-    def state(self):
+    def state(self) -> dict[str, Any]:
         """Get the state for the entity."""
-        response = super().state
-        response.update(self.state_attributes)
-        return response
+        return FirmwareUpdateState(
+            **super().state,
+            **self.state_attributes,
+        ).model_dump()
 
     @property
     def installed_version(self) -> str | None:

@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from zha.application.platforms.model import BasePlatformEntityInfo
-from zha.model import BaseModel
+from zha.model import TypedBaseModel
 
 
-class LockState(BaseModel):
+class LockState(TypedBaseModel):
     """Lock state model."""
 
-    class_name: Literal["Lock", "DoorLock"] = "Lock"
     is_locked: bool
     available: bool
 
@@ -19,5 +16,4 @@ class LockState(BaseModel):
 class LockEntityInfo(BasePlatformEntityInfo):
     """Lock entity model."""
 
-    class_name: Literal["Lock", "DoorLock"]
     state: LockState

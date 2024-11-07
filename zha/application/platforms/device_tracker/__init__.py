@@ -12,7 +12,10 @@ from zigpy.zcl.clusters.general import PowerConfiguration
 from zha.application import Platform
 from zha.application.platforms import PlatformEntity, WebSocketClientEntity
 from zha.application.platforms.device_tracker.const import SourceType
-from zha.application.platforms.device_tracker.model import DeviceTrackerEntityInfo
+from zha.application.platforms.device_tracker.model import (
+    DeviceTrackerEntityInfo,
+    DeviceTrackerState,
+)
 from zha.application.platforms.sensor import Battery
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.decorators import periodic
@@ -98,17 +101,21 @@ class DeviceScannerEntity(PlatformEntity, DeviceTrackerEntityInterface):
         )
 
     @property
+    def info_object(self) -> DeviceTrackerEntityInfo:
+        """Return a representation of the device tracker."""
+        return DeviceTrackerEntityInfo(
+            **super().info_object.model_dump(exclude=["model_class_name"])
+        )
+
+    @property
     def state(self) -> dict[str, Any]:
         """Return the state of the device."""
-        response = super().state
-        response.update(
-            {
-                "connected": self._connected,
-                "battery_level": self._battery_level,
-                "source_type": self.source_type,
-            }
-        )
-        return response
+        return DeviceTrackerState(
+            **super().state,
+            connected=self._connected,
+            battery_level=self._battery_level,
+            source_type=self.source_type,
+        ).model_dump()
 
     @property
     def is_connected(self):

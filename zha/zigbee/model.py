@@ -1,9 +1,9 @@
 """Models for the ZHA zigbee module."""
 
 from enum import Enum, StrEnum
-from typing import Annotated, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
-from pydantic import Field, field_serializer, field_validator
+from pydantic import field_serializer, field_validator
 from zigpy.types import uint1_t, uint8_t
 from zigpy.types.named import EUI64, NWK, ExtendedPanId
 from zigpy.zdo.types import RouteStatus, _NeighborEnums
@@ -13,15 +13,25 @@ from zha.application.platforms.alarm_control_panel.model import (
     AlarmControlPanelEntityInfo,
 )
 from zha.application.platforms.binary_sensor.model import BinarySensorEntityInfo
-from zha.application.platforms.button.model import ButtonEntityInfo
+from zha.application.platforms.button.model import (
+    ButtonEntityInfo,
+    CommandButtonEntityInfo,
+    WriteAttributeButtonEntityInfo,
+)
 from zha.application.platforms.climate.model import ThermostatEntityInfo
 from zha.application.platforms.cover.model import CoverEntityInfo, ShadeEntityInfo
 from zha.application.platforms.device_tracker.model import DeviceTrackerEntityInfo
 from zha.application.platforms.fan.model import FanEntityInfo
 from zha.application.platforms.light.model import LightEntityInfo
 from zha.application.platforms.lock.model import LockEntityInfo
-from zha.application.platforms.number.model import NumberEntityInfo
-from zha.application.platforms.select.model import SelectEntityInfo
+from zha.application.platforms.number.model import (
+    NumberConfigurationEntityInfo,
+    NumberEntityInfo,
+)
+from zha.application.platforms.select.model import (
+    EnumSelectEntityInfo,
+    SelectEntityInfo,
+)
 from zha.application.platforms.sensor.model import (
     BatteryEntityInfo,
     DeviceCounterSensorEntityInfo,
@@ -31,9 +41,12 @@ from zha.application.platforms.sensor.model import (
     SmartEnergyMeteringEntityInfo,
 )
 from zha.application.platforms.siren.model import SirenEntityInfo
-from zha.application.platforms.switch.model import SwitchEntityInfo
+from zha.application.platforms.switch.model import (
+    ConfigurableAttributeSwitchEntityInfo,
+    SwitchEntityInfo,
+)
 from zha.application.platforms.update.model import FirmwareUpdateEntityInfo
-from zha.model import BaseEvent, BaseModel, convert_enum, convert_int
+from zha.model import BaseEvent, BaseModel, as_tagged_union, convert_enum, convert_int
 
 
 class DeviceStatus(StrEnum):
@@ -209,39 +222,44 @@ class EndpointNameInfo(BaseModel):
     name: str
 
 
+EntityInfoUnion = (
+    SirenEntityInfo
+    | SelectEntityInfo
+    | NumberEntityInfo
+    | LightEntityInfo
+    | FanEntityInfo
+    | ButtonEntityInfo
+    | CommandButtonEntityInfo
+    | WriteAttributeButtonEntityInfo
+    | AlarmControlPanelEntityInfo
+    | FirmwareUpdateEntityInfo
+    | SensorEntityInfo
+    | BinarySensorEntityInfo
+    | DeviceTrackerEntityInfo
+    | ShadeEntityInfo
+    | CoverEntityInfo
+    | LockEntityInfo
+    | SwitchEntityInfo
+    | BatteryEntityInfo
+    | ElectricalMeasurementEntityInfo
+    | SmartEnergyMeteringEntityInfo
+    | ThermostatEntityInfo
+    | DeviceCounterSensorEntityInfo
+    | SetpointChangeSourceTimestampSensorEntityInfo
+    | NumberConfigurationEntityInfo
+    | EnumSelectEntityInfo
+    | ConfigurableAttributeSwitchEntityInfo
+)
+
+if not TYPE_CHECKING:
+    EntityInfoUnion = as_tagged_union(EntityInfoUnion)
+
+
 class ExtendedDeviceInfo(DeviceInfo):
     """Describes a ZHA device."""
 
     active_coordinator: bool
-    entities: dict[
-        tuple[Platform, str],
-        Annotated[
-            Union[
-                SirenEntityInfo,
-                SelectEntityInfo,
-                NumberEntityInfo,
-                LightEntityInfo,
-                FanEntityInfo,
-                FirmwareUpdateEntityInfo,
-                ButtonEntityInfo,
-                AlarmControlPanelEntityInfo,
-                SensorEntityInfo,
-                BinarySensorEntityInfo,
-                DeviceTrackerEntityInfo,
-                ShadeEntityInfo,
-                CoverEntityInfo,
-                LockEntityInfo,
-                SwitchEntityInfo,
-                BatteryEntityInfo,
-                ElectricalMeasurementEntityInfo,
-                SmartEnergyMeteringEntityInfo,
-                ThermostatEntityInfo,
-                DeviceCounterSensorEntityInfo,
-                SetpointChangeSourceTimestampSensorEntityInfo,
-            ],
-            Field(discriminator="class_name"),
-        ],
-    ]
+    entities: dict[tuple[Platform, str], EntityInfoUnion]  # type: ignore
     neighbors: list[NeighborInfo]
     routes: list[RouteInfo]
     endpoint_names: list[EndpointNameInfo]
@@ -284,33 +302,13 @@ class GroupMemberInfo(BaseModel):
     ieee: EUI64
     endpoint_id: int
     device_info: ExtendedDeviceInfo
-    entities: dict[
-        str,
-        Annotated[
-            Union[
-                SirenEntityInfo,
-                SelectEntityInfo,
-                NumberEntityInfo,
-                LightEntityInfo,
-                FanEntityInfo,
-                ButtonEntityInfo,
-                AlarmControlPanelEntityInfo,
-                FirmwareUpdateEntityInfo,
-                SensorEntityInfo,
-                BinarySensorEntityInfo,
-                DeviceTrackerEntityInfo,
-                ShadeEntityInfo,
-                CoverEntityInfo,
-                LockEntityInfo,
-                SwitchEntityInfo,
-                BatteryEntityInfo,
-                ElectricalMeasurementEntityInfo,
-                SmartEnergyMeteringEntityInfo,
-                ThermostatEntityInfo,
-            ],
-            Field(discriminator="class_name"),
-        ],
-    ]
+    entities: dict[str, EntityInfoUnion]  # type: ignore
+
+
+GroupEntityUnion = LightEntityInfo | FanEntityInfo | SwitchEntityInfo
+
+if not TYPE_CHECKING:
+    GroupEntityUnion = as_tagged_union(GroupEntityUnion)
 
 
 class GroupInfo(BaseModel):
@@ -319,13 +317,7 @@ class GroupInfo(BaseModel):
     group_id: int
     name: str
     members: list[GroupMemberInfo]
-    entities: dict[
-        str,
-        Annotated[
-            Union[LightEntityInfo, FanEntityInfo, SwitchEntityInfo],
-            Field(discriminator="class_name"),
-        ],
-    ]
+    entities: dict[str, GroupEntityUnion]  # type: ignore
 
     @property
     def members_by_ieee(self) -> dict[EUI64, GroupMemberInfo]:

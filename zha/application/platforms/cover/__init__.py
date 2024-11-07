@@ -14,7 +14,6 @@ from zigpy.zcl.foundation import Status
 from zha.application import Platform
 from zha.application.platforms import PlatformEntity, WebSocketClientEntity
 from zha.application.platforms.cover.const import (
-    ATTR_CURRENT_POSITION,
     ATTR_POSITION,
     ATTR_TILT_POSITION,
     STATE_CLOSED,
@@ -27,7 +26,12 @@ from zha.application.platforms.cover.const import (
     CoverEntityFeature,
     WCAttrs,
 )
-from zha.application.platforms.cover.model import CoverEntityInfo, ShadeEntityInfo
+from zha.application.platforms.cover.model import (
+    CoverEntityInfo,
+    CoverState,
+    ShadeEntityInfo,
+    ShadeState,
+)
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.exceptions import ZHAException
 from zha.zigbee.cluster_handlers.closures import WindowCoveringClusterHandler
@@ -163,27 +167,24 @@ class Cover(PlatformEntity, CoverEntityInterface):
     def info_object(self) -> CoverEntityInfo:
         """Return the info object for this entity."""
         return CoverEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             supported_features=self.supported_features,
         )
 
     @property
     def state(self) -> dict[str, Any]:
         """Get the state of the cover."""
-        response = super().state
-        response.update(
-            {
-                ATTR_CURRENT_POSITION: self.current_cover_position,
-                "current_tilt_position": self.current_cover_tilt_position,
-                "state": self._state,
-                "is_opening": self.is_opening,
-                "is_closing": self.is_closing,
-                "is_closed": self.is_closed,
-                "target_lift_position": self._target_lift_position,
-                "target_tilt_position": self._target_tilt_position,
-            }
-        )
-        return response
+        return CoverState(
+            **super().state,
+            current_position=self.current_cover_position,
+            current_tilt_position=self.current_cover_tilt_position,
+            state=self._state,
+            is_opening=self.is_opening,
+            is_closing=self.is_closing,
+            is_closed=self.is_closed,
+            target_lift_position=self._target_lift_position,
+            target_tilt_position=self._target_tilt_position,
+        ).model_dump()
 
     def restore_external_state_attributes(
         self,
@@ -484,7 +485,7 @@ class Shade(PlatformEntity):
     def info_object(self) -> ShadeEntityInfo:
         """Return the info object for this entity."""
         return ShadeEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             supported_features=self.supported_features,
         )
 
@@ -495,17 +496,15 @@ class Shade(PlatformEntity):
             state = None
         else:
             state = STATE_CLOSED if closed else STATE_OPEN
-        response = super().state
-        response.update(
-            {
-                ATTR_CURRENT_POSITION: self.current_cover_position,
-                "is_closed": self.is_closed,
-                "is_opening": self.is_opening,
-                "is_closing": self.is_closing,
-                "state": state,
-            }
-        )
-        return response
+
+        return ShadeState(
+            **super().state,
+            current_position=self.current_cover_position,
+            state=state,
+            is_opening=self.is_opening,
+            is_closing=self.is_closing,
+            is_closed=closed,
+        ).model_dump()
 
     @functools.cached_property
     def is_opening(self) -> bool:

@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import functools
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from zhaquirks.quirk_ids import DANFOSS_ALLY_THERMOSTAT
 from zigpy.quirks.v2 import BinarySensorMetadata
@@ -19,6 +19,7 @@ from zha.application.platforms.binary_sensor.const import (
 from zha.application.platforms.binary_sensor.model import BinarySensorEntityInfo
 from zha.application.platforms.const import EntityCategory
 from zha.application.platforms.helpers import validate_device_class
+from zha.application.platforms.model import EntityState
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ACCELEROMETER,
@@ -96,16 +97,17 @@ class BinarySensor(PlatformEntity, BinarySensorEntityInterface):
     def info_object(self) -> BinarySensorEntityInfo:
         """Return a representation of the binary sensor."""
         return BinarySensorEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             attribute_name=self._attribute_name,
         )
 
     @property
-    def state(self) -> dict:
+    def state(self) -> dict[str, Any]:
         """Return the state of the binary sensor."""
-        response = super().state
-        response["state"] = self.is_on
-        return response
+        return EntityState(
+            **super().state,
+            state=self.is_on,
+        ).model_dump()
 
     @property
     def is_on(self) -> bool:
@@ -420,4 +422,4 @@ class WebSocketClientBinarySensor(
     @property
     def is_on(self) -> bool:
         """Return True if the switch is on based on the state machine."""
-        return self.info_object.state.state
+        return bool(self.info_object.state.state)

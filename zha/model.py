@@ -1,13 +1,19 @@
 """Shared models for ZHA."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from enum import Enum
 import logging
-from typing import Any, Literal, Optional, Union
+from typing import Annotated, Any, Literal, Optional, Union, get_args
 
 from pydantic import (
     BaseModel as PydanticBaseModel,
     ConfigDict,
+    Discriminator,
+    Field,
+    Tag,
+    computed_field,
     field_serializer,
     field_validator,
 )
@@ -86,6 +92,72 @@ class BaseModel(PydanticBaseModel):
         if nwk is not None:
             return repr(nwk)
         return nwk
+
+
+class TypedBaseModel(BaseModel):
+    """Typed base model for use in discriminated unions."""
+
+    @computed_field  # type: ignore
+    @property
+    def model_class_name(self) -> str:
+        """Property to create type field from class name when serializing."""
+        return self.__class__.__name__
+
+    @classmethod
+    def _tag(cls):
+        """Create a pydantic `Tag` for this class to include it in tagged unions."""
+        return Annotated[cls, Tag(cls.__name__)]
+
+    @staticmethod
+    def _discriminator():
+        """Create a pydantic `Discriminator` for a tagged union of `TypedBaseModel`."""
+        return Field(discriminator=Discriminator(TypedBaseModel._get_model_class_name))
+
+    @staticmethod
+    def _get_model_class_name(x: Any) -> str | None:
+        """Get the model_class_name from an instance or serialized `dict` of `TypedBaseModel`.
+
+        This is a callable for pydantic Discriminator to discriminate between types in a
+        tagged union of `TypedBaseModel` child classes.
+
+        If given an instance of `TypedBaseModel` then this method is being called to
+        serialize an instance. The model_class_name field of the entry for this instance should be
+        its class name.
+
+        If given a dictionary, then an instance is being deserialized. The name of the
+        class to be instantiated is given by the model_class_name field, and the remaining fields
+        should be passed as fields to the class.
+
+        In any other case, return `None` to cause a pydantic validation error.
+
+        Args:
+            x: `TypedBaseModel` instance or serialized `dict` of a `TypedBaseModel`
+
+        """
+        match x:
+            case TypedBaseModel():
+                return x.__class__.__name__
+            case dict() as serialized:
+                return serialized.pop("model_class_name", None)
+            case _:
+                return None
+
+
+def as_tagged_union(union):
+    """Create a tagged union from a `Union` of `TypedBaseModel`.
+
+    Members will be tagged with their class name to be discriminated by pydantic.
+
+    Args:
+        union: `Union` of `TypedBaseModel` to convert to a tagged union
+
+    """
+    union_members = get_args(union)
+
+    return Annotated[
+        Union[tuple(cls._tag() for cls in union_members)],
+        TypedBaseModel._discriminator(),
+    ]
 
 
 class BaseEvent(BaseModel):

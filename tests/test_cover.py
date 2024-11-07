@@ -26,12 +26,9 @@ from tests.common import (
 from zha.application import Platform
 from zha.application.const import ATTR_COMMAND
 from zha.application.gateway import Gateway
-from zha.application.platforms.cover import (
-    ATTR_CURRENT_POSITION,
-    STATE_CLOSED,
-    STATE_OPEN,
-)
+from zha.application.platforms.cover import STATE_CLOSED, STATE_OPEN
 from zha.application.platforms.cover.const import (
+    ATTR_CURRENT_POSITION,
     STATE_CLOSING,
     STATE_OPENING,
     CoverEntityFeature,

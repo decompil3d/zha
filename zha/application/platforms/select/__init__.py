@@ -25,7 +25,11 @@ from zha.application import Platform
 from zha.application.const import ENTITY_METADATA, Strobe
 from zha.application.platforms import PlatformEntity, WebSocketClientEntity
 from zha.application.platforms.const import EntityCategory
-from zha.application.platforms.select.model import EnumSelectInfo, SelectEntityInfo
+from zha.application.platforms.model import EntityState
+from zha.application.platforms.select.model import (
+    EnumSelectEntityInfo,
+    SelectEntityInfo,
+)
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
@@ -93,20 +97,21 @@ class EnumSelectEntity(PlatformEntity, SelectEntityInterface):
         super().__init__(unique_id, cluster_handlers, endpoint, device, **kwargs)
 
     @property
-    def info_object(self) -> EnumSelectInfo:
+    def info_object(self) -> EnumSelectEntityInfo:
         """Return a representation of the select."""
-        return EnumSelectInfo(
-            **super().info_object.model_dump(),
+        return EnumSelectEntityInfo(
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             enum=self._enum.__name__,
             options=self._attr_options,
         )
 
     @property
-    def state(self) -> dict:
+    def state(self) -> dict[str, Any]:
         """Return the state of the select."""
-        response = super().state
-        response["state"] = self.current_option
-        return response
+        return EntityState(
+            **super().state,
+            state=self.current_option,
+        ).model_dump()
 
     @property
     def current_option(self) -> str | None:
@@ -235,10 +240,10 @@ class ZCLEnumSelectEntity(PlatformEntity, SelectEntityInterface):
         self._enum = entity_metadata.enum
 
     @property
-    def info_object(self) -> EnumSelectInfo:
+    def info_object(self) -> EnumSelectEntityInfo:
         """Return a representation of the select."""
-        return EnumSelectInfo(
-            **super().info_object.model_dump(),
+        return EnumSelectEntityInfo(
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             enum=self._enum.__name__,
             options=self._attr_options,
         )
@@ -246,9 +251,10 @@ class ZCLEnumSelectEntity(PlatformEntity, SelectEntityInterface):
     @property
     def state(self) -> dict[str, Any]:
         """Return the state of the select."""
-        response = super().state
-        response["state"] = self.current_option
-        return response
+        return EntityState(
+            **super().state,
+            state=self.current_option,
+        ).model_dump()
 
     @property
     def current_option(self) -> str | None:

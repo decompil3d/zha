@@ -80,7 +80,7 @@ class Button(PlatformEntity, ButtonEntityInterface):
     def info_object(self) -> CommandButtonEntityInfo:
         """Return a representation of the button."""
         return CommandButtonEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             command=self._command_name,
             args=self._args,
             kwargs=self._kwargs,
@@ -168,7 +168,7 @@ class WriteAttributeButton(PlatformEntity):
     def info_object(self) -> WriteAttributeButtonEntityInfo:
         """Return a representation of the button."""
         return WriteAttributeButtonEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             attribute_name=self._attribute_name,
             attribute_value=self._attribute_value,
         )

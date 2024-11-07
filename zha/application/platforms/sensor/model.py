@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
 
 from pydantic import ValidationInfo, field_validator
 from zigpy.types.named import EUI64
@@ -12,16 +11,15 @@ from zha.application.platforms.model import (
     BaseEntityInfo,
     BaseIdentifiers,
     BasePlatformEntityInfo,
-    GenericState,
+    EntityState,
 )
 from zha.application.platforms.sensor.const import SensorDeviceClass, SensorStateClass
-from zha.model import BaseEventedModel, BaseModel
+from zha.model import BaseEventedModel, BaseModel, TypedBaseModel
 
 
-class BatteryState(BaseModel):
+class BatteryState(TypedBaseModel):
     """Battery state model."""
 
-    class_name: Literal["Battery"] = "Battery"
     state: str | float | int | None = None
     battery_size: str | None = None
     battery_quantity: int | None = None
@@ -29,18 +27,9 @@ class BatteryState(BaseModel):
     available: bool
 
 
-class ElectricalMeasurementState(BaseModel):
+class ElectricalMeasurementState(TypedBaseModel):
     """Electrical measurement state model."""
 
-    class_name: Literal[
-        "ElectricalMeasurement",
-        "ElectricalMeasurementApparentPower",
-        "ElectricalMeasurementRMSCurrent",
-        "ElectricalMeasurementRMSVoltage",
-        "ElectricalMeasurementFrequency",
-        "ElectricalMeasurementPowerFactor",
-        "PolledElectricalMeasurement",
-    ]
     state: str | float | int | None = None
     measurement_type: str | None = None
     active_power_max: float | None = None
@@ -49,22 +38,18 @@ class ElectricalMeasurementState(BaseModel):
     available: bool
 
 
-class SmartEnergyMeteringState(BaseModel):
+class SmartEnergyMeteringState(TypedBaseModel):
     """Smare energy metering state model."""
 
-    class_name: Literal[
-        "SmartEnergyMetering", "SmartEnergySummation", "SmartEnergySummationReceived"
-    ]
     state: str | float | int | None = None
     device_type: str | None = None
     status: str | None = None
     available: bool
 
 
-class DeviceCounterSensorState(BaseModel):
+class DeviceCounterSensorState(TypedBaseModel):
     """Device counter sensor state model."""
 
-    class_name: Literal["DeviceCounterSensor"] = "DeviceCounterSensor"
     state: int
     available: bool
 
@@ -102,53 +87,12 @@ class BaseSensorEntityInfo(BasePlatformEntityInfo):
 class SensorEntityInfo(BaseSensorEntityInfo):
     """Sensor entity model."""
 
-    class_name: Literal[
-        "AnalogInput",
-        "Humidity",
-        "SoilMoisture",
-        "LeafWetness",
-        "Illuminance",
-        "Pressure",
-        "Temperature",
-        "CarbonDioxideConcentration",
-        "CarbonMonoxideConcentration",
-        "VOCLevel",
-        "PPBVOCLevel",
-        "FormaldehydeConcentration",
-        "ThermostatHVACAction",
-        "SinopeHVACAction",
-        "RSSISensor",
-        "LQISensor",
-        "LastSeenSensor",
-        "PiHeatingDemand",
-        "SetpointChangeSource",
-        "TimeLeft",
-        "DeviceTemperature",
-        "WindowCoveringTypeSensor",
-        "PM25",
-        "Sensor",
-        "IkeaDeviceRunTime",
-        "IkeaFilterRunTime",
-        "AqaraSmokeDensityDbm",
-        "EnumSensor",
-        "AqaraCurtainMotorPowerSourceSensor",
-        "AqaraCurtainHookStateSensor",
-        "TimestampSensor",
-        "DanfossOpenWindowDetection",
-        "DanfossLoadEstimate",
-        "DanfossAdaptationRunStatus",
-        "DanfossPreheatTime",
-        "DanfossSoftwareErrorCode",
-        "DanfossMotorStepCounter",
-        "Flow",
-    ]
-    state: GenericState
+    state: EntityState
 
 
-class TimestampState(BaseModel):
+class TimestampState(TypedBaseModel):
     """Default state model."""
 
-    class_name: Literal["SetpointChangeSourceTimestamp",]
     available: bool | None = None
     state: datetime | None = None
 
@@ -156,14 +100,12 @@ class TimestampState(BaseModel):
 class SetpointChangeSourceTimestampSensorEntityInfo(BaseSensorEntityInfo):
     """Setpoint change source timestamp sensor model."""
 
-    class_name: Literal["SetpointChangeSourceTimestamp"]
     state: TimestampState
 
 
 class DeviceCounterSensorEntityInfo(BaseEventedModel, BaseEntityInfo):
     """Device counter sensor model."""
 
-    class_name: Literal["DeviceCounterSensor"]
     counter: str
     counter_value: int
     counter_groups: str
@@ -198,48 +140,24 @@ class DeviceCounterSensorEntityInfo(BaseEventedModel, BaseEntityInfo):
 class BatteryEntityInfo(BaseSensorEntityInfo):
     """Battery entity model."""
 
-    class_name: Literal["Battery"]
     state: BatteryState
 
 
 class ElectricalMeasurementEntityInfo(BaseSensorEntityInfo):
     """Electrical measurement entity model."""
 
-    class_name: Literal[
-        "ElectricalMeasurement",
-        "ElectricalMeasurementApparentPower",
-        "ElectricalMeasurementRMSCurrent",
-        "ElectricalMeasurementRMSVoltage",
-        "ElectricalMeasurementFrequency",
-        "ElectricalMeasurementPowerFactor",
-        "PolledElectricalMeasurement",
-    ]
     state: ElectricalMeasurementState
 
 
 class SmartEnergyMeteringEntityInfo(BaseSensorEntityInfo):
     """Smare energy metering entity model."""
 
-    class_name: Literal[
-        "SmartEnergyMetering", "SmartEnergySummation", "SmartEnergySummationReceived"
-    ]
     state: SmartEnergyMeteringState
     entity_description: (
         SmartEnergySummationEntityDescription
         | SmartEnergyMeteringEntityDescription
         | None
     ) = None
-
-
-class DeviceCounterEntityInfo(BaseEntityInfo):
-    """Device counter entity info."""
-
-    device_ieee: EUI64
-    available: bool
-    counter: str
-    counter_value: int
-    counter_groups: str
-    counter_group: str
 
 
 class DeviceCounterSensorIdentifiers(BaseIdentifiers):

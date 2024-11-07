@@ -23,8 +23,9 @@ from zha.application.platforms import (
 )
 from zha.application.platforms.const import EntityCategory
 from zha.application.platforms.switch.model import (
-    ConfigurableAttributeSwitchInfo,
+    ConfigurableAttributeSwitchEntityInfo,
     SwitchEntityInfo,
+    SwitchState,
 )
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.zigbee.cluster_handlers.const import (
@@ -84,13 +85,6 @@ class BaseSwitch(BaseEntity, SwitchEntityInterface):
         super().__init__(*args, **kwargs)
 
     @property
-    def state(self) -> dict[str, Any]:
-        """Return the state of the switch."""
-        response = super().state
-        response["state"] = self.is_on
-        return response
-
-    @property
     def is_on(self) -> bool:
         """Return if the switch is on based on the statemachine."""
         if self._on_off_cluster_handler.on_off is None:
@@ -133,6 +127,18 @@ class Switch(PlatformEntity, BaseSwitch):
             self.handle_cluster_handler_attribute_updated,
         )
 
+    @property
+    def info_object(self) -> SwitchEntityInfo:
+        """Return representation of the switch entity."""
+        return SwitchEntityInfo(
+            **super().info_object.model_dump(exclude=["model_class_name"]),
+        )
+
+    @property
+    def state(self) -> dict[str, Any]:
+        """Return the state of the switch."""
+        return SwitchState(**super().state, state=self.is_on).model_dump()
+
     def handle_cluster_handler_attribute_updated(
         self,
         event: ClusterAttributeUpdatedEvent,  # pylint: disable=unused-argument
@@ -152,6 +158,18 @@ class SwitchGroup(GroupEntity, BaseSwitch):
         self._state: bool
         self._on_off_cluster_handler = group.zigpy_group.endpoint[OnOff.cluster_id]
         self.update()
+
+    @property
+    def info_object(self) -> SwitchEntityInfo:
+        """Return representation of the switch entity."""
+        return SwitchEntityInfo(
+            **super().info_object.model_dump(exclude=["model_class_name"]),
+        )
+
+    @property
+    def state(self) -> dict[str, Any]:
+        """Return the state of the switch."""
+        return SwitchState(**super().state, state=self.is_on).model_dump()
 
     @property
     def is_on(self) -> bool:
@@ -257,10 +275,10 @@ class ConfigurableAttributeSwitch(PlatformEntity):
         self._on_value = entity_metadata.on_value
 
     @property
-    def info_object(self) -> ConfigurableAttributeSwitchInfo:
+    def info_object(self) -> ConfigurableAttributeSwitchEntityInfo:
         """Return representation of the switch configuration entity."""
-        return ConfigurableAttributeSwitchInfo(
-            **super().info_object.model_dump(),
+        return ConfigurableAttributeSwitchEntityInfo(
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             attribute_name=self._attribute_name,
             invert_attribute_name=self._inverter_attribute_name,
             force_inverted=self._force_inverted,
@@ -271,10 +289,11 @@ class ConfigurableAttributeSwitch(PlatformEntity):
     @property
     def state(self) -> dict[str, Any]:
         """Return the state of the switch."""
-        response = super().state
-        response["state"] = self.is_on
-        response["inverted"] = self.inverted
-        return response
+        return SwitchState(
+            **super().state,
+            state=self.is_on,
+            inverted=self.inverted,
+        ).model_dump()
 
     @property
     def inverted(self) -> bool:

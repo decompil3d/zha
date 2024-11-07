@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any
 
 from zha.application.platforms.model import (
     BaseEntityInfo,
     BasePlatformEntityInfo,
-    GenericState,
+    EntityState,
 )
 
 
@@ -16,18 +16,10 @@ class ButtonEntityInfo(
 ):  # TODO split into two models CommandButton and WriteAttributeButton
     """Button model."""
 
-    class_name: Literal[
-        "IdentifyButton",
-        "FrostLockResetButton",
-        "Button",
-        "WriteAttributeButton",
-        "AqaraSelfTestButton",
-        "NoPresenceStatusResetButton",
-    ]
     command: str | None = None
     attribute_name: str | None = None
     attribute_value: Any | None = None
-    state: GenericState
+    state: EntityState
 
 
 class CommandButtonEntityInfo(BaseEntityInfo):

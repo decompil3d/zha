@@ -60,7 +60,7 @@ from zha.application.platforms.light.helpers import (
     brightness_supported,
     filter_supported_color_modes,
 )
-from zha.application.platforms.light.model import LightEntityInfo
+from zha.application.platforms.light.model import LightEntityInfo, LightState
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.debounce import Debouncer
 from zha.decorators import periodic
@@ -191,23 +191,6 @@ class BaseLight(BaseEntity, LightEntityInterface):
         self._transitioning_individual: bool = False
         self._transitioning_group: bool = False
         self._transition_listener: Callable[[], None] | None = None
-
-    @property
-    def state(self) -> dict[str, Any]:
-        """Return the state of the light."""
-        response = super().state
-        response["on"] = self.is_on
-        response["brightness"] = self.brightness
-        response["xy_color"] = self.xy_color
-        response["color_temp"] = self.color_temp
-        response["effect_list"] = self.effect_list
-        response["effect"] = self.effect
-        response["supported_features"] = self.supported_features
-        response["color_mode"] = self.color_mode
-        response["supported_color_modes"] = self._supported_color_modes
-        response["off_with_transition"] = self._off_with_transition
-        response["off_brightness"] = self._off_brightness
-        return response
 
     @property
     def xy_color(self) -> tuple[float, float] | None:
@@ -795,13 +778,31 @@ class Light(PlatformEntity, BaseLight):
     def info_object(self) -> LightEntityInfo:
         """Return a representation of the select."""
         return LightEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             effect_list=self.effect_list,
             supported_features=self.supported_features,
             min_mireds=self.min_mireds,
             max_mireds=self.max_mireds,
             supported_color_modes=self.supported_color_modes,
         )
+
+    @property
+    def state(self) -> dict[str, Any]:
+        """Return the state of the light."""
+        return LightState(
+            **super().state,
+            on=self.is_on,
+            brightness=self.brightness,
+            xy_color=self.xy_color,
+            color_temp=self.color_temp,
+            effect_list=self.effect_list,
+            effect=self.effect,
+            supported_features=self.supported_features,
+            color_mode=self.color_mode,
+            supported_color_modes=self.supported_color_modes,
+            off_with_transition=self._off_with_transition,
+            off_brightness=self._off_brightness,
+        ).model_dump()
 
     def start_polling(self) -> None:
         """Start polling."""
@@ -1147,13 +1148,31 @@ class LightGroup(GroupEntity, BaseLight):
     def info_object(self) -> LightEntityInfo:
         """Return a representation of the select."""
         return LightEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             effect_list=self.effect_list,
             supported_features=self.supported_features,
             min_mireds=self.min_mireds,
             max_mireds=self.max_mireds,
             supported_color_modes=self.supported_color_modes,
         )
+
+    @property
+    def state(self) -> dict[str, Any]:
+        """Return the state of the light."""
+        return LightState(
+            **super().state,
+            on=self.is_on,
+            brightness=self.brightness,
+            xy_color=self.xy_color,
+            color_temp=self.color_temp,
+            effect_list=self.effect_list,
+            effect=self.effect,
+            supported_features=self.supported_features,
+            color_mode=self.color_mode,
+            supported_color_modes=self.supported_color_modes,
+            off_with_transition=self._off_with_transition,
+            off_brightness=self._off_brightness,
+        ).model_dump()
 
     async def on_remove(self) -> None:
         """Cancel tasks this entity owns."""

@@ -25,6 +25,7 @@ from zha.application.platforms import BaseEntity, PlatformEntity, WebSocketClien
 from zha.application.platforms.climate.const import HVACAction
 from zha.application.platforms.const import EntityCategory
 from zha.application.platforms.helpers import validate_device_class
+from zha.application.platforms.model import EntityState
 from zha.application.platforms.sensor.const import (
     UNIX_EPOCH_TO_ZCL_EPOCH,
     SensorDeviceClass,
@@ -33,14 +34,19 @@ from zha.application.platforms.sensor.const import (
 from zha.application.platforms.sensor.model import (
     BaseSensorEntityInfo,
     BatteryEntityInfo,
-    DeviceCounterEntityInfo,
+    BatteryState,
+    DeviceCounterSensorEntityInfo,
     DeviceCounterSensorIdentifiers,
+    DeviceCounterSensorState,
     ElectricalMeasurementEntityInfo,
+    ElectricalMeasurementState,
     SensorEntityInfo,
     SetpointChangeSourceTimestampSensorEntityInfo,
     SmartEnergyMeteringEntityDescription,
     SmartEnergyMeteringEntityInfo,
+    SmartEnergyMeteringState,
     SmartEnergySummationEntityDescription,
+    TimestampState,
 )
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.decorators import periodic
@@ -208,7 +214,7 @@ class Sensor(PlatformEntity):
     def info_object(self) -> SensorEntityInfo:
         """Return a representation of the sensor."""
         return SensorEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -225,12 +231,13 @@ class Sensor(PlatformEntity):
         )
 
     @property
-    def state(self) -> dict:
+    def state(self) -> dict[str, Any]:
         """Return the state for this sensor."""
-        response = super().state
-        native_value = self.native_value
-        response["state"] = native_value
-        return response
+        data = EntityState(
+            **super().state,
+            state=self.native_value,
+        ).model_dump()
+        return data
 
     @property
     def native_value(self) -> date | datetime | str | int | float | None:
@@ -399,16 +406,17 @@ class DeviceCounterSensor(BaseEntity):
     def identifiers(self) -> DeviceCounterSensorIdentifiers:
         """Return a dict with the information necessary to identify this entity."""
         return DeviceCounterSensorIdentifiers(
-            **super().identifiers.model_dump(), device_ieee=str(self._device.ieee)
+            **super().identifiers.model_dump(),
+            device_ieee=str(self._device.ieee),
         )
 
     @property
-    def info_object(self) -> DeviceCounterEntityInfo:
+    def info_object(self) -> DeviceCounterSensorEntityInfo:
         """Return a representation of the platform entity."""
-        data = super().info_object.model_dump()
+        data = super().info_object.model_dump(exclude=["model_class_name"])
         data.pop("device_ieee")
         data.pop("available")
-        return DeviceCounterEntityInfo(
+        return DeviceCounterSensorEntityInfo(
             **data,
             device_ieee=self._device.ieee,
             available=self._device.available,
@@ -421,10 +429,11 @@ class DeviceCounterSensor(BaseEntity):
     @property
     def state(self) -> dict[str, Any]:
         """Return the state for this sensor."""
-        response = super().state
-        response["state"] = self._zigpy_counter.value
-        response["available"] = self._device.available
-        return response
+        return DeviceCounterSensorState(
+            **super().state,
+            state=self._zigpy_counter.value,
+            available=self._device.available,
+        ).model_dump()
 
     @property
     def native_value(self) -> int | None:
@@ -562,7 +571,7 @@ class Battery(Sensor):
     def info_object(self) -> BatteryEntityInfo:
         """Return a representation of the sensor."""
         return BatteryEntityInfo(
-            **super(Sensor, self).info_object.model_dump(),
+            **super(Sensor, self).info_object.model_dump(exclude=["model_class_name"]),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -590,7 +599,8 @@ class Battery(Sensor):
         battery_voltage = self._cluster_handler.cluster.get("battery_voltage")
         if battery_voltage is not None:
             response["battery_voltage"] = round(battery_voltage / 10, 2)
-        return response
+
+        return BatteryState(**response).model_dump()
 
 
 @MULTI_MATCH(
@@ -627,7 +637,7 @@ class ElectricalMeasurement(PollableSensor):
     def info_object(self) -> ElectricalMeasurementEntityInfo:
         """Return a representation of the sensor."""
         return ElectricalMeasurementEntityInfo(
-            **super(Sensor, self).info_object.model_dump(),
+            **super(Sensor, self).info_object.model_dump(exclude=["model_class_name"]),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -652,13 +662,13 @@ class ElectricalMeasurement(PollableSensor):
             response["measurement_type"] = self._cluster_handler.measurement_type
 
         max_attr_name = f"{self._attribute_name}_max"
-        if not hasattr(self._cluster_handler.cluster.AttributeDefs, max_attr_name):
-            return response
-
-        if (max_v := self._cluster_handler.cluster.get(max_attr_name)) is not None:
+        if (
+            hasattr(self._cluster_handler.cluster.AttributeDefs, max_attr_name)
+            and (max_v := self._cluster_handler.cluster.get(max_attr_name)) is not None
+        ):
             response[max_attr_name] = self.formatter(max_v)
 
-        return response
+        return ElectricalMeasurementState(**response).model_dump()
 
     def formatter(self, value: int) -> int | float:
         """Return 'normalized' value."""
@@ -904,7 +914,7 @@ class SmartEnergyMetering(PollableSensor):
     def info_object(self) -> SmartEnergyMeteringEntityInfo:
         """Return a representation of the sensor."""
         return SmartEnergyMeteringEntityInfo(
-            **super(Sensor, self).info_object.model_dump(),
+            **super(Sensor, self).info_object.model_dump(exclude=["model_class_name"]),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -934,7 +944,7 @@ class SmartEnergyMetering(PollableSensor):
             else:
                 response["status"] = str(status)[len(status.__class__.__name__) + 1 :]
         response["zcl_unit_of_measurement"] = self._cluster_handler.unit_of_measurement
-        return response
+        return SmartEnergyMeteringState(**response).model_dump()
 
     @property
     def device_class(self) -> str | None:
@@ -1353,7 +1363,7 @@ class ThermostatHVACAction(Sensor):
         return cls(unique_id, cluster_handlers, endpoint, device, **kwargs)
 
     @property
-    def state(self) -> dict:
+    def state(self) -> dict[str, Any]:
         """Return the current HVAC action."""
         response = super().state
         if (
@@ -1363,7 +1373,7 @@ class ThermostatHVACAction(Sensor):
             response["state"] = self._rm_rs_action
         else:
             response["state"] = self._pi_demand_action
-        return response
+        return EntityState(**response).model_dump()
 
     @property
     def native_value(self) -> str | None:
@@ -1504,11 +1514,11 @@ class RSSISensor(Sensor):
         self.device.gateway.global_updater.register_update_listener(self.update)
 
     @property
-    def state(self) -> dict:
+    def state(self) -> dict[str, Any]:
         """Return the state of the sensor."""
         response = super().state
         response["state"] = getattr(self.device.device, self._unique_id_suffix)
-        return response
+        return EntityState(**response).model_dump()
 
     @property
     def native_value(self) -> str | int | float | None:
@@ -1724,7 +1734,7 @@ class SetpointChangeSourceTimestamp(TimestampSensor):
     def info_object(self) -> SetpointChangeSourceTimestampSensorEntityInfo:
         """Return the info object for this entity."""
         return SetpointChangeSourceTimestampSensorEntityInfo(
-            **super(Sensor, self).info_object.model_dump(),
+            **super(Sensor, self).info_object.model_dump(exclude=["model_class_name"]),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -1738,6 +1748,13 @@ class SetpointChangeSourceTimestamp(TimestampSensor):
                 self, "_attr_extra_state_attribute_names", None
             ),
         )
+
+    @property
+    def state(self) -> dict[str, Any]:
+        """Return the state for this sensor."""
+        response = super(Sensor, self).state
+        response["state"] = self.native_value
+        return TimestampState(**response).model_dump()
 
 
 @CONFIG_DIAGNOSTIC_MATCH(cluster_handler_names=CLUSTER_HANDLER_COVER)
@@ -1819,7 +1836,7 @@ class BitMapSensor(Sensor):
                 response[bit.name] = False
             else:
                 response[bit.name] = bit in self._bitmap(value)
-        return response
+        return EntityState(**response).model_dump()
 
     def formatter(self, _value: int) -> str:
         """Summary of all attributes."""

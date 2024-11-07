@@ -51,7 +51,7 @@ class EntityStateChangedEvent(BaseEvent):
     device_ieee: EUI64 | None = None
     endpoint_id: int | None = None
     group_id: int | None = None
-    state: Any
+    state: dict[str, Any] | None
 
 
 class BaseEntity(LogMixin, EventBase):
@@ -219,7 +219,8 @@ class BaseEntity(LogMixin, EventBase):
             self.emit(
                 STATE_CHANGED,
                 EntityStateChangedEvent(
-                    state=self.state, **self.identifiers.model_dump()
+                    state=self.state,
+                    **self.identifiers.model_dump(),
                 ),
             )
             self._previous_state = state
@@ -378,7 +379,8 @@ class PlatformEntity(BaseEntity):
             self.device.gateway.emit(
                 STATE_CHANGED,
                 EntityStateChangedEvent(
-                    state=self.state, **self.identifiers.model_dump()
+                    state=self.state,
+                    **self.identifiers.model_dump(),
                 ),
             )
 
@@ -466,7 +468,8 @@ class GroupEntity(BaseEntity):
             self.group.gateway.emit(
                 STATE_CHANGED,
                 EntityStateChangedEvent(
-                    state=self.state, **self.identifiers.model_dump()
+                    state=self.state,
+                    **self.identifiers.model_dump(),
                 ),
             )
 

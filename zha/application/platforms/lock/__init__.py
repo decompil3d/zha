@@ -16,7 +16,7 @@ from zha.application.platforms.lock.const import (
     STATE_UNLOCKED,
     VALUE_TO_STATE,
 )
-from zha.application.platforms.lock.model import LockEntityInfo
+from zha.application.platforms.lock.model import LockEntityInfo, LockState
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
@@ -94,11 +94,19 @@ class DoorLock(PlatformEntity, LockEntityInterface):
         )
 
     @property
+    def info_object(self) -> LockEntityInfo:
+        """Return a representation of the lock."""
+        return LockEntityInfo(
+            **super().info_object.model_dump(exclude=["model_class_name"])
+        )
+
+    @property
     def state(self) -> dict[str, Any]:
         """Get the state of the lock."""
-        response = super().state
-        response["is_locked"] = self.is_locked
-        return response
+        return LockState(
+            **super().state,
+            is_locked=self.is_locked,
+        ).model_dump()
 
     @property
     def is_locked(self) -> bool:

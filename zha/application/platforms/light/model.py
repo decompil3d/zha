@@ -2,23 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from zha.application.platforms.light.const import ColorMode, LightEntityFeature
 from zha.application.platforms.model import BasePlatformEntityInfo
-from zha.model import BaseModel
+from zha.model import TypedBaseModel
 
 
-class LightState(BaseModel):
+class LightState(TypedBaseModel):
     """Light state model."""
 
-    class_name: Literal[
-        "Light",
-        "HueLight",
-        "ForceOnLight",
-        "LightGroup",
-        "MinTransitionLight",
-    ]
     on: bool
     brightness: int | None = None
     xy_color: tuple[float, float] | None = None
@@ -33,9 +24,6 @@ class LightState(BaseModel):
 class LightEntityInfo(BasePlatformEntityInfo):
     """Light model."""
 
-    class_name: Literal[
-        "Light", "HueLight", "ForceOnLight", "MinTransitionLight", "LightGroup"
-    ]
     supported_features: LightEntityFeature
     min_mireds: int
     max_mireds: int

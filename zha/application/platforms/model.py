@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal, TypeVar
+from typing import Any, TypeVar
 
 from zigpy.types.named import EUI64
 
 from zha.application.discovery import Platform
 from zha.event import EventBase
-from zha.model import BaseModel
+from zha.model import BaseModel, TypedBaseModel
 from zha.zigbee.cluster_handlers.model import ClusterHandlerInfo
 
 
-class BaseEntityInfo(BaseModel):
+class BaseEntityInfo(TypedBaseModel):
     """Information about a base entity."""
 
     platform: Platform
@@ -61,109 +61,11 @@ class GroupEntityIdentifiers(BaseIdentifiers):
     group_id: int
 
 
-class GenericState(BaseModel):
+class EntityState(TypedBaseModel):
     """Default state model."""
 
-    class_name: Literal[
-        "AlarmControlPanel",
-        "Number",
-        "MaxHeatSetpointLimit",
-        "MinHeatSetpointLimit",
-        "DefaultToneSelectEntity",
-        "DefaultSirenLevelSelectEntity",
-        "DefaultStrobeLevelSelectEntity",
-        "DefaultStrobeSelectEntity",
-        "AnalogInput",
-        "Humidity",
-        "SoilMoisture",
-        "LeafWetness",
-        "Illuminance",
-        "Pressure",
-        "Temperature",
-        "CarbonDioxideConcentration",
-        "CarbonMonoxideConcentration",
-        "VOCLevel",
-        "PPBVOCLevel",
-        "FormaldehydeConcentration",
-        "ThermostatHVACAction",
-        "SinopeHVACAction",
-        "RSSISensor",
-        "LQISensor",
-        "LastSeenSensor",
-        "PiHeatingDemand",
-        "SetpointChangeSource",
-        "TimeLeft",
-        "DeviceTemperature",
-        "WindowCoveringTypeSensor",
-        "StartUpCurrentLevelConfigurationEntity",
-        "StartUpColorTemperatureConfigurationEntity",
-        "StartupOnOffSelectEntity",
-        "PM25",
-        "Sensor",
-        "OnOffTransitionTimeConfigurationEntity",
-        "OnLevelConfigurationEntity",
-        "NumberConfigurationEntity",
-        "OnTransitionTimeConfigurationEntity",
-        "OffTransitionTimeConfigurationEntity",
-        "DefaultMoveRateConfigurationEntity",
-        "FilterLifeTime",
-        "IkeaDeviceRunTime",
-        "IkeaFilterRunTime",
-        "AqaraSmokeDensityDbm",
-        "HueV1MotionSensitivity",
-        "EnumSensor",
-        "AqaraMonitoringMode",
-        "AqaraApproachDistance",
-        "AqaraMotionSensitivity",
-        "AqaraCurtainMotorPowerSourceSensor",
-        "AqaraCurtainHookStateSensor",
-        "AqaraMagnetAC01DetectionDistance",
-        "AqaraMotionDetectionInterval",
-        "HueV2MotionSensitivity",
-        "TiRouterTransmitPower",
-        "ZCLEnumSelectEntity",
-        "IdentifyButton",
-        "FrostLockResetButton",
-        "Button",
-        "WriteAttributeButton",
-        "AqaraSelfTestButton",
-        "NoPresenceStatusResetButton",
-        "TimestampSensor",
-        "DanfossOpenWindowDetection",
-        "DanfossLoadEstimate",
-        "DanfossAdaptationRunStatus",
-        "DanfossPreheatTime",
-        "DanfossSoftwareErrorCode",
-        "DanfossMotorStepCounter",
-        "Flow",
-    ]
     available: bool | None = None
     state: str | bool | int | float | datetime | None = None
-
-
-class BooleanState(BaseModel):
-    """Boolean value state model."""
-
-    class_name: Literal[
-        "Accelerometer",
-        "Occupancy",
-        "Opening",
-        "BinaryInput",
-        "Motion",
-        "IASZone",
-        "Siren",
-        "FrostLock",
-        "BinarySensor",
-        "ReplaceFilter",
-        "AqaraLinkageAlarmState",
-        "HueOccupancy",
-        "AqaraE1CurtainMotorOpenedByHandBinarySensor",
-        "DanfossHeatRequired",
-        "DanfossMountingModeActive",
-        "DanfossPreheatStatus",
-    ]
-    state: bool
-    available: bool
 
 
 class BasePlatformEntityInfo(EventBase, BaseEntityInfo):

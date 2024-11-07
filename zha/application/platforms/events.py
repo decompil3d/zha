@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Literal
 
-from pydantic import Field
 from zigpy.types.named import EUI64
 
 from zha.application import Platform
@@ -14,7 +13,7 @@ from zha.application.platforms.device_tracker.model import DeviceTrackerState
 from zha.application.platforms.fan.model import FanState
 from zha.application.platforms.light.model import LightState
 from zha.application.platforms.lock.model import LockState
-from zha.application.platforms.model import BooleanState, GenericState
+from zha.application.platforms.model import EntityState
 from zha.application.platforms.sensor.model import (
     BatteryState,
     DeviceCounterSensorState,
@@ -24,7 +23,28 @@ from zha.application.platforms.sensor.model import (
 )
 from zha.application.platforms.switch.model import SwitchState
 from zha.application.platforms.update.model import FirmwareUpdateState
-from zha.model import BaseEvent
+from zha.model import BaseEvent, as_tagged_union
+
+EntityStateUnion = (
+    DeviceTrackerState
+    | CoverState
+    | ShadeState
+    | FanState
+    | LockState
+    | BatteryState
+    | ElectricalMeasurementState
+    | LightState
+    | SwitchState
+    | SmartEnergyMeteringState
+    | EntityState
+    | ThermostatState
+    | FirmwareUpdateState
+    | DeviceCounterSensorState
+    | TimestampState
+)
+
+if not TYPE_CHECKING:
+    EntityStateUnion = as_tagged_union(EntityStateUnion)
 
 
 class EntityStateChangedEvent(BaseEvent):
@@ -37,23 +57,4 @@ class EntityStateChangedEvent(BaseEvent):
     device_ieee: EUI64 | None = None
     endpoint_id: int | None = None
     group_id: int | None = None
-    state: Annotated[
-        DeviceTrackerState
-        | CoverState
-        | ShadeState
-        | FanState
-        | LockState
-        | BatteryState
-        | ElectricalMeasurementState
-        | LightState
-        | SwitchState
-        | SmartEnergyMeteringState
-        | GenericState
-        | BooleanState
-        | ThermostatState
-        | FirmwareUpdateState
-        | DeviceCounterSensorState
-        | TimestampState
-        | None,
-        Field(discriminator="class_name"),  # noqa: F821
-    ]
+    state: EntityStateUnion | None

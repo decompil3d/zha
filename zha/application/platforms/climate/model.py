@@ -2,28 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from zha.application.platforms.climate.const import (
     ClimateEntityFeature,
     HVACAction,
     HVACMode,
 )
 from zha.application.platforms.model import BasePlatformEntityInfo
-from zha.model import BaseModel
+from zha.model import TypedBaseModel
 
 
-class ThermostatState(BaseModel):
+class ThermostatState(TypedBaseModel):
     """Thermostat state model."""
 
-    class_name: Literal[
-        "Thermostat",
-        "SinopeTechnologiesThermostat",
-        "ZenWithinThermostat",
-        "MoesThermostat",
-        "BecaThermostat",
-        "ZONNSMARTThermostat",
-    ]
     current_temperature: float | None = None
     outdoor_temperature: float | None = None
     target_temperature: float | None = None
@@ -47,14 +37,6 @@ class ThermostatState(BaseModel):
 class ThermostatEntityInfo(BasePlatformEntityInfo):
     """Thermostat entity model."""
 
-    class_name: Literal[
-        "Thermostat",
-        "SinopeTechnologiesThermostat",
-        "ZenWithinThermostat",
-        "MoesThermostat",
-        "BecaThermostat",
-        "ZONNSMARTThermostat",
-    ]
     state: ThermostatState
     supported_features: ClimateEntityFeature
     hvac_modes: list[HVACMode]

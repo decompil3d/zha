@@ -25,6 +25,7 @@ from zha.application.const import (
     Strobe,
 )
 from zha.application.platforms import PlatformEntity, WebSocketClientEntity
+from zha.application.platforms.model import EntityState
 from zha.application.platforms.siren.const import (
     ATTR_DURATION,
     ATTR_TONE,
@@ -109,7 +110,7 @@ class Siren(PlatformEntity, SirenEntityInterface):
     def info_object(self) -> SirenEntityInfo:
         """Return representation of the siren."""
         return SirenEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             available_tones=self._attr_available_tones,
             supported_features=self._attr_supported_features,
         )
@@ -117,9 +118,10 @@ class Siren(PlatformEntity, SirenEntityInterface):
     @property
     def state(self) -> dict[str, Any]:
         """Get the state of the siren."""
-        response = super().state
-        response["state"] = self.is_on
-        return response
+        return EntityState(
+            **super().state,
+            state=self.is_on,
+        ).model_dump()
 
     @property
     def supported_features(self) -> SirenEntityFeature:
@@ -221,7 +223,7 @@ class WebSocketClientSirenEntity(
     @property
     def is_on(self) -> bool:
         """Return true if the entity is on."""
-        return self.info_object.state.state
+        return bool(self.info_object.state.state)
 
     @property
     def supported_features(self) -> SirenEntityFeature:

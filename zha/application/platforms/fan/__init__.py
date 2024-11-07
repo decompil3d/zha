@@ -37,7 +37,7 @@ from zha.application.platforms.fan.helpers import (
     percentage_to_ranged_value,
     ranged_value_to_percentage,
 )
-from zha.application.platforms.fan.model import FanEntityInfo
+from zha.application.platforms.fan.model import FanEntityInfo, FanState
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.zigbee.cluster_handlers import wrap_zigpy_exceptions
 from zha.zigbee.cluster_handlers.const import (
@@ -282,7 +282,7 @@ class Fan(PlatformEntity, BaseFan):
     def info_object(self) -> FanEntityInfo:
         """Return a representation of the binary sensor."""
         return FanEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             preset_modes=self.preset_modes,
             supported_features=self.supported_features,
             speed_count=self.speed_count,
@@ -292,18 +292,15 @@ class Fan(PlatformEntity, BaseFan):
         )
 
     @property
-    def state(self) -> dict:
+    def state(self) -> dict[str, Any]:
         """Return the state of the fan."""
-        response = super().state
-        response.update(
-            {
-                "preset_mode": self.preset_mode,
-                "percentage": self.percentage,
-                "is_on": self.is_on,
-                "speed": self.speed,
-            }
-        )
-        return response
+        return FanState(
+            **super().state,
+            preset_mode=self.preset_mode,
+            percentage=self.percentage,
+            is_on=self.is_on,
+            speed=self.speed,
+        ).model_dump()
 
     @property
     def percentage(self) -> int | None:
@@ -355,7 +352,7 @@ class FanGroup(GroupEntity, BaseFan):
     def info_object(self) -> FanEntityInfo:
         """Return a representation of the binary sensor."""
         return FanEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             preset_modes=self.preset_modes,
             supported_features=self.supported_features,
             speed_count=self.speed_count,
@@ -367,16 +364,13 @@ class FanGroup(GroupEntity, BaseFan):
     @property
     def state(self) -> dict[str, Any]:
         """Return the state of the fan."""
-        response = super().state
-        response.update(
-            {
-                "preset_mode": self.preset_mode,
-                "percentage": self.percentage,
-                "is_on": self.is_on,
-                "speed": self.speed,
-            }
-        )
-        return response
+        return FanState(
+            **super().state,
+            preset_mode=self.preset_mode,
+            percentage=self.percentage,
+            is_on=self.is_on,
+            speed=self.speed,
+        ).model_dump()
 
     @property
     def percentage(self) -> int | None:

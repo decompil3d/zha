@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from zha.application.platforms.fan.const import FanEntityFeature
 from zha.application.platforms.model import BasePlatformEntityInfo
-from zha.model import BaseModel
+from zha.model import TypedBaseModel
 
 
-class FanState(BaseModel):
+class FanState(TypedBaseModel):
     """Fan state model."""
 
-    class_name: Literal["Fan", "FanGroup", "IkeaFan", "KofFan"]
     preset_mode: str | None = (
         None  # TODO: how should we represent these when they are None?
     )
@@ -27,7 +24,6 @@ class FanState(BaseModel):
 class FanEntityInfo(BasePlatformEntityInfo):
     """Fan model."""
 
-    class_name: Literal["Fan", "IkeaFan", "KofFan", "FanGroup"]
     preset_modes: list[str]
     supported_features: FanEntityFeature
     default_on_percentage: int

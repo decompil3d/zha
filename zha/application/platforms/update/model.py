@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from zha.application.platforms.model import BasePlatformEntityInfo
 from zha.application.platforms.update.const import UpdateEntityFeature
-from zha.model import BaseModel
+from zha.model import TypedBaseModel
 
 
-class FirmwareUpdateState(BaseModel):
+class FirmwareUpdateState(TypedBaseModel):
     """Firmware update state model."""
 
-    class_name: Literal["FirmwareUpdateEntity"]
     available: bool
     installed_version: str | None = None
     in_progress: bool | None = None
@@ -26,6 +23,5 @@ class FirmwareUpdateState(BaseModel):
 class FirmwareUpdateEntityInfo(BasePlatformEntityInfo):
     """Firmware update entity model."""
 
-    class_name: Literal["FirmwareUpdateEntity"]
     state: FirmwareUpdateState
     supported_features: UpdateEntityFeature

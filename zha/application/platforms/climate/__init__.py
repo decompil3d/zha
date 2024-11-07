@@ -37,7 +37,10 @@ from zha.application.platforms.climate.const import (
     HVACMode,
     Preset,
 )
-from zha.application.platforms.climate.model import ThermostatEntityInfo
+from zha.application.platforms.climate.model import (
+    ThermostatEntityInfo,
+    ThermostatState,
+)
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.decorators import periodic
 from zha.units import UnitOfTemperature
@@ -220,7 +223,7 @@ class Thermostat(PlatformEntity, ClimateEntityInterface):
     def info_object(self) -> ThermostatEntityInfo:
         """Return a representation of the thermostat."""
         return ThermostatEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             max_temp=self.max_temp,
             min_temp=self.min_temp,
             supported_features=self.supported_features,
@@ -235,30 +238,28 @@ class Thermostat(PlatformEntity, ClimateEntityInterface):
         thermostat = self._thermostat_cluster_handler
         system_mode = SYSTEM_MODE_2_HVAC.get(thermostat.system_mode, "unknown")
 
-        response = super().state
-        response["current_temperature"] = self.current_temperature
-        response["outdoor_temperature"] = self.outdoor_temperature
-        response["target_temperature"] = self.target_temperature
-        response["target_temperature_high"] = self.target_temperature_high
-        response["target_temperature_low"] = self.target_temperature_low
-        response["hvac_action"] = self.hvac_action
-        response["hvac_mode"] = self.hvac_mode
-        response["preset_mode"] = self.preset_mode
-        response["fan_mode"] = self.fan_mode
-
-        response[ATTR_SYS_MODE] = (
-            f"[{thermostat.system_mode}]/{system_mode}"
+        return ThermostatState(
+            **super().state,
+            current_temperature=self.current_temperature,
+            outdoor_temperature=self.outdoor_temperature,
+            target_temperature=self.target_temperature,
+            target_temperature_high=self.target_temperature_high,
+            target_temperature_low=self.target_temperature_low,
+            hvac_action=self.hvac_action,
+            hvac_mode=self.hvac_mode,
+            preset_mode=self.preset_mode,
+            fan_mode=self.fan_mode,
+            system_mode=f"[{thermostat.system_mode}]/{system_mode}"
             if self.hvac_mode is not None
-            else None
-        )
-        response[ATTR_OCCUPANCY] = thermostat.occupancy
-        response[ATTR_OCCP_COOL_SETPT] = thermostat.occupied_cooling_setpoint
-        response[ATTR_OCCP_HEAT_SETPT] = thermostat.occupied_heating_setpoint
-        response[ATTR_PI_HEATING_DEMAND] = thermostat.pi_heating_demand
-        response[ATTR_PI_COOLING_DEMAND] = thermostat.pi_cooling_demand
-        response[ATTR_UNOCCP_COOL_SETPT] = thermostat.unoccupied_cooling_setpoint
-        response[ATTR_UNOCCP_HEAT_SETPT] = thermostat.unoccupied_heating_setpoint
-        return response
+            else None,
+            occupancy=thermostat.occupancy,
+            occupied_cooling_setpoint=thermostat.occupied_cooling_setpoint,
+            occupied_heating_setpoint=thermostat.occupied_heating_setpoint,
+            pi_heating_demand=thermostat.pi_heating_demand,
+            pi_cooling_demand=thermostat.pi_cooling_demand,
+            unoccupied_cooling_setpoint=thermostat.unoccupied_cooling_setpoint,
+            unoccupied_heating_setpoint=thermostat.unoccupied_heating_setpoint,
+        ).model_dump()
 
     @property
     def current_temperature(self):

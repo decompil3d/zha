@@ -16,6 +16,7 @@ from zha.application.const import ENTITY_METADATA
 from zha.application.platforms import PlatformEntity, WebSocketClientEntity
 from zha.application.platforms.const import EntityCategory
 from zha.application.platforms.helpers import validate_device_class
+from zha.application.platforms.model import EntityState
 from zha.application.platforms.number.const import (
     ICONS,
     UNITS,
@@ -130,7 +131,7 @@ class Number(PlatformEntity, NumberEntityInterface):
     def info_object(self) -> NumberEntityInfo:
         """Return a representation of the number entity."""
         return NumberEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             engineering_units=self._analog_output_cluster_handler.engineering_units,
             application_type=self._analog_output_cluster_handler.application_type,
             min_value=self.native_min_value,
@@ -145,9 +146,10 @@ class Number(PlatformEntity, NumberEntityInterface):
     @property
     def state(self) -> dict[str, Any]:
         """Return the state of the entity."""
-        response = super().state
-        response["state"] = self.native_value
-        return response
+        return EntityState(
+            **super().state,
+            state=self.native_value,
+        ).model_dump()
 
     @property
     def native_value(self) -> float | None:
@@ -308,7 +310,7 @@ class NumberConfigurationEntity(PlatformEntity):
     def info_object(self) -> NumberConfigurationEntityInfo:
         """Return a representation of the number entity."""
         return NumberConfigurationEntityInfo(
-            **super().info_object.model_dump(),
+            **super().info_object.model_dump(exclude=["model_class_name"]),
             min_value=self._attr_native_min_value,
             max_value=self._attr_native_max_value,
             step=self._attr_native_step,
@@ -318,9 +320,10 @@ class NumberConfigurationEntity(PlatformEntity):
     @property
     def state(self) -> dict[str, Any]:
         """Return the state of the entity."""
-        response = super().state
-        response["state"] = self.native_value
-        return response
+        return EntityState(
+            **super().state,
+            state=self.native_value,
+        ).model_dump()
 
     @property
     def native_value(self) -> float | None:
