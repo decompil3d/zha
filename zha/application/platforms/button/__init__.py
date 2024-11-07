@@ -181,6 +181,13 @@ class WriteAttributeButton(PlatformEntity):
             attribute_value=self._attribute_value,
         )
 
+    @property
+    def state(self) -> dict[str, Any]:
+        """Return the state of the button."""
+        return EntityState(
+            **super().state,
+        ).model_dump()
+
     async def async_press(self) -> None:
         """Write attribute with defined value."""
         await self._cluster_handler.write_attributes_safe(
