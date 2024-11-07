@@ -19,6 +19,7 @@ from zha.application.platforms.button.model import (
     WriteAttributeButtonEntityInfo,
 )
 from zha.application.platforms.const import EntityCategory
+from zha.application.platforms.model import EntityState
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.zigbee.cluster_handlers.const import CLUSTER_HANDLER_IDENTIFY
 
@@ -85,6 +86,13 @@ class Button(PlatformEntity, ButtonEntityInterface):
             args=self._args,
             kwargs=self._kwargs,
         )
+
+    @property
+    def state(self) -> dict[str, Any]:
+        """Return the state of the button."""
+        return EntityState(
+            **super().state,
+        ).model_dump()
 
     @functools.cached_property
     def args(self) -> list[Any]:
