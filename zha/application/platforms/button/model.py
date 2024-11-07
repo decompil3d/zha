@@ -28,6 +28,7 @@ class CommandButtonEntityInfo(BaseEntityInfo):
     command: str
     args: list[Any]
     kwargs: dict[str, Any]
+    state: EntityState
 
 
 class WriteAttributeButtonEntityInfo(BaseEntityInfo):
@@ -35,3 +36,4 @@ class WriteAttributeButtonEntityInfo(BaseEntityInfo):
 
     attribute_name: str
     attribute_value: Any
+    state: EntityState
