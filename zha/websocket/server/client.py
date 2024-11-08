@@ -19,6 +19,7 @@ from zha.websocket.const import (
     MODEL_CLASS_NAME,
     SUCCESS,
     WEBSOCKET_API,
+    ZIGBEE_ERROR,
     ZIGBEE_ERROR_CODE,
     APICommands,
     EventTypes,
@@ -115,7 +116,7 @@ class Client:
         """Send zigbee error result prompted by a client zigbee request."""
         self.send_result_error(
             command,
-            error_code="zigbee_error",
+            error_code=ZIGBEE_ERROR,
             error_message=error_message,
             data={ZIGBEE_ERROR_CODE: zigbee_error_code},
         )
