@@ -7,6 +7,7 @@ from zigpy.state import CounterGroups, NetworkInfo, NodeInfo, State
 from zigpy.types.named import EUI64
 
 from zha.application.model import (
+    ConnectionLostEvent,
     DeviceFullyInitializedEvent,
     DeviceJoinedEvent,
     DeviceLeftEvent,
@@ -22,8 +23,20 @@ from zha.application.model import (
 from zha.application.platforms.events import EntityStateChangedEvent
 from zha.model import BaseModel, TypedBaseModel, as_tagged_union
 from zha.websocket.const import APICommands
-from zha.zigbee.cluster_handlers.model import ClusterInfo
-from zha.zigbee.model import ExtendedDeviceInfo, GroupInfo, ZHAEvent
+from zha.zigbee.cluster_handlers.model import (
+    ClusterAttributeUpdatedEvent,
+    ClusterBindEvent,
+    ClusterConfigureReportingEvent,
+    ClusterInfo,
+    LevelChangeEvent,
+)
+from zha.zigbee.cluster_handlers.security import ClusterHandlerStateChangedEvent
+from zha.zigbee.model import (
+    ClusterHandlerConfigurationComplete,
+    ExtendedDeviceInfo,
+    GroupInfo,
+    ZHAEvent,
+)
 
 
 class WebSocketCommand(TypedBaseModel):
@@ -111,12 +124,6 @@ class ErrorResponse(WebSocketCommandResponse):
     error_code: str
     error_message: str
     zigbee_error_code: Optional[str] = None
-    command: APICommands
-
-
-class DefaultResponse(WebSocketCommandResponse):
-    """Default command response."""
-
     command: APICommands
 
 
@@ -264,6 +271,13 @@ Events = (
     | DeviceOfflineEvent
     | DeviceOnlineEvent
     | ZHAEvent
+    | ConnectionLostEvent
+    | ClusterAttributeUpdatedEvent
+    | ClusterBindEvent
+    | ClusterConfigureReportingEvent
+    | LevelChangeEvent
+    | ClusterHandlerStateChangedEvent
+    | ClusterHandlerConfigurationComplete
 )
 
 Messages = CommandResponses | Events
