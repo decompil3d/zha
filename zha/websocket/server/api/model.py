@@ -1,8 +1,8 @@
 """Models for the websocket API."""
 
-from typing import Annotated, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
-from pydantic import Field, field_serializer, field_validator
+from pydantic import field_serializer, field_validator
 from zigpy.state import CounterGroups, NetworkInfo, NodeInfo, State
 from zigpy.types.named import EUI64
 
@@ -20,13 +20,13 @@ from zha.application.model import (
     RawDeviceInitializedEvent,
 )
 from zha.application.platforms.events import EntityStateChangedEvent
-from zha.model import BaseModel
+from zha.model import BaseModel, TypedBaseModel, as_tagged_union
 from zha.websocket.const import APICommands
 from zha.zigbee.cluster_handlers.model import ClusterInfo
 from zha.zigbee.model import ExtendedDeviceInfo, GroupInfo, ZHAEvent
 
 
-class WebSocketCommand(BaseModel):
+class WebSocketCommand(TypedBaseModel):
     """Command for the websocket API."""
 
     message_id: int = 1
@@ -111,136 +111,27 @@ class ErrorResponse(WebSocketCommandResponse):
     error_code: str
     error_message: str
     zigbee_error_code: Optional[str] = None
-    command: Literal[
-        "error.start_network",
-        "error.stop_network",
-        "error.remove_device",
-        "error.stop_server",
-        "error.light_turn_on",
-        "error.light_turn_off",
-        "error.light_restore_external_state_attributes",
-        "error.switch_turn_on",
-        "error.switch_turn_off",
-        "error.lock_lock",
-        "error.lock_unlock",
-        "error.lock_set_user_lock_code",
-        "error.lock_clear_user_lock_code",
-        "error.lock_disable_user_lock_code",
-        "error.lock_enable_user_lock_code",
-        "error.lock_restore_external_state_attributes",
-        "error.fan_turn_on",
-        "error.fan_turn_off",
-        "error.fan_set_percentage",
-        "error.fan_set_preset_mode",
-        "error.cover_open",
-        "error.cover_open_tilt",
-        "error.cover_close",
-        "error.cover_close_tilt",
-        "error.cover_set_position",
-        "error.cover_set_tilt_position",
-        "error.cover_stop",
-        "error.cover_stop_tilt",
-        "error.cover_restore_external_state_attributes",
-        "error.climate_set_fan_mode",
-        "error.climate_set_hvac_mode",
-        "error.climate_set_preset_mode",
-        "error.climate_set_temperature",
-        "error.button_press",
-        "error.alarm_control_panel_disarm",
-        "error.alarm_control_panel_arm_home",
-        "error.alarm_control_panel_arm_away",
-        "error.alarm_control_panel_arm_night",
-        "error.alarm_control_panel_trigger",
-        "error.select_select_option",
-        "error.select_restore_external_state_attributes",
-        "error.siren_turn_on",
-        "error.siren_turn_off",
-        "error.number_set_value",
-        "error.platform_entity_refresh_state",
-        "error.platform_entity_enable",
-        "error.platform_entity_disable",
-        "error.client_listen",
-        "error.client_listen_raw_zcl",
-        "error.client_disconnect",
-        "error.reconfigure_device",
-        "error.UpdateNetworkTopologyCommand",
-        "error.create_group",
-        "error.firmware_install",
-        "error.get_application_state",
-    ]
+    command: APICommands
 
 
 class DefaultResponse(WebSocketCommandResponse):
     """Default command response."""
 
-    command: Literal[
-        "start_network",
-        "stop_network",
-        "remove_device",
-        "stop_server",
-        "light_turn_on",
-        "light_turn_off",
-        "light_restore_external_state_attributes",
-        "switch_turn_on",
-        "switch_turn_off",
-        "lock_lock",
-        "lock_unlock",
-        "lock_set_user_lock_code",
-        "lock_clear_user_lock_code",
-        "lock_disable_user_lock_code",
-        "lock_enable_user_lock_code",
-        "lock_restore_external_state_attributes",
-        "fan_turn_on",
-        "fan_turn_off",
-        "fan_set_percentage",
-        "fan_set_preset_mode",
-        "cover_open",
-        "cover_close",
-        "cover_set_position",
-        "cover_stop",
-        "cover_stop_tilt",
-        "cover_open_tilt",
-        "cover_close_tilt",
-        "cover_set_tilt_position",
-        "cover_restore_external_state_attributes",
-        "climate_set_fan_mode",
-        "climate_set_hvac_mode",
-        "climate_set_preset_mode",
-        "climate_set_temperature",
-        "button_press",
-        "alarm_control_panel_disarm",
-        "alarm_control_panel_arm_home",
-        "alarm_control_panel_arm_away",
-        "alarm_control_panel_arm_night",
-        "alarm_control_panel_trigger",
-        "select_select_option",
-        "select_restore_external_state_attributes",
-        "siren_turn_on",
-        "siren_turn_off",
-        "number_set_value",
-        "platform_entity_refresh_state",
-        "platform_entity_enable",
-        "platform_entity_disable",
-        "client_listen",
-        "client_listen_raw_zcl",
-        "client_disconnect",
-        "reconfigure_device",
-        "UpdateNetworkTopologyCommand",
-        "firmware_install",
-    ]
+    command: APICommands
 
 
 class PermitJoiningResponse(WebSocketCommandResponse):
     """Get devices response."""
 
-    command: Literal["permit_joining"] = "permit_joining"
-    duration: int
+    command: Literal[APICommands.PERMIT_JOINING] = APICommands.PERMIT_JOINING
+    duration: int | None = None
+    ieee: EUI64 | None = None
 
 
 class GetDevicesResponse(WebSocketCommandResponse):
     """Get devices response."""
 
-    command: Literal["get_devices"] = "get_devices"
+    command: Literal[APICommands.GET_DEVICES] = APICommands.GET_DEVICES
     devices: dict[EUI64, ExtendedDeviceInfo]
 
     @field_serializer("devices", check_fields=False)
@@ -262,7 +153,9 @@ class GetDevicesResponse(WebSocketCommandResponse):
 class ReadClusterAttributesResponse(WebSocketCommandResponse):
     """Read cluster attributes response."""
 
-    command: Literal["read_cluster_attributes"] = "read_cluster_attributes"
+    command: Literal[APICommands.READ_CLUSTER_ATTRIBUTES] = (
+        APICommands.READ_CLUSTER_ATTRIBUTES
+    )
     device: ExtendedDeviceInfo
     cluster: ClusterInfo
     manufacturer_code: Optional[int]
@@ -280,7 +173,9 @@ class AttributeStatus(BaseModel):
 class WriteClusterAttributeResponse(WebSocketCommandResponse):
     """Write cluster attribute response."""
 
-    command: Literal["write_cluster_attribute"] = "write_cluster_attribute"
+    command: Literal[APICommands.WRITE_CLUSTER_ATTRIBUTE] = (
+        APICommands.WRITE_CLUSTER_ATTRIBUTE
+    )
     device: ExtendedDeviceInfo
     cluster: ClusterInfo
     manufacturer_code: Optional[int]
@@ -290,14 +185,18 @@ class WriteClusterAttributeResponse(WebSocketCommandResponse):
 class GroupsResponse(WebSocketCommandResponse):
     """Get groups response."""
 
-    command: Literal["get_groups", "remove_groups"]
+    command: Literal[APICommands.GET_GROUPS, APICommands.REMOVE_GROUPS]
     groups: dict[int, GroupInfo]
 
 
 class UpdateGroupResponse(WebSocketCommandResponse):
     """Update group response."""
 
-    command: Literal["create_group", "add_group_members", "remove_group_members"]
+    command: Literal[
+        APICommands.CREATE_GROUP,
+        APICommands.ADD_GROUP_MEMBERS,
+        APICommands.REMOVE_GROUP_MEMBERS,
+    ]
     group: GroupInfo
 
 
@@ -338,37 +237,38 @@ class GetApplicationStateResponse(WebSocketCommandResponse):
         return state
 
 
-CommandResponses = Annotated[
-    Union[
-        DefaultResponse,
-        ErrorResponse,
-        GetDevicesResponse,
-        GroupsResponse,
-        PermitJoiningResponse,
-        UpdateGroupResponse,
-        ReadClusterAttributesResponse,
-        WriteClusterAttributeResponse,
-        GetApplicationStateResponse,
-    ],
-    Field(discriminator="command"),
-]
+CommandResponses = (
+    WebSocketCommandResponse
+    | ErrorResponse
+    | GetDevicesResponse
+    | GroupsResponse
+    | PermitJoiningResponse
+    | UpdateGroupResponse
+    | ReadClusterAttributesResponse
+    | WriteClusterAttributeResponse
+    | GetApplicationStateResponse
+)
 
 
-Events = Annotated[
-    Union[
-        EntityStateChangedEvent,
-        DeviceJoinedEvent,
-        RawDeviceInitializedEvent,
-        DeviceFullyInitializedEvent,
-        DeviceLeftEvent,
-        DeviceRemovedEvent,
-        GroupRemovedEvent,
-        GroupAddedEvent,
-        GroupMemberAddedEvent,
-        GroupMemberRemovedEvent,
-        DeviceOfflineEvent,
-        DeviceOnlineEvent,
-        ZHAEvent,
-    ],
-    Field(discriminator="event"),
-]
+Events = (
+    EntityStateChangedEvent
+    | DeviceJoinedEvent
+    | RawDeviceInitializedEvent
+    | DeviceFullyInitializedEvent
+    | DeviceLeftEvent
+    | DeviceRemovedEvent
+    | GroupRemovedEvent
+    | GroupAddedEvent
+    | GroupMemberAddedEvent
+    | GroupMemberRemovedEvent
+    | DeviceOfflineEvent
+    | DeviceOnlineEvent
+    | ZHAEvent
+)
+
+Messages = CommandResponses | Events
+
+if not TYPE_CHECKING:
+    CommandResponses = as_tagged_union(CommandResponses)
+    Events = as_tagged_union(Events)
+    Messages = as_tagged_union(Messages)

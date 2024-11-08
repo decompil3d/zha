@@ -16,7 +16,6 @@ from zha.websocket.const import (
     ERROR_CODE,
     ERROR_MESSAGE,
     MESSAGE_ID,
-    MESSAGE_TYPE,
     SUCCESS,
     WEBSOCKET_API,
     ZIGBEE_ERROR_CODE,
@@ -25,7 +24,11 @@ from zha.websocket.const import (
     MessageTypes,
 )
 from zha.websocket.server.api import decorators, register_api_command
-from zha.websocket.server.api.model import WebSocketCommand, WebSocketCommandResponse
+from zha.websocket.server.api.model import (
+    ErrorResponse,
+    WebSocketCommand,
+    WebSocketCommandResponse,
+)
 
 if TYPE_CHECKING:
     from zha.application.gateway import WebSocketServerGateway
@@ -92,14 +95,13 @@ class Client:
         message = {
             SUCCESS: False,
             MESSAGE_ID: command.message_id,
-            MESSAGE_TYPE: MessageTypes.RESULT,
-            COMMAND: f"error.{command.command}",
+            COMMAND: command.command,
             ERROR_CODE: error_code,
             ERROR_MESSAGE: error_message,
         }
         if data:
             message.update(data)
-        self._send_data(message)
+        self._send_data(ErrorResponse(**message))
 
     def send_result_zigbee_error(
         self,

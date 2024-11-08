@@ -1,17 +1,11 @@
 """Models that represent messages in zha."""
 
-from typing import Annotated
-
 from pydantic import RootModel
-from pydantic.fields import Field
 
-from zha.websocket.server.api.model import CommandResponses, Events
+from zha.websocket.server.api.model import Messages
 
 
 class Message(RootModel):
     """Response model."""
 
-    root: Annotated[
-        CommandResponses | Events,
-        Field(discriminator="message_type"),
-    ]
+    root: Messages

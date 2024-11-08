@@ -160,7 +160,7 @@ def as_tagged_union(union):
     ]
 
 
-class BaseEvent(BaseModel):
+class BaseEvent(TypedBaseModel):
     """Base model for ZHA events."""
 
     message_type: Literal["event"] = "event"

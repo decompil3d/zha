@@ -31,12 +31,14 @@ def test_ser_deser_zha_event():
         "device_ieee": "00:00:00:00:00:00:00:00",
         "unique_id": "00:00:00:00:00:00:00:00",
         "data": {"key": "value"},
+        "model_class_name": "ZHAEvent",
     }
 
     assert (
         zha_event.model_dump_json()
         == '{"message_type":"event","event_type":"device_event","event":"zha_event",'
-        '"device_ieee":"00:00:00:00:00:00:00:00","unique_id":"00:00:00:00:00:00:00:00","data":{"key":"value"}}'
+        '"device_ieee":"00:00:00:00:00:00:00:00","unique_id":"00:00:00:00:00:00:00:00",'
+        '"data":{"key":"value"},"model_class_name":"ZHAEvent"}'
     )
 
     device_info = DeviceInfo(
