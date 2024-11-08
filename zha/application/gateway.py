@@ -911,7 +911,7 @@ class WebSocketClientGateway(BaseGateway):
             f"ws://{config.ws_client_config.host}:{config.ws_client_config.port}"
         )
         self._client: Client = Client(
-            self._ws_server_url, config.ws_client_config.aiohttp_session
+            self._ws_server_url, aiohttp_session=config.ws_client_config.aiohttp_session
         )
         self._devices: dict[EUI64, WebSocketClientDevice] = {}
         self._groups: dict[int, WebSocketClientGroup] = {}

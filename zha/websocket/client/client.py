@@ -14,7 +14,7 @@ from aiohttp.http_websocket import WSMsgType
 from async_timeout import timeout
 
 from zha.event import EventBase
-from zha.exceptions import ZHAException
+from zha.websocket import ZHAWebSocketException
 from zha.websocket.client.model.messages import Message
 from zha.websocket.server.api.model import WebSocketCommand, WebSocketCommandResponse
 
@@ -28,8 +28,8 @@ class Client(EventBase):
     def __init__(
         self,
         ws_server_url: str,
-        aiohttp_session: ClientSession | None = None,
         *args: Any,
+        aiohttp_session: ClientSession | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the Client class."""
@@ -120,7 +120,7 @@ class Client(EventBase):
             )
         except client_exceptions.ClientError as err:
             _LOGGER.exception("Error connecting to server", exc_info=err)
-            raise err
+            raise ZHAWebSocketException from err
 
     async def listen_loop(self) -> None:
         """Listen to the websocket."""
@@ -132,7 +132,7 @@ class Client(EventBase):
     async def listen(self) -> None:
         """Start listening to the websocket."""
         if not self.connected:
-            raise Exception("Not connected when start listening")  # noqa: TRY002
+            raise ZHAWebSocketException("Not connected when start listening")
 
         assert self._client
 
@@ -170,13 +170,13 @@ class Client(EventBase):
         msg = await self._client.receive()
 
         if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.CLOSING):
-            raise Exception("Connection was closed.")  # noqa: TRY002
+            raise ZHAWebSocketException(f"Connection was closed: {msg}")
 
         if msg.type == WSMsgType.ERROR:
-            raise Exception()  # noqa: TRY002
+            raise ZHAWebSocketException(f"WS message type was ERROR: {msg}")
 
         if msg.type != WSMsgType.TEXT:
-            raise Exception(f"Received non-Text message: {msg.type}")  # noqa: TRY002
+            raise ZHAWebSocketException(f"Received non-Text message: {msg}")
 
         try:
             if len(msg.data) > SIZE_PARSE_JSON_EXECUTOR:
@@ -184,7 +184,7 @@ class Client(EventBase):
             else:
                 data = msg.json()
         except ValueError as err:
-            raise Exception("Received invalid JSON.") from err  # noqa: TRY002
+            raise ZHAWebSocketException(f"Received invalid JSON: {msg}") from err
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug("Received message:\n%s\n", pprint.pformat(msg))
@@ -199,12 +199,12 @@ class Client(EventBase):
 
         try:
             message = Message.model_validate(msg).root
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             _LOGGER.exception("Error parsing message: %s", msg, exc_info=err)
             if msg["message_type"] == "result":
                 future = self._result_futures.get(msg["message_id"])
                 if future is not None:
-                    future.set_exception(err)
+                    future.set_exception(ZHAWebSocketException(err))
                     return
             return
 
@@ -220,9 +220,9 @@ class Client(EventBase):
                 return
 
             if msg["error_code"] != "zigbee_error":
-                error = ZHAException(msg["message_id"], msg["error_code"])
+                error = ZHAWebSocketException(msg["message_id"], msg["error_code"])
             else:
-                error = ZHAException(
+                error = ZHAWebSocketException(
                     msg["message_id"],
                     msg["zigbee_error_code"],
                     msg["zigbee_error_message"],
@@ -242,8 +242,9 @@ class Client(EventBase):
 
         try:
             self.emit(message.event_type, message)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             _LOGGER.exception("Error handling event", exc_info=err)
+            raise ZHAWebSocketException from err
 
     async def _send_json_message(self, message: str) -> None:
         """Send a message.
@@ -251,7 +252,7 @@ class Client(EventBase):
         Raises NotConnected if client not connected.
         """
         if not self.connected:
-            raise Exception()  # noqa: TRY002
+            raise ZHAWebSocketException("Sending message failed: no active connection.")
 
         _LOGGER.debug("Publishing message:\n%s\n", pprint.pformat(message))
 
