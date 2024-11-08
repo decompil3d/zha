@@ -39,6 +39,7 @@ from zha.application.platforms.fan.helpers import (
 )
 from zha.application.platforms.fan.model import FanEntityInfo, FanState
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers import wrap_zigpy_exceptions
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
@@ -282,7 +283,7 @@ class Fan(PlatformEntity, BaseFan):
     def info_object(self) -> FanEntityInfo:
         """Return a representation of the binary sensor."""
         return FanEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             preset_modes=self.preset_modes,
             supported_features=self.supported_features,
             speed_count=self.speed_count,
@@ -352,7 +353,7 @@ class FanGroup(GroupEntity, BaseFan):
     def info_object(self) -> FanEntityInfo:
         """Return a representation of the binary sensor."""
         return FanEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             preset_modes=self.preset_modes,
             supported_features=self.supported_features,
             speed_count=self.speed_count,

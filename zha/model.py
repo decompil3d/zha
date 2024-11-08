@@ -20,6 +20,7 @@ from pydantic import (
 from zigpy.types.named import EUI64, NWK
 
 from zha.event import EventBase
+from zha.websocket.const import MODEL_CLASS_NAME
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -138,7 +139,7 @@ class TypedBaseModel(BaseModel):
             case TypedBaseModel():
                 return x.__class__.__name__
             case dict() as serialized:
-                return serialized.pop("model_class_name", None)
+                return serialized.pop(MODEL_CLASS_NAME, None)
             case _:
                 return None
 

@@ -6,6 +6,7 @@ from typing import Any, Literal, cast
 
 from zigpy.types.named import EUI64
 
+from zha.application.const import ATTR_ENDPOINT_ID, ATTR_IEEE, ATTR_MEMBERS
 from zha.application.platforms.alarm_control_panel.model import (
     AlarmControlPanelEntityInfo,
 )
@@ -104,6 +105,7 @@ from zha.application.websocket_api import (
     WriteClusterAttributeCommand,
 )
 from zha.websocket.client.client import Client
+from zha.websocket.const import GROUP_ID, GROUP_IDS, GROUP_NAME
 from zha.websocket.server.api.model import (
     GetDevicesResponse,
     GroupsResponse,
@@ -838,12 +840,12 @@ class GroupHelper:
     ) -> GroupInfo:
         """Create a new group."""
         request_data: dict[str, Any] = {
-            "group_name": name,
-            "group_id": group_id,
+            GROUP_NAME: name,
+            GROUP_ID: group_id,
         }
         if members is not None:
-            request_data["members"] = [
-                {"ieee": member.ieee, "endpoint_id": member.endpoint_id}
+            request_data[ATTR_MEMBERS] = [
+                {ATTR_IEEE: member.ieee, ATTR_ENDPOINT_ID: member.endpoint_id}
                 for member in members
             ]
 
@@ -857,7 +859,7 @@ class GroupHelper:
     async def remove_groups(self, groups: list[GroupInfo]) -> dict[int, GroupInfo]:
         """Remove groups."""
         request: dict[str, Any] = {
-            "group_ids": [group.group_id for group in groups],
+            GROUP_IDS: [group.group_id for group in groups],
         }
         command = RemoveGroupsCommand(**request)
         response = cast(
@@ -871,9 +873,9 @@ class GroupHelper:
     ) -> GroupInfo:
         """Add members to a group."""
         request_data: dict[str, Any] = {
-            "group_id": group.group_id,
-            "members": [
-                {"ieee": member.ieee, "endpoint_id": member.endpoint_id}
+            GROUP_ID: group.group_id,
+            ATTR_MEMBERS: [
+                {ATTR_IEEE: member.ieee, ATTR_ENDPOINT_ID: member.endpoint_id}
                 for member in members
             ],
         }
@@ -890,9 +892,9 @@ class GroupHelper:
     ) -> GroupInfo:
         """Remove members from a group."""
         request_data: dict[str, Any] = {
-            "group_id": group.group_id,
-            "members": [
-                {"ieee": member.ieee, "endpoint_id": member.endpoint_id}
+            GROUP_ID: group.group_id,
+            ATTR_MEMBERS: [
+                {ATTR_IEEE: member.ieee, ATTR_ENDPOINT_ID: member.endpoint_id}
                 for member in members
             ],
         }
@@ -1025,7 +1027,7 @@ class NetworkHelper:
         if device is not None:
             if device.device_type == "EndDevice":
                 raise ValueError("Device is not a coordinator or router")
-            request_data["ieee"] = device.ieee
+            request_data[ATTR_IEEE] = device.ieee
         command = PermitJoiningCommand(**request_data)
         response = cast(
             PermitJoiningResponse,

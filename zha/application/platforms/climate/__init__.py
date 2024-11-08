@@ -44,6 +44,7 @@ from zha.application.platforms.climate.model import (
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.decorators import periodic
 from zha.units import UnitOfTemperature
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
     CLUSTER_HANDLER_FAN,
@@ -223,7 +224,7 @@ class Thermostat(PlatformEntity, ClimateEntityInterface):
     def info_object(self) -> ThermostatEntityInfo:
         """Return a representation of the thermostat."""
         return ThermostatEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             max_temp=self.max_temp,
             min_temp=self.min_temp,
             supported_features=self.supported_features,

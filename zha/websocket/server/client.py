@@ -16,6 +16,7 @@ from zha.websocket.const import (
     ERROR_CODE,
     ERROR_MESSAGE,
     MESSAGE_ID,
+    MODEL_CLASS_NAME,
     SUCCESS,
     WEBSOCKET_API,
     ZIGBEE_ERROR_CODE,
@@ -80,7 +81,7 @@ class Client:
                 data = {}
             self._send_data(
                 response_type(
-                    **command.model_dump(exclude=["model_class_name"]),
+                    **command.model_dump(exclude=[MODEL_CLASS_NAME]),
                     success=True,
                     **data,
                 )

@@ -34,6 +34,7 @@ from zha.application.platforms.cover.model import (
 )
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.exceptions import ZHAException
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.closures import WindowCoveringClusterHandler
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
@@ -167,7 +168,7 @@ class Cover(PlatformEntity, CoverEntityInterface):
     def info_object(self) -> CoverEntityInfo:
         """Return the info object for this entity."""
         return CoverEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             supported_features=self.supported_features,
         )
 
@@ -485,7 +486,7 @@ class Shade(PlatformEntity):
     def info_object(self) -> ShadeEntityInfo:
         """Return the info object for this entity."""
         return ShadeEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             supported_features=self.supported_features,
         )
 

@@ -22,6 +22,7 @@ from zha.application.platforms.alarm_control_panel.model import (
 )
 from zha.application.platforms.model import EntityState
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_IAS_ACE,
     CLUSTER_HANDLER_STATE_CHANGED,
@@ -114,7 +115,7 @@ class AlarmControlPanel(PlatformEntity, AlarmControlPanelEntityInterface):
     def info_object(self) -> AlarmControlPanelEntityInfo:
         """Return a representation of the alarm control panel."""
         return AlarmControlPanelEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             code_arm_required=self.code_arm_required,
             code_format=self.code_format,
             supported_features=self.supported_features,

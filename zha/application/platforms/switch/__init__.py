@@ -28,6 +28,7 @@ from zha.application.platforms.switch.model import (
     SwitchState,
 )
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
     CLUSTER_HANDLER_BASIC,
@@ -131,7 +132,7 @@ class Switch(PlatformEntity, BaseSwitch):
     def info_object(self) -> SwitchEntityInfo:
         """Return representation of the switch entity."""
         return SwitchEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
         )
 
     @property
@@ -163,7 +164,7 @@ class SwitchGroup(GroupEntity, BaseSwitch):
     def info_object(self) -> SwitchEntityInfo:
         """Return representation of the switch entity."""
         return SwitchEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
         )
 
     @property
@@ -278,7 +279,7 @@ class ConfigurableAttributeSwitch(PlatformEntity):
     def info_object(self) -> ConfigurableAttributeSwitchEntityInfo:
         """Return representation of the switch configuration entity."""
         return ConfigurableAttributeSwitchEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             attribute_name=self._attribute_name,
             invert_attribute_name=self._inverter_attribute_name,
             force_inverted=self._force_inverted,

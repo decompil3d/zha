@@ -35,6 +35,7 @@ from zha.application.platforms.siren.const import (
 )
 from zha.application.platforms.siren.model import SirenEntityInfo
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import CLUSTER_HANDLER_IAS_WD
 from zha.zigbee.cluster_handlers.security import IasWdClusterHandler
 
@@ -110,7 +111,7 @@ class Siren(PlatformEntity, SirenEntityInterface):
     def info_object(self) -> SirenEntityInfo:
         """Return representation of the siren."""
         return SirenEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             available_tones=self._attr_available_tones,
             supported_features=self._attr_supported_features,
         )

@@ -19,6 +19,7 @@ from zha.application.platforms.device_tracker.model import (
 from zha.application.platforms.sensor import Battery
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.decorators import periodic
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
     CLUSTER_HANDLER_POWER_CONFIGURATION,
@@ -104,7 +105,7 @@ class DeviceScannerEntity(PlatformEntity, DeviceTrackerEntityInterface):
     def info_object(self) -> DeviceTrackerEntityInfo:
         """Return a representation of the device tracker."""
         return DeviceTrackerEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"])
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME])
         )
 
     @property

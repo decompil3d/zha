@@ -21,6 +21,7 @@ from zha.application.platforms.button.model import (
 from zha.application.platforms.const import EntityCategory
 from zha.application.platforms.model import EntityState
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import CLUSTER_HANDLER_IDENTIFY
 
 if TYPE_CHECKING:
@@ -81,7 +82,7 @@ class Button(PlatformEntity, ButtonEntityInterface):
     def info_object(self) -> CommandButtonEntityInfo:
         """Return a representation of the button."""
         return CommandButtonEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             command=self._command_name,
             args=self._args,
             kwargs=self._kwargs,
@@ -176,7 +177,7 @@ class WriteAttributeButton(PlatformEntity):
     def info_object(self) -> WriteAttributeButtonEntityInfo:
         """Return a representation of the button."""
         return WriteAttributeButtonEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             attribute_name=self._attribute_name,
             attribute_value=self._attribute_value,
         )

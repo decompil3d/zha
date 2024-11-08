@@ -29,6 +29,7 @@ from zha.application.platforms.number.model import (
 )
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.units import UnitOfMass, UnitOfTemperature, UnitOfTime, validate_unit
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ANALOG_OUTPUT,
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
@@ -131,7 +132,7 @@ class Number(PlatformEntity, NumberEntityInterface):
     def info_object(self) -> NumberEntityInfo:
         """Return a representation of the number entity."""
         return NumberEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             engineering_units=self._analog_output_cluster_handler.engineering_units,
             application_type=self._analog_output_cluster_handler.application_type,
             min_value=self.native_min_value,
@@ -310,7 +311,7 @@ class NumberConfigurationEntity(PlatformEntity):
     def info_object(self) -> NumberConfigurationEntityInfo:
         """Return a representation of the number entity."""
         return NumberConfigurationEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             min_value=self._attr_native_min_value,
             max_value=self._attr_native_max_value,
             step=self._attr_native_step,

@@ -32,6 +32,7 @@ from zha.application.platforms.update.model import (
 )
 from zha.application.registries import PLATFORM_ENTITIES
 from zha.exceptions import ZHAException
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
     CLUSTER_HANDLER_OTA,
@@ -167,7 +168,7 @@ class FirmwareUpdateEntity(PlatformEntity, FirmwareUpdateEntityInterface):
     def info_object(self) -> FirmwareUpdateEntityInfo:
         """Return a representation of the entity."""
         return FirmwareUpdateEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             supported_features=self.supported_features,
         )
 

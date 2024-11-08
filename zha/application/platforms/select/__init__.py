@@ -31,6 +31,7 @@ from zha.application.platforms.select.model import (
     SelectEntityInfo,
 )
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
     CLUSTER_HANDLER_HUE_OCCUPANCY,
@@ -100,7 +101,7 @@ class EnumSelectEntity(PlatformEntity, SelectEntityInterface):
     def info_object(self) -> EnumSelectEntityInfo:
         """Return a representation of the select."""
         return EnumSelectEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             enum=self._enum.__name__,
             options=self._attr_options,
         )
@@ -243,7 +244,7 @@ class ZCLEnumSelectEntity(PlatformEntity, SelectEntityInterface):
     def info_object(self) -> EnumSelectEntityInfo:
         """Return a representation of the select."""
         return EnumSelectEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             enum=self._enum.__name__,
             options=self._attr_options,
         )

@@ -71,6 +71,7 @@ from zha.units import (
     UnitOfVolumeFlowRate,
     validate_unit,
 )
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ANALOG_INPUT,
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
@@ -214,7 +215,7 @@ class Sensor(PlatformEntity):
     def info_object(self) -> SensorEntityInfo:
         """Return a representation of the sensor."""
         return SensorEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -413,7 +414,7 @@ class DeviceCounterSensor(BaseEntity):
     @property
     def info_object(self) -> DeviceCounterSensorEntityInfo:
         """Return a representation of the platform entity."""
-        data = super().info_object.model_dump(exclude=["model_class_name"])
+        data = super().info_object.model_dump(exclude=[MODEL_CLASS_NAME])
         data.pop("device_ieee")
         data.pop("available")
         return DeviceCounterSensorEntityInfo(
@@ -571,7 +572,7 @@ class Battery(Sensor):
     def info_object(self) -> BatteryEntityInfo:
         """Return a representation of the sensor."""
         return BatteryEntityInfo(
-            **super(Sensor, self).info_object.model_dump(exclude=["model_class_name"]),
+            **super(Sensor, self).info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -637,7 +638,7 @@ class ElectricalMeasurement(PollableSensor):
     def info_object(self) -> ElectricalMeasurementEntityInfo:
         """Return a representation of the sensor."""
         return ElectricalMeasurementEntityInfo(
-            **super(Sensor, self).info_object.model_dump(exclude=["model_class_name"]),
+            **super(Sensor, self).info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -914,7 +915,7 @@ class SmartEnergyMetering(PollableSensor):
     def info_object(self) -> SmartEnergyMeteringEntityInfo:
         """Return a representation of the sensor."""
         return SmartEnergyMeteringEntityInfo(
-            **super(Sensor, self).info_object.model_dump(exclude=["model_class_name"]),
+            **super(Sensor, self).info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,
@@ -1734,7 +1735,7 @@ class SetpointChangeSourceTimestamp(TimestampSensor):
     def info_object(self) -> SetpointChangeSourceTimestampSensorEntityInfo:
         """Return the info object for this entity."""
         return SetpointChangeSourceTimestampSensorEntityInfo(
-            **super(Sensor, self).info_object.model_dump(exclude=["model_class_name"]),
+            **super(Sensor, self).info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             attribute=self._attribute_name,
             decimals=self._decimals,
             divisor=self._divisor,

@@ -21,6 +21,7 @@ from zha.application.platforms.const import EntityCategory
 from zha.application.platforms.helpers import validate_device_class
 from zha.application.platforms.model import EntityState
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ACCELEROMETER,
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
@@ -97,7 +98,7 @@ class BinarySensor(PlatformEntity, BinarySensorEntityInterface):
     def info_object(self) -> BinarySensorEntityInfo:
         """Return a representation of the binary sensor."""
         return BinarySensorEntityInfo(
-            **super().info_object.model_dump(exclude=["model_class_name"]),
+            **super().info_object.model_dump(exclude=[MODEL_CLASS_NAME]),
             attribute_name=self._attribute_name,
         )
 

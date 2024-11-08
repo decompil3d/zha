@@ -12,10 +12,22 @@ from typing import Any
 from aiohttp import ClientSession, ClientWebSocketResponse, client_exceptions
 from aiohttp.http_websocket import WSMsgType
 from async_timeout import timeout
+from pydantic_core import ValidationError
 
 from zha.event import EventBase
 from zha.websocket import ZHAWebSocketException
 from zha.websocket.client.model.messages import Message
+from zha.websocket.const import (
+    COMMAND,
+    ERROR_CODE,
+    MESSAGE_ID,
+    MESSAGE_TYPE,
+    SUCCESS,
+    ZIGBEE_ERROR,
+    ZIGBEE_ERROR_CODE,
+    ZIGBEE_ERROR_MESSAGE,
+    MessageTypes,
+)
 from zha.websocket.server.api.model import WebSocketCommand, WebSocketCommandResponse
 
 SIZE_PARSE_JSON_EXECUTOR = 8192
@@ -92,7 +104,7 @@ class Client(EventBase):
         except TimeoutError:
             _LOGGER.exception("Timeout waiting for response")
             return WebSocketCommandResponse.model_validate(
-                {"message_id": message_id, "success": False, "command": command.command}
+                {MESSAGE_ID: message_id, SUCCESS: False, COMMAND: command.command}
             )
         finally:
             self._result_futures.pop(message_id)
@@ -199,43 +211,45 @@ class Client(EventBase):
 
         try:
             message = Message.model_validate(msg).root
-        except Exception as err:  # pylint: disable=broad-except
+        except ValidationError as err:
             _LOGGER.exception("Error parsing message: %s", msg, exc_info=err)
-            if msg["message_type"] == "result":
-                future = self._result_futures.get(msg["message_id"])
+            if msg[MESSAGE_TYPE] == MessageTypes.RESULT:
+                future = self._result_futures.get(msg[MESSAGE_ID])
                 if future is not None:
                     future.set_exception(ZHAWebSocketException(err))
                     return
             return
 
-        if message.message_type == "result":
+        if message.message_type == MessageTypes.RESULT:
             future = self._result_futures.get(message.message_id)
 
             if future is None:
-                # no listener for this result
+                _LOGGER.debug(
+                    "Unable to handle result message because future for message: {message} is None"
+                )
                 return
 
             if message.success:
                 future.set_result(message)
                 return
 
-            if msg["error_code"] != "zigbee_error":
-                error = ZHAWebSocketException(msg["message_id"], msg["error_code"])
+            if msg[ERROR_CODE] != ZIGBEE_ERROR:
+                error = ZHAWebSocketException(msg[MESSAGE_ID], msg[ERROR_CODE])
             else:
                 error = ZHAWebSocketException(
-                    msg["message_id"],
-                    msg["zigbee_error_code"],
-                    msg["zigbee_error_message"],
+                    msg[MESSAGE_ID],
+                    msg[ZIGBEE_ERROR_CODE],
+                    msg[ZIGBEE_ERROR_MESSAGE],
                 )
 
             future.set_exception(error)
             return
 
-        if message.message_type != "event":
+        if message.message_type != MessageTypes.EVENT:
             # Can't handle
             _LOGGER.debug(
                 "Received message with unknown type '%s': %s",
-                msg["message_type"],
+                msg[MESSAGE_TYPE],
                 msg,
             )
             return
@@ -257,7 +271,7 @@ class Client(EventBase):
         _LOGGER.debug("Publishing message:\n%s\n", pprint.pformat(message))
 
         assert self._client
-        assert "message_id" in message
+        assert MESSAGE_ID in message
 
         await self._client.send_str(message)
 
