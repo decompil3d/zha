@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 from zigpy.types.named import EUI64
 
 from zha.application import Platform
-from zha.websocket.const import ATTR_UNIQUE_ID, IEEE, APICommands
+from zha.websocket.const import APICommands
 from zha.websocket.server.api import decorators, register_api_command
 from zha.websocket.server.api.model import WebSocketCommand
 
@@ -74,13 +74,7 @@ async def execute_platform_entity_command(
         client.send_result_error(command, "PLATFORM_ENTITY_ACTION_ERROR", str(err))
         return
 
-    result: dict[str, Any] = {}
-    if command.ieee:
-        result[IEEE] = str(command.ieee)
-    else:
-        result["group_id"] = command.group_id
-    result[ATTR_UNIQUE_ID] = command.unique_id
-    client.send_result_success(command, result)
+    client.send_result_success(command)
 
 
 class PlatformEntityRefreshStateCommand(PlatformEntityCommand):

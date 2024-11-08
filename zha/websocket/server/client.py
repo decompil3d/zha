@@ -67,7 +67,10 @@ class Client:
         self._send_data(message)
 
     def send_result_success(
-        self, command: WebSocketCommand, data: dict[str, Any] | BaseModel | None = None
+        self,
+        command: WebSocketCommand,
+        data: dict[str, Any] | BaseModel | None = None,
+        response_type: type[WebSocketCommandResponse] = WebSocketCommandResponse,
     ) -> None:
         """Send success result prompted by a client request."""
         if data and isinstance(data, BaseModel):
@@ -76,10 +79,9 @@ class Client:
             if data is None:
                 data = {}
             self._send_data(
-                WebSocketCommandResponse(
+                response_type(
+                    **command.model_dump(exclude=["model_class_name"]),
                     success=True,
-                    message_id=command.message_id,
-                    command=command.command,
                     **data,
                 )
             )

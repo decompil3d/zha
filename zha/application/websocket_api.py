@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeVar, Union
 from pydantic import Field
 from zigpy.types.named import EUI64
 
-from zha.websocket.const import GROUPS, APICommands
+from zha.websocket.const import DEVICE, DEVICES, GROUPS, APICommands
 from zha.websocket.server.api import decorators, register_api_command
 from zha.websocket.server.api.model import (
     GetApplicationStateResponse,
@@ -101,16 +101,16 @@ async def get_devices(
 ) -> None:
     """Get Zigbee devices."""
     try:
-        response = GetDevicesResponse(
-            success=True,
-            devices={
-                ieee: device.extended_device_info
-                for ieee, device in gateway.devices.items()
+        client.send_result_success(
+            command,
+            data={
+                DEVICES: {
+                    ieee: device.extended_device_info
+                    for ieee, device in gateway.devices.items()
+                }
             },
-            message_id=command.message_id,
+            response_type=GetDevicesResponse,
         )
-        _LOGGER.info("response: %s", response)
-        client.send_result_success(command, response)
     except Exception as e:
         _LOGGER.exception("Error getting devices", exc_info=e)
         client.send_result_error(command, "Error getting devices", str(e))
@@ -154,12 +154,7 @@ async def get_groups(
         )  # maybe we should change the group_id type...
     _LOGGER.info("groups: %s", groups)
     client.send_result_success(
-        command,
-        GroupsResponse(
-            **command.model_dump(exclude="model_class_name"),
-            groups=groups,
-            success=True,
-        ),
+        command, data={GROUPS: groups}, response_type=GroupsResponse
     )
 
 
@@ -179,13 +174,7 @@ async def permit_joining(
     """Permit joining devices to the Zigbee network."""
     # TODO add permit with code support
     await gateway.application_controller.permit(command.duration, command.ieee)
-    response = PermitJoiningResponse(
-        **command.model_dump(exclude="model_class_name"),
-        success=True,
-        duration=command.duration,
-        ieee=command.ieee,
-    )
-    client.send_result_success(command, response)
+    client.send_result_success(command, response_type=PermitJoiningResponse)
 
 
 class RemoveDeviceCommand(WebSocketCommand):
@@ -256,22 +245,22 @@ async def read_cluster_attributes(
         attributes, allow_cache=False, only_cache=False, manufacturer=manufacturer
     )
 
-    response = ReadClusterAttributesResponse(
-        message_id=command.message_id,
-        success=True,
-        device=device.extended_device_info,
-        cluster={
+    data = {
+        DEVICE: device.extended_device_info,
+        "cluster": {
             "id": cluster.cluster_id,
             "name": cluster.name,
             "type": cluster.cluster_type,
             "endpoint_id": cluster.endpoint.endpoint_id,
             "endpoint_attribute": cluster.ep_attribute,
         },
-        manufacturer_code=manufacturer,
-        succeeded=success,
-        failed=failure,
+        "succeeded": success,
+        "failed": failure,
+    }
+
+    client.send_result_success(
+        command, data=data, response_type=ReadClusterAttributesResponse
     )
-    client.send_result_success(command, response)
 
 
 class WriteClusterAttributeCommand(WebSocketCommand):
@@ -332,24 +321,24 @@ async def write_cluster_attribute(
         manufacturer=manufacturer,
     )
 
-    api_response = WriteClusterAttributeResponse(
-        message_id=command.message_id,
-        success=True,
-        device=device.extended_device_info,
-        cluster={
+    data = {
+        DEVICE: device.extended_device_info,
+        "cluster": {
             "id": cluster.cluster_id,
             "name": cluster.name,
             "type": cluster.cluster_type,
             "endpoint_id": cluster.endpoint.endpoint_id,
             "endpoint_attribute": cluster.ep_attribute,
         },
-        manufacturer_code=manufacturer,
-        response={
+        "response": {
             "attribute": attribute,
             "status": response[0][0].status.name,  # type: ignore
         },  # TODO there has to be a better way to do this
+    }
+
+    client.send_result_success(
+        command, data=data, response_type=WriteClusterAttributeResponse
     )
-    client.send_result_success(command, api_response)
 
 
 class CreateGroupCommand(WebSocketCommand):
@@ -371,12 +360,9 @@ async def create_group(
     members = command.members
     group_id = command.group_id
     group: Group = await gateway.async_create_zigpy_group(group_name, members, group_id)
-    response = UpdateGroupResponse(
-        **command.model_dump(exclude="model_class_name"),
-        group=group.info_object,
-        success=True,
+    client.send_result_success(
+        command, data={GROUP: group.info_object}, response_type=UpdateGroupResponse
     )
-    client.send_result_success(command, response)
 
 
 class RemoveGroupsCommand(WebSocketCommand):
@@ -405,7 +391,9 @@ async def remove_groups(
     for group_id, group in gateway.groups.items():
         groups[int(group_id)] = group.info_object
     _LOGGER.info("groups: %s", groups)
-    client.send_result_success(command, {GROUPS: groups})
+    client.send_result_success(
+        command, data={GROUPS: groups}, response_type=GroupsResponse
+    )
 
 
 class AddGroupMembersCommand(WebSocketCommand):
@@ -434,12 +422,9 @@ async def add_group_members(
     if not group:
         client.send_result_error(command, "G1", "ZHA Group not found")
         return
-    response = UpdateGroupResponse(
-        **command.model_dump(exclude="model_class_name"),
-        group=group.info_object,
-        success=True,
+    client.send_result_success(
+        command, data={GROUP: group.info_object}, response_type=UpdateGroupResponse
     )
-    client.send_result_success(command, response)
 
 
 class RemoveGroupMembersCommand(AddGroupMembersCommand):
@@ -466,12 +451,9 @@ async def remove_group_members(
     if not group:
         client.send_result_error(command, "G1", "ZHA Group not found")
         return
-    response = UpdateGroupResponse(
-        **command.model_dump(exclude="model_class_name"),
-        group=group.info_object,
-        success=True,
+    client.send_result_success(
+        command, data={GROUP: group.info_object}, response_type=UpdateGroupResponse
     )
-    client.send_result_success(command, response)
 
 
 class StopServerCommand(WebSocketCommand):
@@ -505,10 +487,9 @@ async def get_application_state(
 ) -> None:
     """Get the application state."""
     state = gateway.application_controller.state
-    response = GetApplicationStateResponse(
-        success=True, message_id=command.message_id, state=state
+    client.send_result_success(
+        command, data={"state": state}, response_type=GetApplicationStateResponse
     )
-    client.send_result_success(command, data=response)
 
 
 def load_api(gateway: WebSocketServerGateway) -> None:
