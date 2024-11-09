@@ -104,15 +104,6 @@ class MessageTypes(StrEnum):
     RESULT = "result"
 
 
-class EventTypes(StrEnum):
-    """WS event types."""
-
-    CONTROLLER_EVENT = "zha_gateway_message"
-    PLATFORM_ENTITY_EVENT = "platform_entity_event"
-    RAW_ZCL_EVENT = "raw_zcl_event"
-    DEVICE_EVENT = "device_event"
-
-
 class ControllerEvents(StrEnum):
     """WS controller events."""
 
@@ -126,6 +117,7 @@ class ControllerEvents(StrEnum):
     GROUP_MEMBER_REMOVED = "group_member_removed"
     GROUP_ADDED = "group_added"
     GROUP_REMOVED = "group_removed"
+    CONNECTION_LOST = "connection_lost"
 
 
 class PlatformEntityEvents(StrEnum):

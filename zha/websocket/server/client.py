@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from pydantic import BaseModel, ValidationError
 from websockets.server import WebSocketServerProtocol
 
+from zha.const import EventTypes
 from zha.model import BaseEvent
 from zha.websocket.const import (
     COMMAND,
@@ -22,7 +23,6 @@ from zha.websocket.const import (
     ZIGBEE_ERROR,
     ZIGBEE_ERROR_CODE,
     APICommands,
-    EventTypes,
     MessageTypes,
 )
 from zha.websocket.server.api import decorators, register_api_command

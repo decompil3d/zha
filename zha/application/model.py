@@ -5,7 +5,9 @@ from typing import Any, Literal
 
 from zigpy.types.named import EUI64, NWK
 
+from zha.const import EventTypes
 from zha.model import BaseEvent, BaseModel
+from zha.websocket.const import ControllerEvents, DeviceEvents
 from zha.zigbee.model import DeviceInfo, ExtendedDeviceInfo, GroupInfo
 
 
@@ -41,8 +43,8 @@ class DeviceJoinedDeviceInfo(BaseModel):
 class ConnectionLostEvent(BaseEvent):
     """Event to signal that the connection to the radio has been lost."""
 
-    event_type: Literal["zha_gateway_message"] = "zha_gateway_message"
-    event: Literal["connection_lost"] = "connection_lost"
+    event_type: Literal[EventTypes.CONTROLLER_EVENT] = EventTypes.CONTROLLER_EVENT
+    event: Literal[ControllerEvents.CONNECTION_LOST] = ControllerEvents.CONNECTION_LOST
     exception: Exception | None = None
 
 
@@ -50,8 +52,8 @@ class DeviceJoinedEvent(BaseEvent):
     """Event to signal that a device has joined the network."""
 
     device_info: DeviceJoinedDeviceInfo
-    event_type: Literal["zha_gateway_message"] = "zha_gateway_message"
-    event: Literal["device_joined"] = "device_joined"
+    event_type: Literal[EventTypes.CONTROLLER_EVENT] = EventTypes.CONTROLLER_EVENT
+    event: Literal[ControllerEvents.DEVICE_JOINED] = ControllerEvents.DEVICE_JOINED
 
 
 class DeviceLeftEvent(BaseEvent):
@@ -59,8 +61,8 @@ class DeviceLeftEvent(BaseEvent):
 
     ieee: EUI64
     nwk: NWK
-    event_type: Literal["zha_gateway_message"] = "zha_gateway_message"
-    event: Literal["device_left"] = "device_left"
+    event_type: Literal[EventTypes.CONTROLLER_EVENT] = EventTypes.CONTROLLER_EVENT
+    event: Literal[ControllerEvents.DEVICE_LEFT] = ControllerEvents.DEVICE_LEFT
 
 
 class RawDeviceInitializedDeviceInfo(DeviceJoinedDeviceInfo):
@@ -75,8 +77,10 @@ class RawDeviceInitializedEvent(BaseEvent):
     """Event to signal that a device has been initialized without quirks loaded."""
 
     device_info: RawDeviceInitializedDeviceInfo
-    event_type: Literal["zha_gateway_message"] = "zha_gateway_message"
-    event: Literal["raw_device_initialized"] = "raw_device_initialized"
+    event_type: Literal[EventTypes.CONTROLLER_EVENT] = EventTypes.CONTROLLER_EVENT
+    event: Literal[ControllerEvents.RAW_DEVICE_INITIALIZED] = (
+        ControllerEvents.RAW_DEVICE_INITIALIZED
+    )
 
 
 class DeviceFullyInitializedEvent(BaseEvent):
@@ -84,39 +88,45 @@ class DeviceFullyInitializedEvent(BaseEvent):
 
     device_info: ExtendedDeviceInfoWithPairingStatus
     new_join: bool = False
-    event_type: Literal["zha_gateway_message"] = "zha_gateway_message"
-    event: Literal["device_fully_initialized"] = "device_fully_initialized"
+    event_type: Literal[EventTypes.CONTROLLER_EVENT] = EventTypes.CONTROLLER_EVENT
+    event: Literal[ControllerEvents.DEVICE_FULLY_INITIALIZED] = (
+        ControllerEvents.DEVICE_FULLY_INITIALIZED
+    )
 
 
 class GroupRemovedEvent(BaseEvent):
     """Group removed event."""
 
-    event_type: Literal["zha_gateway_message"] = "zha_gateway_message"
-    event: Literal["group_removed"] = "group_removed"
+    event_type: Literal[EventTypes.CONTROLLER_EVENT] = EventTypes.CONTROLLER_EVENT
+    event: Literal[ControllerEvents.GROUP_REMOVED] = ControllerEvents.GROUP_REMOVED
     group_info: GroupInfo
 
 
 class GroupAddedEvent(BaseEvent):
     """Group added event."""
 
-    event_type: Literal["zha_gateway_message"] = "zha_gateway_message"
-    event: Literal["group_added"] = "group_added"
+    event_type: Literal[EventTypes.CONTROLLER_EVENT] = EventTypes.CONTROLLER_EVENT
+    event: Literal[ControllerEvents.GROUP_ADDED] = ControllerEvents.GROUP_ADDED
     group_info: GroupInfo
 
 
 class GroupMemberAddedEvent(BaseEvent):
     """Group member added event."""
 
-    event_type: Literal["zha_gateway_message"] = "zha_gateway_message"
-    event: Literal["group_member_added"] = "group_member_added"
+    event_type: Literal[EventTypes.CONTROLLER_EVENT] = EventTypes.CONTROLLER_EVENT
+    event: Literal[ControllerEvents.GROUP_MEMBER_ADDED] = (
+        ControllerEvents.GROUP_MEMBER_ADDED
+    )
     group_info: GroupInfo
 
 
 class GroupMemberRemovedEvent(BaseEvent):
     """Group member removed event."""
 
-    event_type: Literal["zha_gateway_message"] = "zha_gateway_message"
-    event: Literal["group_member_removed"] = "group_member_removed"
+    event_type: Literal[EventTypes.CONTROLLER_EVENT] = EventTypes.CONTROLLER_EVENT
+    event: Literal[ControllerEvents.GROUP_MEMBER_REMOVED] = (
+        ControllerEvents.GROUP_MEMBER_REMOVED
+    )
     group_info: GroupInfo
 
 
@@ -124,21 +134,21 @@ class DeviceRemovedEvent(BaseEvent):
     """Event to signal that a device has been removed."""
 
     device_info: ExtendedDeviceInfo
-    event_type: Literal["zha_gateway_message"] = "zha_gateway_message"
-    event: Literal["device_removed"] = "device_removed"
+    event_type: Literal[EventTypes.CONTROLLER_EVENT] = EventTypes.CONTROLLER_EVENT
+    event: Literal[ControllerEvents.DEVICE_REMOVED] = ControllerEvents.DEVICE_REMOVED
 
 
 class DeviceOfflineEvent(BaseEvent):
     """Device offline event."""
 
-    event: Literal["device_offline"] = "device_offline"
-    event_type: Literal["device_event"] = "device_event"
+    event: Literal[DeviceEvents.DEVICE_OFFLINE] = DeviceEvents.DEVICE_OFFLINE
+    event_type: Literal[EventTypes.DEVICE_EVENT] = EventTypes.DEVICE_EVENT
     device_info: ExtendedDeviceInfo
 
 
 class DeviceOnlineEvent(BaseEvent):
     """Device online event."""
 
-    event: Literal["device_online"] = "device_online"
-    event_type: Literal["device_event"] = "device_event"
+    event: Literal[DeviceEvents.DEVICE_ONLINE] = DeviceEvents.DEVICE_ONLINE
+    event_type: Literal[EventTypes.DEVICE_EVENT] = EventTypes.DEVICE_EVENT
     device_info: ExtendedDeviceInfo
