@@ -428,7 +428,18 @@ async def test_ws_client_gateway_groups(
     assert client_device1.ieee in response.members_by_ieee
     assert client_device2.ieee in response.members_by_ieee
 
+    # test get group from ws_client_gateway
     group_from_ws_client_gateway = ws_client_gateway.get_group(response.group_id)
+    assert group_from_ws_client_gateway is not None
+    assert group_from_ws_client_gateway.group_id == response.group_id
+    assert group_from_ws_client_gateway.name == response.name
+    assert (
+        group_from_ws_client_gateway.info_object.members_by_ieee
+        == response.members_by_ieee
+    )
+
+    # test get group from ws_client_gateway by group name
+    group_from_ws_client_gateway = ws_client_gateway.get_group(response.name)
     assert group_from_ws_client_gateway is not None
     assert group_from_ws_client_gateway.group_id == response.group_id
     assert group_from_ws_client_gateway.name == response.name
