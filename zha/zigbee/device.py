@@ -77,7 +77,7 @@ from zha.zigbee.model import (
 )
 
 if TYPE_CHECKING:
-    from zha.application.gateway import BaseGateway, Gateway, WebSocketClientGateway
+    from zha.application.gateway import Gateway, WebSocketClientGateway
     from zha.application.platforms.events import EntityStateChangedEvent
 
 _LOGGER = logging.getLogger(__name__)
@@ -211,11 +211,6 @@ class BaseDevice(LogMixin, EventBase, ABC, Generic[T]):
     @abstractmethod
     def platform_entities(self) -> dict[tuple[Platform, str], T]:
         """Return the platform entities for this device."""
-
-    @property
-    def gateway(self) -> BaseGateway:
-        """Return the gateway for this device."""
-        return self._gateway
 
     def get_platform_entity(self, platform: Platform, unique_id: str) -> T:
         """Get a platform entity by unique id."""
@@ -458,15 +453,6 @@ class Device(BaseDevice[PlatformEntity]):
     def gateway(self) -> Gateway:
         """Return the gateway for this device."""
         return self._gateway
-
-    @cached_property
-    def device_automation_commands(self) -> dict[str, list[tuple[str, str]]]:
-        """Return the a lookup of commands to etype/sub_type."""
-        commands: dict[str, list[tuple[str, str]]] = {}
-        for etype_subtype, trigger in self.device_automation_triggers.items():
-            if command := trigger.get(ATTR_COMMAND):
-                commands.setdefault(command, []).append(etype_subtype)
-        return commands
 
     @cached_property
     def device_automation_triggers(self) -> dict[tuple[str, str], dict[str, Any]]:

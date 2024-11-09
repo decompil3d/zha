@@ -36,6 +36,7 @@ from zha.application.platforms.cover.websocket_api import (
     CoverSetPositionCommand,
     CoverSetTiltPositionCommand,
     CoverStopCommand,
+    CoverStopTiltCommand,
 )
 from zha.application.platforms.fan.model import FanEntityInfo
 from zha.application.platforms.fan.websocket_api import (
@@ -371,7 +372,7 @@ class CoverHelper:
         self, cover_platform_entity: CoverEntityInfo
     ) -> WebSocketCommandResponse:
         """Stop a cover tilt."""
-        command = CoverStopCommand(
+        command = CoverStopTiltCommand(
             ieee=cover_platform_entity.device_ieee,
             unique_id=cover_platform_entity.unique_id,
         )

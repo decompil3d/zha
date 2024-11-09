@@ -109,6 +109,9 @@ async def test_button(
     )
     assert entity.PLATFORM == Platform.BUTTON
 
+    assert entity.args == [5]
+    assert entity.kwargs == {}
+
     with patch(
         "zigpy.zcl.Cluster.request",
         return_value=mock_coro([0x00, zcl_f.Status.SUCCESS]),

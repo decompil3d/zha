@@ -100,7 +100,7 @@ from zha.websocket.client.helpers import (
     SwitchHelper,
     UpdateHelper,
 )
-from zha.websocket.const import ControllerEvents, DeviceEvents
+from zha.websocket.const import WEBSOCKET_API, ControllerEvents, DeviceEvents
 from zha.websocket.server.client import ClientManager, load_api as load_client_api
 from zha.zigbee.device import BaseDevice, Device, WebSocketClientDevice
 from zha.zigbee.endpoint import ATTR_IN_CLUSTERS, ATTR_OUT_CLUSTERS
@@ -813,6 +813,7 @@ class WebSocketServerGateway(Gateway):
         self.data: dict[Any, Any] = {}
         for platform in discovery.PLATFORMS:
             self.data.setdefault(platform, [])
+        self.data.setdefault(WEBSOCKET_API, {})
         self._register_api_commands()
 
     @property

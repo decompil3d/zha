@@ -28,12 +28,7 @@ async def _handle_async_response(
     msg: T_WebSocketCommand,
 ) -> None:
     """Create a response and handle exception."""
-    try:
-        await func(gateway, client, msg)
-    except Exception as err:  # pylint: disable=broad-except
-        # TODO fix this to send a real error code and message
-        _LOGGER.exception("Error handling message", exc_info=err)
-        client.send_result_error(msg, "API_COMMAND_HANDLER_ERROR", str(err))
+    await func(gateway, client, msg)
 
 
 def async_response(

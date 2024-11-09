@@ -126,6 +126,8 @@ async def async_test_illuminance(
     await send_attributes_report(zha_gateway, cluster, {0: 0xFFFF})
     assert_state(entity, None, "lx")
 
+    assert entity.extra_state_attribute_names is None
+
 
 async def async_test_metering(
     zha_gateway: Gateway, cluster: Cluster, entity: PlatformEntity

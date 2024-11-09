@@ -26,6 +26,4 @@ def register_api_command(
         model = handler._ws_command_model  # type: ignore[attr-defined]
     else:
         command = command_or_handler
-    if (handlers := gateway.data.get(WEBSOCKET_API)) is None:
-        handlers = gateway.data[WEBSOCKET_API] = {}
-    handlers[command] = (handler, model)
+    gateway.data[WEBSOCKET_API][command] = (handler, model)

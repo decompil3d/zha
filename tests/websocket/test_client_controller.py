@@ -28,7 +28,12 @@ from zha.websocket.server.api.model import (
     WriteClusterAttributeResponse,
 )
 from zha.zigbee.device import Device, WebSocketClientDevice
-from zha.zigbee.group import Group, GroupMemberReference, WebSocketClientGroup
+from zha.zigbee.group import (
+    Group,
+    GroupMemberReference,
+    WebSocketClientGroup,
+    WebSocketClientGroupMember,
+)
 from zha.zigbee.model import GroupInfo
 
 from ..common import (
@@ -481,3 +486,37 @@ async def test_ws_client_gateway_groups(
     assert response.name == "Test Group Controller"
     assert client_device1.ieee in response.members_by_ieee
     assert client_device2.ieee in response.members_by_ieee
+
+    # test member info and removal from member
+
+    member_info = response.members_by_ieee[client_device1.ieee]
+    assert member_info is not None
+    assert member_info.endpoint_id == entity1.info_object.endpoint_id
+    assert member_info.ieee == entity1.info_object.device_ieee
+    assert member_info.device_info is not None
+    assert member_info.device_info.ieee == entity1._device.extended_device_info.ieee
+    assert member_info.device_info.nwk == entity1._device.extended_device_info.nwk
+    assert (
+        member_info.device_info.manufacturer
+        == entity1._device.extended_device_info.manufacturer
+    )
+    assert member_info.device_info.model == entity1._device.extended_device_info.model
+    assert (
+        member_info.device_info.signature
+        == entity1._device.extended_device_info.signature
+    )
+
+    client_group: WebSocketClientGroup = ws_client_gateway.get_group(response.group_id)
+    assert client_group is not None
+    members = client_group.members
+    assert len(members) == 2
+    entity_1_member: WebSocketClientGroupMember
+    for member in members:
+        if member.member_info.ieee == entity1.info_object.device_ieee:
+            entity_1_member = member
+            break
+
+    assert entity_1_member is not None
+    await entity_1_member.async_remove_from_group()
+    await zha_gateway.async_block_till_done()
+    assert len(client_group.members) == 1

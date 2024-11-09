@@ -90,9 +90,7 @@ class BaseModel(PydanticBaseModel):
     )
     def serialize_nwk(self, nwk: NWK):
         """Serialize nwk as hex string."""
-        if nwk is not None:
-            return repr(nwk)
-        return nwk
+        return repr(nwk)
 
 
 class TypedBaseModel(BaseModel):

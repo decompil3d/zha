@@ -154,10 +154,6 @@ class ClimateEntityInterface(ABC):
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
 
-    @abstractmethod
-    async def async_preset_handler(self, preset: str, enable: bool = False) -> None:
-        """Set the preset mode via handler."""
-
 
 @MULTI_MATCH(
     cluster_handler_names=CLUSTER_HANDLER_THERMOSTAT,
@@ -1080,10 +1076,4 @@ class WebSocketClientThermostatEntity(
         """Set new target temperature."""
         await self._device.gateway.thermostats.set_temperature(
             self.info_object, **kwargs
-        )
-
-    async def async_preset_handler(self, preset: str, enable: bool = False) -> None:
-        """Set the preset mode via handler."""
-        await self._device.gateway.thermostats.preset_handler(
-            self.info_object, preset, enable
         )
