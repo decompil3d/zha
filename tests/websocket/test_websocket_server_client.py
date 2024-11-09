@@ -8,6 +8,7 @@ from tests.conftest import CombinedWebsocketGateways
 from zha.application.gateway import WebSocketClientGateway, WebSocketServerGateway
 from zha.application.helpers import ZHAData
 from zha.websocket.client.client import Client
+from zha.websocket.client.helpers import ClientHelper
 
 
 async def test_server_client_connect_disconnect(
@@ -39,6 +40,36 @@ async def test_server_client_connect_disconnect(
 
         assert not client_gateway.client.connected
         assert client_gateway.client._listen_task is None
+
+    assert not gateway.is_serving
+    assert gateway._ws_server is None
+
+
+async def test_client_helper_disconnect(
+    zha_data: ZHAData,
+) -> None:
+    """Tests client helper disconnect logic."""
+
+    async with WebSocketServerGateway(zha_data) as gateway:
+        assert gateway.is_serving
+        assert gateway._ws_server is not None
+
+        client = Client(f"ws://localhost:{zha_data.ws_server_config.port}")
+        client_helper = ClientHelper(client)
+
+        await client.connect()
+        assert client.connected
+        assert "connected" in repr(client)
+
+        # The client does not begin listening immediately
+        assert client._listen_task is None
+        await client_helper.listen()
+        assert client._listen_task is not None
+
+        await client_helper.disconnect()
+        assert client._listen_task is None
+        assert "not connected" in repr(client)
+        assert not client.connected
 
     assert not gateway.is_serving
     assert gateway._ws_server is None

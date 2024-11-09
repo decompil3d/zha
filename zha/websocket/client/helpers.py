@@ -804,6 +804,7 @@ class ClientHelper:
     async def listen(self) -> WebSocketCommandResponse:
         """Listen for incoming messages."""
         command = ClientListenCommand()
+        await self._client.listen()
         return await self._client.async_send_command(command)
 
     async def listen_raw_zcl(self) -> WebSocketCommandResponse:
@@ -811,10 +812,11 @@ class ClientHelper:
         command = ClientListenRawZCLCommand()
         return await self._client.async_send_command(command)
 
-    async def disconnect(self) -> WebSocketCommandResponse:
+    async def disconnect(self) -> None:
         """Disconnect this client from the server."""
         command = ClientDisconnectCommand()
-        return await self._client.async_send_command(command)
+        await self._client.async_send_command_no_wait(command)
+        await self._client.disconnect()
 
 
 class GroupHelper:

@@ -969,8 +969,6 @@ class WebSocketClientGateway(BaseGateway):
             _LOGGER.exception("Unable to connect to the ZHA wss", exc_info=err)
             raise err
 
-        await self._client.listen()
-
     async def disconnect(self) -> None:
         """Disconnect from the websocket server."""
         await self._client.disconnect()
@@ -978,6 +976,7 @@ class WebSocketClientGateway(BaseGateway):
     async def __aenter__(self) -> WebSocketClientGateway:
         """Connect to the websocket server."""
         await self.connect()
+        await self.clients.listen()
         return self
 
     async def __aexit__(
