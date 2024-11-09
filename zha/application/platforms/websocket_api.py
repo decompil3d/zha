@@ -36,24 +36,22 @@ async def execute_platform_entity_command(
     method_name: str,
 ) -> None:
     """Get the platform entity and execute a method based on the command."""
-    try:
-        _LOGGER.debug("command: %s", command)
-        if command.group_id:
-            group = gateway.get_group(command.group_id)
-            platform_entity = group.group_entities[command.unique_id]
-        else:
-            device = gateway.get_device(command.ieee)
-            platform_entity = device.get_platform_entity(
-                command.platform, command.unique_id
-            )
-    except ValueError as err:
-        _LOGGER.exception(
-            "Error executing command: %s method_name: %s",
-            command,
-            method_name,
-            exc_info=err,
+
+    _LOGGER.debug("attempting to execute platform entity command: %s", command)
+
+    if command.group_id:
+        group = gateway.get_group(command.group_id)
+        platform_entity = group.group_entities[command.unique_id]
+    else:
+        device = gateway.get_device(command.ieee)
+        platform_entity = device.get_platform_entity(
+            command.platform, command.unique_id
         )
-        client.send_result_error(command, "PLATFORM_ENTITY_COMMAND_ERROR", str(err))
+
+    if not platform_entity:
+        client.send_result_error(
+            command, "PLATFORM_ENTITY_COMMAND_ERROR", "platform entity not found"
+        )
         return None
 
     try:
@@ -69,7 +67,7 @@ async def execute_platform_entity_command(
         else:
             action()  # the only argument is self
 
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-except
         _LOGGER.exception("Error executing command: %s", method_name, exc_info=err)
         client.send_result_error(command, "PLATFORM_ENTITY_ACTION_ERROR", str(err))
         return
