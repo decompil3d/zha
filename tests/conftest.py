@@ -342,9 +342,11 @@ class CombinedWebsocketGateways:
         self.zha_data = zha_data
         self.ws_gateway: WebSocketServerGateway = ws_gateway
         self.client_gateway: WebSocketClientGateway = client_gateway
-        self.application_controller: ControllerApplication = (
-            self.ws_gateway.application_controller
-        )
+
+    @property
+    def application_controller(self) -> ControllerApplication:
+        """Return the Zigpy application controller."""
+        return self.ws_gateway.application_controller
 
     @property
     def config(self) -> ZHAData:

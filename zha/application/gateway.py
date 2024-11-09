@@ -757,7 +757,7 @@ class Gateway(AsyncUtilMixin, BaseGateway):
                 await asyncio.gather(*tasks)
         self.application_controller.groups.pop(group_id)
 
-    async def shutdown(self) -> None:
+    async def shutdown(self, call_super=True) -> None:
         """Stop ZHA Controller Application."""
         if self.shutting_down:
             _LOGGER.debug("Ignoring duplicate shutdown event")
@@ -780,7 +780,8 @@ class Gateway(AsyncUtilMixin, BaseGateway):
             self.application_controller = None
             await asyncio.sleep(0.1)  # give bellows thread callback a chance to run
 
-        await super().shutdown()
+        if call_super:
+            await super().shutdown()
 
         self._devices.clear()
         self._groups.clear()
@@ -858,6 +859,15 @@ class WebSocketServerGateway(Gateway):
         self._ws_server = None
 
         self._stopped_event.set()
+
+    async def start_network(self) -> None:
+        """Start the Zigbee network."""
+        await super().async_initialize()  # we do this to avoid 2x event registration
+        await self.async_initialize_devices_and_entities()
+
+    async def stop_network(self) -> None:
+        """Stop the Zigbee network."""
+        await self.shutdown(call_super=False)
 
     async def wait_closed(self) -> None:
         """Wait until the server is not running."""

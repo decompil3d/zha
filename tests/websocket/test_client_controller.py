@@ -183,6 +183,15 @@ async def test_ws_client_gateway_devices(
     await zha_gateway.async_block_till_done()
     assert len(ws_client_gateway.devices) == 1
 
+    # lets kill the network and then start it back up to make sure everything is still in working order
+    await ws_client_gateway.network.stop_network()
+
+    assert zha_gateway.application_controller is None
+
+    await ws_client_gateway.network.start_network()
+
+    assert zha_gateway.application_controller is not None
+
     # let's add it back
     zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
     await zha_gateway.async_block_till_done()
@@ -312,6 +321,17 @@ async def test_ws_client_gateway_devices(
             ),
         )
     )
+
+    # test topology scan
+    zha_gateway.application_controller.topology.scan = AsyncMock()
+    await ws_client_gateway.network.update_topology()
+    assert zha_gateway.application_controller.topology.scan.await_count == 1
+
+    # test permit join
+    zha_gateway.application_controller.permit = AsyncMock()
+    await ws_client_gateway.network.permit_joining(60)
+    assert zha_gateway.application_controller.permit.await_count == 1
+    assert zha_gateway.application_controller.permit.await_args == call(60, None)
 
 
 @pytest.mark.parametrize(
