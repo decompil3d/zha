@@ -78,6 +78,7 @@ from zha.async_ import (
     gather_with_limited_concurrency,
 )
 from zha.event import EventBase
+from zha.websocket import ZHAWebSocketException
 from zha.websocket.client.client import Client
 from zha.websocket.client.helpers import (
     AlarmControlPanelHelper,
@@ -113,10 +114,6 @@ from zha.zigbee.model import DeviceStatus
 
 if TYPE_CHECKING:
     from zha.application.platforms.events import EntityStateChangedEvent
-    from zha.websocket.server.api.model import (
-        WebSocketCommand,
-        WebSocketCommandResponse,
-    )
     from zha.zigbee.model import ExtendedDeviceInfo, ZHAEvent
 
 BLOCK_LOG_TIMEOUT: Final[int] = 60
@@ -913,10 +910,10 @@ class WebSocketClientGateway(BaseGateway):
         self._client: Client = Client(
             self._ws_server_url, aiohttp_session=config.ws_client_config.aiohttp_session
         )
+        self._state: State
         self._devices: dict[EUI64, WebSocketClientDevice] = {}
         self._groups: dict[int, WebSocketClientGroup] = {}
         self.coordinator_zha_device: WebSocketClientDevice = None  # type: ignore[assignment]
-        self._state: State
         self.lights: LightHelper = LightHelper(self._client)
         self.switches: SwitchHelper = SwitchHelper(self._client)
         self.sirens: SirenHelper = SirenHelper(self._client)
@@ -965,9 +962,10 @@ class WebSocketClientGateway(BaseGateway):
         try:
             async with timeout(CONNECT_TIMEOUT):
                 await self._client.connect()
-        except Exception as err:
+        except TimeoutError as err:
             _LOGGER.exception("Unable to connect to the ZHA wss", exc_info=err)
-            raise err
+            await self._client.disconnect()
+            raise ZHAWebSocketException from err
 
     async def disconnect(self) -> None:
         """Disconnect from the websocket server."""
@@ -991,10 +989,6 @@ class WebSocketClientGateway(BaseGateway):
         self._tasks.append(task)
         task.add_done_callback(self._tasks.remove)
         return task
-
-    async def send_command(self, command: WebSocketCommand) -> WebSocketCommandResponse:
-        """Send a command and get a response."""
-        return await self._client.async_send_command(command)
 
     async def load_devices(self) -> None:
         """Restore ZHA devices from zigpy application state."""
@@ -1104,7 +1098,7 @@ class WebSocketClientGateway(BaseGateway):
     def handle_zha_event(self, event: ZHAEvent) -> None:
         """Handle a zha_event from the websocket server."""
         _LOGGER.debug("zha_event: %s", event)
-        device = self.devices.get(event.device.ieee)
+        device = self.devices.get(event.device_ieee)
         if device is None:
             _LOGGER.warning("Received zha_event from unknown device: %s", event)
             return

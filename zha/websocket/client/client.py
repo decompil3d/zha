@@ -163,8 +163,8 @@ class Client(EventBase):
 
             self._listen_task = None
 
-        assert self._client is not None
-        await self._client.close()
+        if self._client is not None:
+            await self._client.close()
 
         if self._close_aiohttp_session:
             await self.aiohttp_session.close()

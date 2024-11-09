@@ -416,6 +416,7 @@ class CombinedWebsocketGatewaysContextManager:
         await client_gateway.clients.listen()
         await ws_gateway.async_block_till_done()
         await client_gateway.async_initialize()
+        assert client_gateway.state is not None
 
         self.combined_gateways = CombinedWebsocketGateways(
             self.zha_data, ws_gateway, client_gateway

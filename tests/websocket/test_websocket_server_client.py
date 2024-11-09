@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 
 from tests.conftest import CombinedWebsocketGateways
 from zha.application.gateway import WebSocketClientGateway, WebSocketServerGateway
 from zha.application.helpers import ZHAData
+from zha.websocket import ZHAWebSocketException
 from zha.websocket.client.client import Client
 from zha.websocket.client.helpers import ClientHelper
 
@@ -43,6 +46,13 @@ async def test_server_client_connect_disconnect(
 
     assert not gateway.is_serving
     assert gateway._ws_server is None
+
+    with (
+        pytest.raises(ZHAWebSocketException),
+        patch("zha.websocket.client.client.Client.connect", side_effect=TimeoutError),
+    ):
+        async with WebSocketClientGateway(zha_data) as client_gateway:
+            assert client_gateway.client.connected
 
 
 async def test_client_helper_disconnect(

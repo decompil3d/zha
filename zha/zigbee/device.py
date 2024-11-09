@@ -681,14 +681,18 @@ class Device(BaseDevice[PlatformEntity]):
 
     def emit_zha_event(self, event_data: dict[str, str | int]) -> None:  # pylint: disable=unused-argument
         """Relay events directly."""
-        self.emit(
-            ZHA_EVENT,
-            ZHAEvent(
-                device_ieee=self.ieee,
-                unique_id=str(self.ieee),
-                data=event_data,
-            ),
+        event: ZHAEvent = ZHAEvent(
+            device_ieee=self.ieee,
+            unique_id=str(self.ieee),
+            data=event_data,
         )
+        self.emit(ZHA_EVENT, event)
+
+        # pylint: disable=import-outside-toplevel
+        from zha.application.gateway import WebSocketServerGateway
+
+        if isinstance(self.gateway, WebSocketServerGateway):
+            self.gateway.emit(ZHA_EVENT, event)
 
     async def _async_became_available(self) -> None:
         """Update device availability and signal entities."""

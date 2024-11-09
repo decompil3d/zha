@@ -178,6 +178,16 @@ async def test_ws_client_gateway_devices(
     await zha_gateway.async_block_till_done()
     assert len(ws_client_gateway.devices) == 2
 
+    # test client gateway device removal
+    await ws_client_gateway.async_remove_device(zha_device.ieee)
+    await zha_gateway.async_block_till_done()
+    assert len(ws_client_gateway.devices) == 1
+
+    # let's add it back
+    zha_device = await join_zigpy_device(zha_gateway, zigpy_device)
+    await zha_gateway.async_block_till_done()
+    assert len(ws_client_gateway.devices) == 2
+
     # we removed and joined the device again so lets get the entity again
     client_device = ws_client_gateway.devices.get(zha_device.ieee)
     assert client_device is not None
@@ -397,6 +407,15 @@ async def test_ws_client_gateway_groups(
     assert response.name == "Test Group Controller"
     assert client_device1.ieee in response.members_by_ieee
     assert client_device2.ieee in response.members_by_ieee
+
+    group_from_ws_client_gateway = ws_client_gateway.get_group(response.group_id)
+    assert group_from_ws_client_gateway is not None
+    assert group_from_ws_client_gateway.group_id == response.group_id
+    assert group_from_ws_client_gateway.name == response.name
+    assert (
+        group_from_ws_client_gateway.info_object.members_by_ieee
+        == response.members_by_ieee
+    )
 
     # test remove member from group from ws_client_gateway
     response = await ws_client_gateway.groups_helper.remove_group_members(

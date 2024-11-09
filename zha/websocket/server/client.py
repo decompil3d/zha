@@ -247,7 +247,6 @@ async def disconnect(
     gateway: WebSocketServerGateway, client: Client, command: WebSocketCommand
 ) -> None:
     """Disconnect the client."""
-    client.disconnect()
     gateway.client_manager.remove_client(client)
 
 
