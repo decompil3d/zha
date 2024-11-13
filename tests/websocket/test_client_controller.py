@@ -41,7 +41,6 @@ from ..common import (
     SIG_EP_OUTPUT,
     SIG_EP_PROFILE,
     SIG_EP_TYPE,
-    async_find_group_entity_id,
     create_mock_zigpy_device,
     find_entity,
     join_zigpy_device,
@@ -370,7 +369,7 @@ async def test_ws_client_gateway_groups(
         assert member.group == zha_group
         assert member.endpoint_id == 1
 
-    entity_id = async_find_group_entity_id(Platform.SWITCH, zha_group)
+    entity_id = f"{Platform.SWITCH}_zha_group_0x{zha_group.group_id:04x}"
     assert entity_id is not None
 
     group_proxy: Optional[WebSocketClientGroup] = ws_client_gateway.groups.get(

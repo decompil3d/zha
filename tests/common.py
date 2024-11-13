@@ -548,12 +548,3 @@ def create_mock_zigpy_device(
                     cluster._attr_cache[attr_id] = value
 
     return device
-
-
-def async_find_group_entity_id(domain: str, group: Group) -> Optional[str]:
-    """Find the group entity id under test."""
-    entity_id = f"{domain}_zha_group_0x{group.group_id:04x}"
-
-    if entity_id in group.group_entities:
-        return entity_id
-    return None
