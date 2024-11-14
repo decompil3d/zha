@@ -23,6 +23,7 @@ from zha.application.platforms.sensor.model import (
 )
 from zha.application.platforms.switch.model import SwitchState
 from zha.application.platforms.update.model import FirmwareUpdateState
+from zha.const import EntityEvents, EventTypes
 from zha.model import BaseEvent, as_tagged_union
 
 EntityStateUnion = (
@@ -50,8 +51,8 @@ if not TYPE_CHECKING:
 class EntityStateChangedEvent(BaseEvent):
     """Event for when an entity state changes."""
 
-    event_type: Literal["entity"] = "entity"
-    event: Literal["state_changed"] = "state_changed"
+    event_type: Literal[EventTypes.ENTITY_EVENT] = EventTypes.ENTITY_EVENT
+    event: Literal[EntityEvents.STATE_CHANGED] = EntityEvents.STATE_CHANGED
     platform: Platform
     unique_id: str
     device_ieee: EUI64 | None = None

@@ -22,7 +22,7 @@ from zha.application.platforms.alarm_control_panel.model import (
 )
 from zha.application.platforms.model import EntityState
 from zha.application.registries import PLATFORM_ENTITIES
-from zha.websocket.const import MODEL_CLASS_NAME
+from zha.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_IAS_ACE,
     CLUSTER_HANDLER_STATE_CHANGED,

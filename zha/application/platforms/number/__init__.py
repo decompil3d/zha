@@ -28,8 +28,8 @@ from zha.application.platforms.number.model import (
     NumberEntityInfo,
 )
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.const import MODEL_CLASS_NAME
 from zha.units import UnitOfMass, UnitOfTemperature, UnitOfTime, validate_unit
-from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ANALOG_OUTPUT,
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,

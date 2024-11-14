@@ -49,6 +49,7 @@ from zha.application.platforms.sensor.model import (
     TimestampState,
 )
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.const import MODEL_CLASS_NAME
 from zha.decorators import periodic
 from zha.units import (
     CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
@@ -71,7 +72,6 @@ from zha.units import (
     UnitOfVolumeFlowRate,
     validate_unit,
 )
-from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ANALOG_INPUT,
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,

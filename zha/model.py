@@ -19,8 +19,8 @@ from pydantic import (
 )
 from zigpy.types.named import EUI64, NWK
 
+from zha.const import MODEL_CLASS_NAME, MessageTypes
 from zha.event import EventBase
-from zha.websocket.const import MODEL_CLASS_NAME
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -162,7 +162,7 @@ def as_tagged_union(union):
 class BaseEvent(TypedBaseModel):
     """Base model for ZHA events."""
 
-    message_type: Literal["event"] = "event"
+    message_type: Literal[MessageTypes.EVENT] = MessageTypes.EVENT
     event_type: str
     event: str
 

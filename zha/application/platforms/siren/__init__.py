@@ -35,7 +35,7 @@ from zha.application.platforms.siren.const import (
 )
 from zha.application.platforms.siren.model import SirenEntityInfo
 from zha.application.registries import PLATFORM_ENTITIES
-from zha.websocket.const import MODEL_CLASS_NAME
+from zha.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import CLUSTER_HANDLER_IAS_WD
 from zha.zigbee.cluster_handlers.security import IasWdClusterHandler
 

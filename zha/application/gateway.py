@@ -78,6 +78,7 @@ from zha.async_ import (
     create_eager_task,
     gather_with_limited_concurrency,
 )
+from zha.const import ControllerEvents, DeviceEvents
 from zha.event import EventBase
 from zha.model import BaseEvent
 from zha.websocket import ZHAWebSocketException
@@ -102,7 +103,7 @@ from zha.websocket.client.helpers import (
     SwitchHelper,
     UpdateHelper,
 )
-from zha.websocket.const import WEBSOCKET_API, ControllerEvents, DeviceEvents
+from zha.websocket.const import WEBSOCKET_API
 from zha.websocket.server.client import ClientManager, load_api as load_client_api
 from zha.zigbee.device import BaseDevice, Device, WebSocketClientDevice
 from zha.zigbee.endpoint import ATTR_IN_CLUSTERS, ATTR_OUT_CLUSTERS
@@ -1126,7 +1127,7 @@ class WebSocketClientGateway(BaseGateway):
         if device is None:
             _LOGGER.warning("Received zha_event from unknown device: %s", event)
             return
-        device.emit("zha_event", event)
+        device.emit(DeviceEvents.ZHA_EVENT, event)
 
     def handle_device_joined(self, event: DeviceJoinedEvent) -> None:
         """Handle device joined.

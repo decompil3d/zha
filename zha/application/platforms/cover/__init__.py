@@ -33,8 +33,8 @@ from zha.application.platforms.cover.model import (
     ShadeState,
 )
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.const import MODEL_CLASS_NAME
 from zha.exceptions import ZHAException
-from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.closures import WindowCoveringClusterHandler
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,

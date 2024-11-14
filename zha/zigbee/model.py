@@ -1,5 +1,7 @@
 """Models for the ZHA zigbee module."""
 
+from __future__ import annotations
+
 from enum import Enum, StrEnum
 from typing import TYPE_CHECKING, Any, Literal, Union
 
@@ -46,6 +48,7 @@ from zha.application.platforms.switch.model import (
     SwitchEntityInfo,
 )
 from zha.application.platforms.update.model import FirmwareUpdateEntityInfo
+from zha.const import DeviceEvents, EventTypes
 from zha.model import BaseEvent, BaseModel, as_tagged_union, convert_enum, convert_int
 
 
@@ -62,8 +65,8 @@ class ZHAEvent(BaseEvent):
     device_ieee: EUI64
     unique_id: str
     data: dict[str, Any]
-    event_type: Literal["device_event"] = "device_event"
-    event: Literal["zha_event"] = "zha_event"
+    event_type: Literal[EventTypes.DEVICE_EVENT] = EventTypes.DEVICE_EVENT
+    event: Literal[DeviceEvents.ZHA_EVENT] = DeviceEvents.ZHA_EVENT
 
 
 class ClusterHandlerConfigurationComplete(BaseEvent):
@@ -259,7 +262,7 @@ class ExtendedDeviceInfo(DeviceInfo):
     """Describes a ZHA device."""
 
     active_coordinator: bool
-    entities: dict[tuple[Platform, str], EntityInfoUnion]  # type: ignore
+    entities: dict[tuple[Platform, str], EntityInfoUnion]
     neighbors: list[NeighborInfo]
     routes: list[RouteInfo]
     endpoint_names: list[EndpointNameInfo]
@@ -302,7 +305,7 @@ class GroupMemberInfo(BaseModel):
     ieee: EUI64
     endpoint_id: int
     device_info: ExtendedDeviceInfo
-    entities: dict[str, EntityInfoUnion]  # type: ignore
+    entities: dict[str, EntityInfoUnion]
 
 
 GroupEntityUnion = LightEntityInfo | FanEntityInfo | SwitchEntityInfo
@@ -317,7 +320,7 @@ class GroupInfo(BaseModel):
     group_id: int
     name: str
     members: list[GroupMemberInfo]
-    entities: dict[str, GroupEntityUnion]  # type: ignore
+    entities: dict[str, GroupEntityUnion]
 
     @property
     def members_by_ieee(self) -> dict[EUI64, GroupMemberInfo]:

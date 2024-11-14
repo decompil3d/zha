@@ -21,7 +21,7 @@ from zha.application.platforms.const import EntityCategory
 from zha.application.platforms.helpers import validate_device_class
 from zha.application.platforms.model import EntityState
 from zha.application.registries import PLATFORM_ENTITIES
-from zha.websocket.const import MODEL_CLASS_NAME
+from zha.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ACCELEROMETER,
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,

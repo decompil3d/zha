@@ -21,6 +21,7 @@ from zha.application.model import (
     RawDeviceInitializedEvent,
 )
 from zha.application.platforms.events import EntityStateChangedEvent
+from zha.const import MessageTypes
 from zha.model import BaseModel, TypedBaseModel, as_tagged_union
 from zha.websocket.const import APICommands
 from zha.zigbee.cluster_handlers.model import (
@@ -113,7 +114,7 @@ class WebSocketCommand(TypedBaseModel):
 class WebSocketCommandResponse(WebSocketCommand):
     """Websocket command response."""
 
-    message_type: Literal["result"] = "result"
+    message_type: Literal[MessageTypes.RESULT] = MessageTypes.RESULT
     success: bool
 
 

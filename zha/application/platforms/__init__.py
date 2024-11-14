@@ -21,7 +21,7 @@ from zha.application.platforms.model import (
     PlatformEntityIdentifiers,
     T as BaseEntityInfoType,
 )
-from zha.const import STATE_CHANGED
+from zha.const import STATE_CHANGED, EntityEvents, EventTypes
 from zha.debounce import Debouncer
 from zha.event import EventBase
 from zha.mixins import LogMixin
@@ -44,8 +44,8 @@ DEFAULT_UPDATE_GROUP_FROM_CHILD_DELAY: float = 0.5
 class EntityStateChangedEvent(BaseEvent):
     """Event for when an entity state changes."""
 
-    event_type: Literal["entity"] = "entity"
-    event: Literal["state_changed"] = "state_changed"
+    event_type: Literal[EventTypes.ENTITY_EVENT] = EventTypes.ENTITY_EVENT
+    event: Literal[EntityEvents.STATE_CHANGED] = EntityEvents.STATE_CHANGED
     platform: Platform
     unique_id: str
     device_ieee: EUI64 | None = None

@@ -31,7 +31,7 @@ from zha.application.platforms.select.model import (
     SelectEntityInfo,
 )
 from zha.application.registries import PLATFORM_ENTITIES
-from zha.websocket.const import MODEL_CLASS_NAME
+from zha.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
     CLUSTER_HANDLER_HUE_OCCUPANCY,

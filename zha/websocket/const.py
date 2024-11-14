@@ -97,81 +97,12 @@ class APICommands(StrEnum):
     FIRMWARE_INSTALL = "firmware_install"
 
 
-class MessageTypes(StrEnum):
-    """WS message types."""
-
-    EVENT = "event"
-    RESULT = "result"
-
-
-class ControllerEvents(StrEnum):
-    """WS controller events."""
-
-    DEVICE_JOINED = "device_joined"
-    RAW_DEVICE_INITIALIZED = "raw_device_initialized"
-    DEVICE_REMOVED = "device_removed"
-    DEVICE_LEFT = "device_left"
-    DEVICE_FULLY_INITIALIZED = "device_fully_initialized"
-    DEVICE_CONFIGURED = "device_configured"
-    GROUP_MEMBER_ADDED = "group_member_added"
-    GROUP_MEMBER_REMOVED = "group_member_removed"
-    GROUP_ADDED = "group_added"
-    GROUP_REMOVED = "group_removed"
-    CONNECTION_LOST = "connection_lost"
-
-
-class PlatformEntityEvents(StrEnum):
-    """WS platform entity events."""
-
-    PLATFORM_ENTITY_STATE_CHANGED = "platform_entity_state_changed"
-
-
-class RawZCLEvents(StrEnum):
-    """WS raw ZCL events."""
-
-    ATTRIBUTE_UPDATED = "attribute_updated"
-
-
-class DeviceEvents(StrEnum):
-    """Events that devices can broadcast."""
-
-    DEVICE_OFFLINE = "device_offline"
-    DEVICE_ONLINE = "device_online"
-    ZHA_EVENT = "zha_event"
-
-
-ATTR_UNIQUE_ID: Final[str] = "unique_id"
-COMMAND: Final[str] = "command"
-CONF_BAUDRATE: Final[str] = "baudrate"
-CONF_CUSTOM_QUIRKS_PATH: Final[str] = "custom_quirks_path"
-CONF_DATABASE: Final[str] = "database_path"
-CONF_DEFAULT_LIGHT_TRANSITION: Final[str] = "default_light_transition"
-CONF_DEVICE_CONFIG: Final[str] = "device_config"
-CONF_ENABLE_IDENTIFY_ON_JOIN: Final[str] = "enable_identify_on_join"
-CONF_ENABLE_QUIRKS: Final[str] = "enable_quirks"
-CONF_FLOWCONTROL: Final[str] = "flow_control"
-CONF_RADIO_TYPE: Final[str] = "radio_type"
-CONF_USB_PATH: Final[str] = "usb_path"
-CONF_ZIGPY: Final[str] = "zigpy_config"
-
 DEVICE: Final[str] = "device"
-
-EVENT: Final[str] = "event"
-EVENT_TYPE: Final[str] = "event_type"
-
-MESSAGE_TYPE: Final[str] = "message_type"
-
-IEEE: Final[str] = "ieee"
-NWK: Final[str] = "nwk"
-PAIRING_STATUS: Final[str] = "pairing_status"
-
-
 DEVICES: Final[str] = "devices"
 GROUPS: Final[str] = "groups"
 GROUP_ID: Final[str] = "group_id"
 GROUP_IDS: Final[str] = "group_ids"
 GROUP_NAME: Final[str] = "group_name"
-DURATION: Final[str] = "duration"
 ERROR_CODE: Final[str] = "error_code"
 ERROR_MESSAGE: Final[str] = "error_message"
 MESSAGE_ID: Final[str] = "message_id"
@@ -180,5 +111,3 @@ WEBSOCKET_API: Final[str] = "websocket_api"
 ZIGBEE_ERROR_CODE: Final[str] = "zigbee_error_code"
 ZIGBEE_ERROR: Final[str] = "zigbee_error"
 ZIGBEE_ERROR_MESSAGE: Final[str] = "zigbee_error_message"
-
-MODEL_CLASS_NAME: Final[str] = "model_class_name"

@@ -22,7 +22,7 @@ from zha.application.gateway import (
 from zha.application.model import DeviceJoinedEvent, DeviceLeftEvent
 from zha.application.platforms import WebSocketClientEntity
 from zha.application.platforms.switch import WebSocketClientSwitchEntity
-from zha.websocket.const import ControllerEvents
+from zha.const import ControllerEvents
 from zha.websocket.server.api.model import (
     ReadClusterAttributesResponse,
     WriteClusterAttributeResponse,

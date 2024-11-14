@@ -62,9 +62,9 @@ from zha.application.platforms.light.helpers import (
 )
 from zha.application.platforms.light.model import LightEntityInfo, LightState
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.const import MODEL_CLASS_NAME
 from zha.debounce import Debouncer
 from zha.decorators import periodic
-from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
     CLUSTER_HANDLER_COLOR,

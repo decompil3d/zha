@@ -17,9 +17,8 @@ from zha.application.const import (
     CONF_DEFAULT_CONSIDER_UNAVAILABLE_BATTERY,
     CONF_DEFAULT_CONSIDER_UNAVAILABLE_MAINS,
 )
-from zha.const import EventTypes
+from zha.const import ControllerEvents, DeviceEvents, EventTypes
 from zha.model import BaseEvent, BaseModel
-from zha.websocket.const import ControllerEvents, DeviceEvents
 from zha.zigbee.model import DeviceInfo, ExtendedDeviceInfo, GroupInfo
 
 if TYPE_CHECKING:

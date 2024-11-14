@@ -18,8 +18,8 @@ from zha.application.platforms.device_tracker.model import (
 )
 from zha.application.platforms.sensor import Battery
 from zha.application.registries import PLATFORM_ENTITIES
+from zha.const import MODEL_CLASS_NAME
 from zha.decorators import periodic
-from zha.websocket.const import MODEL_CLASS_NAME
 from zha.zigbee.cluster_handlers.const import (
     CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
     CLUSTER_HANDLER_POWER_CONFIGURATION,

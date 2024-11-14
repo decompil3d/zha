@@ -3,6 +3,7 @@
 from enum import StrEnum
 from typing import Any, Literal
 
+from zha.const import ClusterHandlerEvents, EventTypes
 from zha.model import BaseEvent, BaseModel
 
 
@@ -22,9 +23,11 @@ class ClusterAttributeUpdatedEvent(BaseEvent):
     attribute_value: Any
     cluster_handler_unique_id: str
     cluster_id: int
-    event_type: Literal["cluster_handler_event"] = "cluster_handler_event"
-    event: Literal["cluster_handler_attribute_updated"] = (
-        "cluster_handler_attribute_updated"
+    event_type: Literal[EventTypes.CLUSTER_HANDLER_EVENT] = (
+        EventTypes.CLUSTER_HANDLER_EVENT
+    )
+    event: Literal[ClusterHandlerEvents.CLUSTER_HANDLER_ATTRIBUTE_UPDATED] = (
+        ClusterHandlerEvents.CLUSTER_HANDLER_ATTRIBUTE_UPDATED
     )
 
 
@@ -80,4 +83,6 @@ class LevelChangeEvent(BaseEvent):
 
     level: int
     event: str
-    event_type: Literal["cluster_handler_event"] = "cluster_handler_event"
+    event_type: Literal[EventTypes.CLUSTER_HANDLER_EVENT] = (
+        EventTypes.CLUSTER_HANDLER_EVENT
+    )
