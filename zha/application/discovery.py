@@ -22,7 +22,6 @@ from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Ota
 
 from zha.application import Platform, const as zha_const
-from zha.application.helpers import DeviceOverridesConfiguration
 from zha.application.platforms import (  # noqa: F401 pylint: disable=unused-import
     alarm_control_panel,
     binary_sensor,
@@ -108,6 +107,7 @@ from zha.zigbee.group import Group
 
 if TYPE_CHECKING:
     from zha.application.gateway import Gateway
+    from zha.application.model import DeviceOverridesConfiguration
     from zha.zigbee.device import Device
     from zha.zigbee.endpoint import Endpoint
 

@@ -653,9 +653,8 @@ class Device(BaseDevice[PlatformEntity]):
             available and on_network
         ):
             self.debug("Device availability changed and device became unavailable")
-            self.gateway.emit(
-                "device_offline",
-                DeviceOfflineEvent(device_info=self.extended_device_info),
+            self.gateway.broadcast_event(
+                DeviceOfflineEvent(device_info=self.extended_device_info)
             )
             for entity in self.platform_entities.values():
                 entity.maybe_emit_state_changed_event()
@@ -673,17 +672,12 @@ class Device(BaseDevice[PlatformEntity]):
             data=event_data,
         )
         self.emit(ZHA_EVENT, event)
-
-        # pylint: disable=import-outside-toplevel
-        from zha.application.gateway import WebSocketServerGateway
-
-        if isinstance(self.gateway, WebSocketServerGateway):
-            self.gateway.emit(ZHA_EVENT, event)
+        self.gateway.broadcast_event(event)
 
     async def _async_became_available(self) -> None:
         """Update device availability and signal entities."""
-        self.gateway.emit(
-            "device_online", DeviceOnlineEvent(device_info=self.extended_device_info)
+        self.gateway.broadcast_event(
+            DeviceOnlineEvent(device_info=self.extended_device_info)
         )
         await self.async_initialize(False)
         for platform_entity in self._platform_entities.values():

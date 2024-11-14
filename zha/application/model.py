@@ -1,14 +1,29 @@
 """Models for the ZHA application module."""
 
-from enum import Enum
-from typing import Any, Literal
+from __future__ import annotations
 
+import collections
+import dataclasses
+import datetime
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Literal
+
+from aiohttp import ClientSession
+from pydantic import Field
 from zigpy.types.named import EUI64, NWK
 
+from zha.application import Platform
+from zha.application.const import (
+    CONF_DEFAULT_CONSIDER_UNAVAILABLE_BATTERY,
+    CONF_DEFAULT_CONSIDER_UNAVAILABLE_MAINS,
+)
 from zha.const import EventTypes
 from zha.model import BaseEvent, BaseModel
 from zha.websocket.const import ControllerEvents, DeviceEvents
 from zha.zigbee.model import DeviceInfo, ExtendedDeviceInfo, GroupInfo
+
+if TYPE_CHECKING:
+    from zha.application.gateway import Gateway
 
 
 class DevicePairingStatus(Enum):
@@ -152,3 +167,110 @@ class DeviceOnlineEvent(BaseEvent):
     event: Literal[DeviceEvents.DEVICE_ONLINE] = DeviceEvents.DEVICE_ONLINE
     event_type: Literal[EventTypes.DEVICE_EVENT] = EventTypes.DEVICE_EVENT
     device_info: ExtendedDeviceInfo
+
+
+class LightOptions(BaseModel):
+    """ZHA light options."""
+
+    default_light_transition: float = Field(default=0)
+    enable_enhanced_light_transition: bool = Field(default=False)
+    enable_light_transitioning_flag: bool = Field(default=True)
+    always_prefer_xy_color_mode: bool = Field(default=True)
+    group_members_assume_state: bool = Field(default=True)
+
+
+class DeviceOptions(BaseModel):
+    """ZHA device options."""
+
+    enable_identify_on_join: bool = Field(default=True)
+    consider_unavailable_mains: int = Field(
+        default=CONF_DEFAULT_CONSIDER_UNAVAILABLE_MAINS
+    )
+    consider_unavailable_battery: int = Field(
+        default=CONF_DEFAULT_CONSIDER_UNAVAILABLE_BATTERY
+    )
+    enable_mains_startup_polling: bool = Field(default=True)
+
+
+class AlarmControlPanelOptions(BaseModel):
+    """ZHA alarm control panel options."""
+
+    master_code: str = Field(default="1234")
+    failed_tries: int = Field(default=3)
+    arm_requires_code: bool = Field(default=False)
+
+
+class CoordinatorConfiguration(BaseModel):
+    """ZHA coordinator configuration."""
+
+    path: str
+    baudrate: int = Field(default=115200)
+    flow_control: str = Field(default="hardware")
+    radio_type: str = Field(default="ezsp")
+
+
+class QuirksConfiguration(BaseModel):
+    """ZHA quirks configuration."""
+
+    enabled: bool = Field(default=True)
+    custom_quirks_path: str | None = Field(default=None)
+
+
+class DeviceOverridesConfiguration(BaseModel):
+    """ZHA device overrides configuration."""
+
+    type: Platform
+
+
+class WebsocketServerConfiguration(BaseModel):
+    """Websocket Server configuration for zha."""
+
+    host: str = "0.0.0.0"
+    port: int = 8001
+    network_auto_start: bool = False
+
+
+class WebsocketClientConfiguration(BaseModel):
+    """Websocket client configuration for zha."""
+
+    host: str = "0.0.0.0"
+    port: int = 8001
+    aiohttp_session: ClientSession | None = None
+
+
+class ZHAConfiguration(BaseModel):
+    """ZHA configuration."""
+
+    coordinator_configuration: CoordinatorConfiguration = Field(
+        default_factory=CoordinatorConfiguration
+    )
+    quirks_configuration: QuirksConfiguration = Field(
+        default_factory=QuirksConfiguration
+    )
+    device_overrides: dict[str, DeviceOverridesConfiguration] = Field(
+        default_factory=dict
+    )
+    light_options: LightOptions = Field(default_factory=LightOptions)
+    device_options: DeviceOptions = Field(default_factory=DeviceOptions)
+    alarm_control_panel_options: AlarmControlPanelOptions = Field(
+        default_factory=AlarmControlPanelOptions
+    )
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class ZHAData:
+    """ZHA data stored in `gateway.data`."""
+
+    config: ZHAConfiguration
+    ws_server_config: WebsocketServerConfiguration | None = None
+    ws_client_config: WebsocketClientConfiguration | None = None
+    zigpy_config: dict[str, Any] = dataclasses.field(default_factory=dict)
+    platforms: collections.defaultdict[Platform, list] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(list)
+    )
+    gateway: Gateway | None = dataclasses.field(default=None)
+    device_trigger_cache: dict[str, tuple[str, dict]] = dataclasses.field(
+        default_factory=dict
+    )
+    allow_polling: bool = dataclasses.field(default=False)
+    local_timezone: datetime.tzinfo = dataclasses.field(default=datetime.UTC)

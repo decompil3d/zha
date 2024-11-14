@@ -8,7 +8,7 @@ import pytest
 
 from tests.conftest import CombinedWebsocketGateways
 from zha.application.gateway import WebSocketClientGateway, WebSocketServerGateway
-from zha.application.helpers import ZHAData
+from zha.application.model import ZHAData
 from zha.websocket import ZHAWebSocketException
 from zha.websocket.client.client import Client
 from zha.websocket.client.helpers import ClientHelper

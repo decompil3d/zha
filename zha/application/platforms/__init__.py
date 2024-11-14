@@ -372,17 +372,13 @@ class PlatformEntity(BaseEntity):
 
     def maybe_emit_state_changed_event(self) -> None:
         """Send the state of this platform entity."""
-        from zha.application.gateway import WebSocketServerGateway
-
         super().maybe_emit_state_changed_event()
-        if isinstance(self.device.gateway, WebSocketServerGateway):
-            self.device.gateway.emit(
-                STATE_CHANGED,
-                EntityStateChangedEvent(
-                    state=self.state,
-                    **self.identifiers.model_dump(),
-                ),
-            )
+        self.device.gateway.broadcast_event(
+            EntityStateChangedEvent(
+                state=self.state,
+                **self.identifiers.model_dump(),
+            ),
+        )
 
     async def async_update(self) -> None:
         """Retrieve latest state."""
@@ -461,17 +457,13 @@ class GroupEntity(BaseEntity):
 
     def maybe_emit_state_changed_event(self) -> None:
         """Send the state of this platform entity."""
-        from zha.application.gateway import WebSocketServerGateway
-
         super().maybe_emit_state_changed_event()
-        if isinstance(self.group.gateway, WebSocketServerGateway):
-            self.group.gateway.emit(
-                STATE_CHANGED,
-                EntityStateChangedEvent(
-                    state=self.state,
-                    **self.identifiers.model_dump(),
-                ),
-            )
+        self.group.gateway.broadcast_event(
+            EntityStateChangedEvent(
+                state=self.state,
+                **self.identifiers.model_dump(),
+            ),
+        )
 
     def debounced_update(self, _: Any | None = None) -> None:
         """Debounce updating group entity from member entity updates."""

@@ -33,7 +33,7 @@ from zha.application.gateway import (
     RawDeviceInitializedDeviceInfo,
     RawDeviceInitializedEvent,
 )
-from zha.application.helpers import ZHAData
+from zha.application.model import ZHAData
 from zha.application.platforms import GroupEntity
 from zha.application.platforms.light.const import EFFECT_OFF, LightEntityFeature
 from zha.zigbee.device import Device

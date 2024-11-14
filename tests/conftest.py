@@ -29,7 +29,7 @@ from zha.application.gateway import (
     WebSocketClientGateway,
     WebSocketServerGateway,
 )
-from zha.application.helpers import (
+from zha.application.model import (
     AlarmControlPanelOptions,
     CoordinatorConfiguration,
     LightOptions,

@@ -52,7 +52,7 @@ from tests.common import (
 from zha.application import Platform, discovery
 from zha.application.discovery import ENDPOINT_PROBE, EndpointProbe
 from zha.application.gateway import Gateway
-from zha.application.helpers import DeviceOverridesConfiguration
+from zha.application.model import DeviceOverridesConfiguration
 from zha.application.platforms import binary_sensor, sensor
 from zha.application.registries import SINGLE_INPUT_CLUSTER_DEVICE_CLASS
 from zha.zigbee.cluster_handlers import ClusterHandler

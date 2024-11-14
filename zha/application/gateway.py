@@ -51,7 +51,7 @@ from zha.application.const import (
     ZHA_GW_MSG_RAW_INIT,
     RadioType,
 )
-from zha.application.helpers import DeviceAvailabilityChecker, GlobalUpdater, ZHAData
+from zha.application.helpers import DeviceAvailabilityChecker, GlobalUpdater
 from zha.application.model import (
     ConnectionLostEvent,
     DeviceFullyInitializedEvent,
@@ -69,6 +69,7 @@ from zha.application.model import (
     GroupRemovedEvent,
     RawDeviceInitializedDeviceInfo,
     RawDeviceInitializedEvent,
+    ZHAData,
 )
 from zha.application.platforms.websocket_api import load_platform_entity_apis
 from zha.application.websocket_api import load_api as load_zigbee_controller_api
@@ -78,6 +79,7 @@ from zha.async_ import (
     gather_with_limited_concurrency,
 )
 from zha.event import EventBase
+from zha.model import BaseEvent
 from zha.websocket import ZHAWebSocketException
 from zha.websocket.client.client import Client
 from zha.websocket.client.helpers import (
@@ -172,6 +174,10 @@ class BaseGateway(EventBase, ABC):
     @abstractmethod
     async def shutdown(self) -> None:
         """Stop ZHA Controller Application."""
+
+    @abstractmethod
+    def broadcast_event(self, event: BaseEvent) -> None:
+        """Broadcast an event to all listeners."""
 
 
 class Gateway(AsyncUtilMixin, BaseGateway):
@@ -800,6 +806,9 @@ class Gateway(AsyncUtilMixin, BaseGateway):
             self.devices[sender.ieee].on_network = True
             self.async_update_device(sender, available=True)
 
+    def broadcast_event(self, event: BaseEvent) -> None:
+        """Broadcast an event to all listeners."""
+
 
 class WebSocketServerGateway(Gateway):
     """ZHA websocket server implementation."""
@@ -896,6 +905,10 @@ class WebSocketServerGateway(Gateway):
         """Exit the context manager."""
         await self.stop_server()
         await self.wait_closed()
+
+    def broadcast_event(self, event: BaseEvent) -> None:
+        """Broadcast an event to all listeners."""
+        self.emit(event.event, event)
 
     def _register_api_commands(self) -> None:
         """Load server API commands."""
@@ -1199,3 +1212,6 @@ class WebSocketClientGateway(BaseGateway):
 
     def connection_lost(self, exc: Exception) -> None:
         """Handle connection lost event."""
+
+    def broadcast_event(self, event: BaseEvent) -> None:
+        """Broadcast an event to all listeners."""
