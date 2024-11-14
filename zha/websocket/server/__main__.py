@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 
 from zha.application.gateway import WebSocketServerGateway
-from zha.application.helpers import (
+from zha.application.model import (
     WebsocketClientConfiguration,
     WebsocketServerConfiguration,
     ZHAConfiguration,
