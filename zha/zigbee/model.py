@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum, StrEnum
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, Union
 
 from pydantic import field_serializer, field_validator
 from zigpy.types import uint1_t, uint8_t
@@ -225,7 +225,7 @@ class EndpointNameInfo(BaseModel):
     name: str
 
 
-EntityInfoUnion = (
+EntityInfoUnion: TypeAlias = (
     SirenEntityInfo
     | SelectEntityInfo
     | NumberEntityInfo
@@ -308,7 +308,7 @@ class GroupMemberInfo(BaseModel):
     entities: dict[str, EntityInfoUnion]
 
 
-GroupEntityUnion = LightEntityInfo | FanEntityInfo | SwitchEntityInfo
+GroupEntityUnion: TypeAlias = LightEntityInfo | FanEntityInfo | SwitchEntityInfo
 
 if not TYPE_CHECKING:
     GroupEntityUnion = as_tagged_union(GroupEntityUnion)
