@@ -535,8 +535,8 @@ class SinopeManufacturerClusterHandler(ClusterHandler):
 
         if self.cluster.endpoint.model == "TH1300ZB":
             self.ZCL_INIT_ATTRS["room_temperature"] = True
-            return # Don't apply switch-specific attributes below
-        
+            return  # Don't apply switch-specific attributes below
+
         self.ZCL_INIT_ATTRS = {
             "double_up_full": True,
             "on_led_color": True,
@@ -576,9 +576,7 @@ class SinopeManufacturerClusterHandler(ClusterHandler):
             "DM2550ZB",
             "DM2550ZB-G2",
         )
-        thermostats = (
-            "TH1300ZB",
-        )
+        thermostats = ("TH1300ZB",)
 
         _LOGGER.debug(
             "matching sinope device to cluster handler %s", cluster.endpoint.model
